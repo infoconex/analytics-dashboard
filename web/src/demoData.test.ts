@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createWidget, formatMetric, selectRows } from './demoData';
+import { createWidget, datasetOptions, dimensions, formatMetric, metrics, selectRows } from './demoData';
 
 describe('sample analytics', () => {
   it('filters commerce observations to the selected period', () => {
@@ -25,5 +25,21 @@ describe('sample analytics', () => {
     expect(first.id).not.toBe(second.id);
     expect(first.datasetKey).toBe('commerce');
     expect(second.kind).toBe('table');
+  });
+
+  it('offers only sample datasets with usable dimensions and numeric measures', () => {
+    for (const dataset of datasetOptions) {
+      const rows = selectRows(dataset.key, '12m');
+      expect(rows.length).toBeGreaterThan(0);
+      expect(metrics[dataset.key].length).toBeGreaterThan(0);
+
+      for (const row of rows) {
+        expect(typeof row[dimensions[dataset.key]]).toBe('string');
+        for (const measure of metrics[dataset.key]) {
+          expect(typeof row[measure.key]).toBe('number');
+          expect(Number.isFinite(row[measure.key])).toBe(true);
+        }
+      }
+    }
   });
 });
