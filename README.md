@@ -10,6 +10,7 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 | --- | --- |
 | Responsive dashboard overview and library | Working |
 | Metric, line, area, bar, donut, and table visualizations | Working with labeled sample data |
+| Guided Explore and visual dashboard composition | Sample-only chart gallery, drag/keyboard widget ordering, responsive canvas, save/cancel and unsaved-change protection; [UX-2 details](docs/dashboard-composition.md) |
 | Create, edit, delete, and share dashboard links | Working in local development |
 | Dashboard definitions, optimistic revisions, and persistence | SQLite metadata catalog |
 | Register, rename, list and remove data-source definitions | SQLite metadata only, tenant-scoped and revision-protected; no connections |

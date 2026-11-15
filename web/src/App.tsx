@@ -8,11 +8,14 @@ import {
   TrendingUp, Users, X,
 } from 'lucide-react';
 import { dashboardApi } from './api';
-import { createWidget, datasetOptions, dimensions, metrics, visualizations } from './demoData';
-import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, WidgetKind } from './model';
+import { hasDashboardChanges } from './composition';
+import { createWidget, datasetOptions, dimensions, metrics } from './demoData';
+import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership } from './model';
+import { DashboardCanvas } from './DashboardCanvas';
 import { WidgetTile } from './WidgetTile';
 import { DataSourcesPage } from './DataSourcesPage';
 import { ExplorePage } from './ExplorePage';
+import { VisualizationGallery } from './VisualizationGallery';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
@@ -52,16 +55,39 @@ export default function App() {
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState<DashboardDraft | null>(null);
   const [widgetDraft, setWidgetDraft] = useState<DashboardWidget | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const skipNextHashPrompt = useRef(false);
+  const acceptedHash = useRef(window.location.hash);
 
   const organization = organizations.find(item => item.id === organizationId);
   const canEdit = organization?.role === 'owner' || organization?.role === 'editor';
   const dashboards = dashboardList?.organizationId === organizationId ? dashboardList.items : [];
   const activeDashboard = dashboards.find(item => item.id === view.id);
+  const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
+
+  function confirmDiscard(): boolean {
+    return !hasChanges || window.confirm('Discard your unsaved dashboard changes?');
+  }
+
+  function stopEditing() {
+    if (!confirmDiscard()) return;
+    setEditMode(false);
+    setDraft(null);
+    setWidgetDraft(null);
+    setSaveError('');
+  }
 
   useEffect(() => {
     const handleHash = () => {
+      if (!skipNextHashPrompt && !confirmDiscard()) {
+        window.history.replaceState(null, '', acceptedHash.current || '#/');
+        return;
+      }
+      skipNextHashPrompt.current = false;
+      acceptedHash.current = window.location.hash;
       const next = currentView();
       setView(next);
       if (next.organizationId && organizations.some(item => item.id === next.organizationId)) {
@@ -69,10 +95,45 @@ export default function App() {
       }
       setEditMode(false);
       setDraft(null);
+      setWidgetDraft(null);
+      setSaveError('');
     };
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
-  }, [organizations]);
+  }, [organizations, hasChanges]);
+
+  useEffect(() => {
+    if (!hasChanges) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasChanges]);
+
+  const modalOpen = createOpen || Boolean(widgetDraft);
+  useEffect(() => {
+    if (!modalOpen) return;
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    if (!dialog) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)'));
+    (dialog.querySelector<HTMLElement>('.gallery-card') ?? dialog.querySelector<HTMLElement>('input'))?.focus();
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (widgetDraft) setWidgetDraft(null);
+        else setCreateOpen(false);
+      }
+      if (event.key !== 'Tab') return;
+      const controls = focusable();
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', handleKeydown);
+    return () => { document.removeEventListener('keydown', handleKeydown); previouslyFocused?.focus(); };
+  }, [modalOpen]);
 
   useEffect(() => {
     Promise.all([dashboardApi.organizations(), dashboardApi.identity()]).then(([items, user]) => {
@@ -111,11 +172,18 @@ export default function App() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  function navigate(next: Page, id?: string) {
-    window.location.hash = id ? `/organization/${encodeURIComponent(organizationId)}/dashboard/${id}` : next === 'overview' ? '/' : `/${next}`;
+  function navigate(next: Page, id?: string, nextOrganizationId = organizationId) {
+    if (!confirmDiscard()) return;
+    const nextHash = id ? `#/organization/${encodeURIComponent(nextOrganizationId)}/dashboard/${id}` : next === 'overview' ? '#/' : `#/${next}`;
+    skipNextHashPrompt.current = window.location.hash !== nextHash;
+    window.location.hash = nextHash;
+    acceptedHash.current = window.location.hash;
+    if (nextOrganizationId !== organizationId) setOrganizationId(nextOrganizationId);
     setView({ page: next, id });
     setEditMode(false);
     setDraft(null);
+    setWidgetDraft(null);
+    setSaveError('');
     setSidebarOpen(false);
   }
 
@@ -152,8 +220,10 @@ export default function App() {
   }
 
   async function saveDashboard() {
-    if (!draft || !activeDashboard) return;
+    if (!draft || !activeDashboard || saving || !hasChanges || !draft.name.trim()) return;
     const targetOrganizationId = organizationId;
+    setSaving(true);
+    setSaveError('');
     try {
       const updated = await dashboardApi.update(targetOrganizationId, activeDashboard, draft);
       if (activeOrganization.current !== targetOrganizationId) return;
@@ -163,7 +233,9 @@ export default function App() {
       setEditMode(false);
       setToast('All changes saved');
     } catch (exception) {
-      setError(exception instanceof Error ? exception.message : 'Unable to save dashboard.');
+      setSaveError(exception instanceof Error ? exception.message : 'Unable to save dashboard. Your edits are still here.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -207,7 +279,7 @@ export default function App() {
           <div className="workspace-avatar">{organization?.name?.charAt(0) ?? 'N'}</div>
           <div className="workspace-details"><strong>{organization?.name ?? 'Your workspace'}</strong><small>{organization?.role ?? 'Organization'}</small></div>
           <ChevronDown size={14} />
-          {organizations.length > 1 && <select aria-label="Switch organization" value={organizationId} onChange={event => { setOrganizationId(event.target.value); navigate('overview'); }}>
+          {organizations.length > 1 && <select aria-label="Switch organization" value={organizationId} onChange={event => navigate('overview', undefined, event.target.value)}>
             {organizations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>}
         </div>
@@ -260,13 +332,14 @@ export default function App() {
                       {editMode && draft ? <input className="description-edit" aria-label="Dashboard description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /> : <p>{preview.description}</p>}</div>
                   </div>
                   <div className="heading-actions">
-                    {editMode ? <><button className="button button-quiet" onClick={() => { setEditMode(false); setDraft(null); }}>Cancel</button><button className="button button-primary" onClick={() => void saveDashboard()}><Check size={16} /> Save changes</button></>
-                      : <><button className="button button-light" onClick={() => void share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => { setDraft({ name: preview.name, description: preview.description, widgets: preview.widgets.map(item => ({ ...item })) }); setEditMode(true); }}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
+                    {editMode ? <><button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
+                      : <><button className="button button-light" onClick={() => void share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => { setDraft({ name: preview.name, description: preview.description, widgets: preview.widgets.map(item => ({ ...item })) }); setSaveError(''); setEditMode(true); }}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
                   </div>
                 </div>
+                {editMode && <div className="composition-status" role="status" aria-live="polite"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Arrange and configure your dashboard before publishing changes to your team.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}
+                {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available.</div>}
                 <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Sample dataset</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> Updated {new Date(preview.updatedAt).toLocaleDateString()}</span></div><PeriodPicker period={period} setPeriod={setPeriod} /></div>
-                <div className="widgets-grid">{preview.widgets.map(widget => <WidgetTile key={widget.id} widget={widget} period={period} editing={editMode} onEdit={setWidgetDraft} onRemove={id => setDraft(current => current ? { ...current, widgets: current.widgets.filter(item => item.id !== id) } : current)} />)}
-                  {editMode && <button className="add-widget" onClick={() => setWidgetDraft(createWidget())}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Choose a visualization and data series</small></button>}</div>
+                <DashboardCanvas widgets={preview.widgets} period={period} editing={editMode} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)} />
               </>
             ) : <EmptyState title="Dashboard not found" message="This dashboard may have been deleted or is not in your organization." />
             : view.page === 'dashboards' ? (
@@ -293,11 +366,12 @@ export default function App() {
       {toast && <div className="toast"><Check size={16} />{toast}</div>}
       {createOpen && draft && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setCreateOpen(false); }}><section className="modal" role="dialog" aria-modal="true" aria-label="Create dashboard"><div className="modal-heading"><div><span className="eyebrow">NEW WORKSPACE VIEW</span><h2>Create dashboard</h2><p>Give your dashboard a name. Add visualizations after creating it.</p></div><button className="icon-button" aria-label="Close" onClick={() => setCreateOpen(false)}><X size={20} /></button></div><label className="form-label">Dashboard name<input autoFocus maxLength={100} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder="e.g. Customer health overview" /></label><label className="form-label">Description<textarea maxLength={500} rows={3} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} placeholder="What would you like your team to learn from this view?" /></label><div className="modal-actions"><button className="button button-light" onClick={() => setCreateOpen(false)}>Cancel</button><button className="button button-primary" disabled={!draft.name.trim()} onClick={() => void createDashboard()}>Create dashboard <ArrowRight size={16} /></button></div></section></div>}
 
-      {widgetDraft && editMode && draft && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setWidgetDraft(null); }}><section className="modal" role="dialog" aria-modal="true" aria-label="Configure visualization"><div className="modal-heading"><div><span className="eyebrow">VISUALIZATION BUILDER</span><h2>Configure visualization</h2><p>Choose how you'd like to present your sample data.</p></div><button className="icon-button" aria-label="Close" onClick={() => setWidgetDraft(null)}><X size={20} /></button></div>
+      {widgetDraft && editMode && draft && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setWidgetDraft(null); }}><section className="modal visualization-modal" role="dialog" aria-modal="true" aria-label="Configure visualization"><div className="modal-heading"><div><span className="eyebrow">VISUALIZATION BUILDER · SAMPLE DATA</span><h2>Configure visualization</h2><p>Pick a visual, then choose what it should show.</p></div><button className="icon-button" aria-label="Close" onClick={() => setWidgetDraft(null)}><X size={20} /></button></div>
+        <VisualizationGallery kind={widgetDraft.kind} onSelect={kind => setWidgetDraft({ ...widgetDraft, kind })} />
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
-        <div className="form-grid"><label className="form-label">Chart type<select value={widgetDraft.kind} onChange={event => setWidgetDraft({ ...widgetDraft, kind: event.target.value as WidgetKind })}>{visualizations.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label><label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey: metrics[datasetKey][0]?.key ?? 'orders', dimensionKey: dimensions[datasetKey] }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label></div>
+        <label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey: metrics[datasetKey][0]?.key ?? 'orders', dimensionKey: dimensions[datasetKey] }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
         <label className="form-label">Metric<select value={widgetDraft.metricKey} onChange={event => setWidgetDraft({ ...widgetDraft, metricKey: event.target.value })}>{(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
-        <div className="modal-actions"><button className="button button-light" onClick={() => setWidgetDraft(null)}>Cancel</button><button className="button button-primary" disabled={!widgetDraft.title.trim()} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> Add to dashboard</button></div></section></div>}
+        <div className="modal-actions"><button className="button button-light" onClick={() => setWidgetDraft(null)}>Cancel</button><button className="button button-primary" disabled={!widgetDraft.title.trim()} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> {draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</button></div></section></div>}
     </div>
   );
 }
