@@ -60,9 +60,11 @@ builder.Services.AddSingleton<IDataSourceRepository>(provider =>
     provider.GetRequiredService<SqliteDataSourceRepository>());
 builder.Services.AddSingleton<IOrganizationCatalog>(provider =>
     provider.GetRequiredService<SqliteCatalog>());
+builder.Services.AddSingleton<IQueryDatasetCatalog, UnconfiguredQueryDatasetCatalog>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<DataSourceService>();
+builder.Services.AddScoped<QueryService>();
 
 var app = builder.Build();
 
@@ -82,13 +84,14 @@ app.UseExceptionHandler(exceptionApp => exceptionApp.Run(async context =>
         ConflictException => (StatusCodes.Status409Conflict, "The resource was modified"),
         InvalidDashboardException => (StatusCodes.Status400BadRequest, "Invalid dashboard"),
         InvalidDataSourceException => (StatusCodes.Status400BadRequest, "Invalid data source"),
+        InvalidQueryException => (StatusCodes.Status400BadRequest, "Invalid query"),
         BadHttpRequestException badRequest => (badRequest.StatusCode, "Invalid request"),
         _ => (StatusCodes.Status500InternalServerError, "Unexpected error")
     };
 
     context.Response.StatusCode = status;
     await Results.Problem(title: title,
-        detail: exception is InvalidDashboardException or InvalidDataSourceException
+        detail: exception is InvalidDashboardException or InvalidDataSourceException or InvalidQueryException
             ? exception.Message : null,
         statusCode: status).ExecuteAsync(context);
 }));
@@ -198,6 +201,15 @@ dataSourceRoutes.MapDelete("/{id:guid}", async (
     DataSourceService service, CancellationToken token) =>
     await service.DeleteAsync(organizationId, id, UserId(context), expectedRevision, token)
         ? Results.NoContent() : Results.NotFound());
+
+// Validation only. Does not create a connection, compile a provider query, or return data.
+dataSourceRoutes.MapPost("/{id:guid}/queries/validate", async (
+    string organizationId, Guid id, QueryRequest request, HttpContext context,
+    QueryService service, CancellationToken token) =>
+{
+    var result = await service.ValidateAsync(organizationId, id, UserId(context), request, token);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
 
 app.Run();
 

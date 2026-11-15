@@ -4,7 +4,7 @@
 
 Analytics Dashboard is an independent analytics experience for software vendors incorporating dashboards into customer-facing applications. Each customer organization has independently authenticated users, connections, dashboard definitions, authorization, audit events, and resource limits.
 
-The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata. Live connectors are planned.
+The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata; Issue #8 adds non-executing query contract validation. Live connectors are planned.
 
 ## Logical components
 
@@ -32,7 +32,7 @@ Domain and Application have no database or UI package dependencies. Infrastructu
 | Widget | Chart kind, dataset, metric and dimension | Implemented for sample data |
 | Data-source registration | Tenant-owned provider/name definition with revisions and provenance, but no connection configuration | Implemented in SQLite/API/UI; no connectivity |
 | Connection | Secured network and authentication configuration | Not modeled or implemented |
-| Query definition | Restricted, provider-neutral query contract | Planned |
+| Query definition | Restricted, provider-neutral contract and tenant-scoped validation against a trusted allowlist | Implemented in Issue #8; deployed allowlist empty, no execution |
 | Data access policy | Connection permissions, quotas and timeouts | Planned |
 | Audit event | Recorded identity, action, resource and outcome | Planned |
 
@@ -54,9 +54,18 @@ Definitions have immutable IDs, organization, provider, creator and creation tim
 
 HTTP requests deliberately have narrow shapes: `DataSourceDraft` accepts only name/provider and `DataSourceUpdate` only name/expected revision. Unknown JSON properties fail deserialization, enum providers are serialized as strings, and unexpected or numeric providers are rejected. No network endpoints, connection configurations, credential fields, connection tests, or query execution exist in this slice. Free-form display names are not an appropriate place for secrets.
 
+## Query contract validation (Issue #8)
+
+`QueryService` implements membership check → tenant-scoped registration lookup → trusted
+`IQueryDatasetCatalog` allowlist → typed operator/aggregation/capability validation and
+budget calculation. The deployed `UnconfiguredQueryDatasetCatalog` deliberately denies
+all datasets. `/queries/validate` exposes only schema and limits, never records.
+No schema inspection, endpoint, credentials, compiler or query execution adapter exists.
+See [query contracts](query-contracts.md) for the type/operator matrix and limits.
+
 ## Connector architecture (future)
 
-Providers will implement a shared query port while retaining provider-specific capabilities. SQL Server, MySQL, PostgreSQL, and SQLite will use supported ADO.NET providers. Elasticsearch will use its supported HTTP API and a constrained query DSL.
+Providers will implement a shared execution port while retaining provider-specific capabilities. Current capability declarations are provisional until verified by real adapter conformance tests. SQL Server, MySQL, PostgreSQL, and SQLite will use supported ADO.NET providers. Elasticsearch will use its supported HTTP API and a constrained query DSL.
 
 Required query properties:
 
@@ -75,4 +84,4 @@ Separated identity, application, and infrastructure boundaries accommodate OIDC 
 
 ## Compatibility and delivery
 
-The backend uses .NET 10 LTS. The UI uses lockfile-controlled npm dependencies. Local/CI verification shares a PowerShell script. Each substantive capability has one reviewable issue/PR pair and a squash merge after owner approval.
+The backend uses .NET 10 LTS. The UI uses lockfile-controlled npm dependencies. Local/CI verification shares a PowerShell script. Each substantive capability has one reviewable issue/PR pair and an authorized squash merge after verified reviews and checks.
