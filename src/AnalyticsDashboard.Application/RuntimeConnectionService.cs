@@ -32,7 +32,9 @@ public sealed class RuntimeConnectionService(
         var profile = await connections.FindAsync(organizationId, dataSourceId, token);
         if (profile is null || profile.IsRevoked || profile.Provider != source.Provider
             || profile.OrganizationId != organizationId || profile.DataSourceId != dataSourceId
-            || profile.Network is null || profile.Secret is null || profile.SqliteFileId is not null)
+            || profile.Network is null || profile.Secret is null || profile.SqliteFileId is not null
+            || !IsValidRelationalName(profile.Network.Database)
+            || !IsValidRelationalName(profile.Network.Username))
             throw new InvalidConnectionException("Runtime relational connection is unavailable.");
 
         // Prevent DNS or key access when the deployment cannot meet the hard transport gates.
@@ -55,8 +57,13 @@ public sealed class RuntimeConnectionService(
         var destination = await destinations.ValidateAsync(source.Provider, profile.Network, token);
         token.ThrowIfCancellationRequested();
 
-        // Ensure no rotation/revocation occurred while performing network authorization.
+        // Membership and registration may be revoked during an asynchronous DNS lookup.
+        if (await organizations.GetRoleAsync(organizationId, userId, token) is null)
+            throw new ForbiddenException();
         if (!await IsCurrentAsync(profile, token)) throw new ConflictException();
+        if (await dataSources.FindAsync(organizationId, dataSourceId, token) is not { } currentSource
+            || currentSource.Provider != source.Provider)
+            throw new ConflictException();
 
         // Decryption occurs only after membership, source, transport and DNS authorization.
         var credential = secrets.Unprotect(profile.Secret, organizationId, dataSourceId, source.Provider);
@@ -83,16 +90,33 @@ public sealed class RuntimeConnectionService(
             if (session.State != ConnectionState.Open)
                 throw new ConnectionSecurityUnavailableException();
             // Reject a session opened across a rotation, revoke or registration deletion.
+            if (await organizations.GetRoleAsync(organizationId, userId, token) is null)
+                throw new ForbiddenException();
             if (!await IsCurrentAsync(profile, token)
                 || await dataSources.FindAsync(organizationId, dataSourceId, token) is not { } latest
                 || latest.Provider != source.Provider)
                 throw new ConflictException();
             return session;
         }
-        catch
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            await session.DisposeAsync();
+            await DisposeWithoutDisclosureAsync(session);
             throw;
+        }
+        catch (ForbiddenException)
+        {
+            await DisposeWithoutDisclosureAsync(session);
+            throw;
+        }
+        catch (ConflictException)
+        {
+            await DisposeWithoutDisclosureAsync(session);
+            throw;
+        }
+        catch (Exception)
+        {
+            await DisposeWithoutDisclosureAsync(session);
+            throw new ConnectionSecurityUnavailableException();
         }
     }
 
@@ -102,5 +126,21 @@ public sealed class RuntimeConnectionService(
         return current is not null && !current.IsRevoked
             && current.Revision == original.Revision
             && current.Provider == original.Provider;
+    }
+
+    private static bool IsValidRelationalName(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && value.Length <= 128 && value.All(c =>
+            char.IsAsciiLetterOrDigit(c) || c is '_' or '-' or '.' or '@');
+
+    private static async Task DisposeWithoutDisclosureAsync(DbConnection connection)
+    {
+        try
+        {
+            await connection.DisposeAsync();
+        }
+        catch (Exception)
+        {
+            // Cleanup must be attempted, but exceptions must not expose provider diagnostics.
+        }
     }
 }

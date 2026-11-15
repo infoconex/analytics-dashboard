@@ -57,8 +57,9 @@ gate and a fresh exact-allowlist/DNS validation **before** decrypting a secret.
 It rechecks revisions around opening to reject basic revoke/rotation races.
 The API registers only a permanently unavailable transport, so no SQL Server or
 PostgreSQL runtime session or customer query can be opened. The existing
-credential reader remains a privileged server-side port and is never mapped
-over HTTP. See [runtime admission and unresolved gates](runtime-connection-admission.md).
+credential reader now also requires tenant/source/member authorization and
+remains a privileged server-side port never mapped over HTTP. See
+[runtime admission and unresolved gates](runtime-connection-admission.md).
 
 **No provider TLS/socket evidence exists for runtime connections yet.** Existing
 real DBMS tests concern compiler conformance and use isolated test-only TLS

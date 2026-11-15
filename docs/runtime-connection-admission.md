@@ -31,22 +31,28 @@ attempt follows this order:
    and unapproved address sets. This result is **not** a standalone connect
    token: only the privileged transport may establish the ensuing socket,
    and it must exclusively use the vetted IP set for this attempt.
-5. Recheck the profile revision, then decrypt its authenticated secret using
+5. Recheck tenant membership, registration and profile revision, then decrypt its authenticated secret using
    tenant/source/provider context. The plaintext is passed only to the
    privileged transport and never returned by the application use case.
 6. The future transport must return an already-open, provider-authenticated
-   `DbConnection`. Deny closed sessions. Re-read source and profile after open;
+   `DbConnection`. Deny closed sessions. Recheck membership, source and profile after open;
    dispose the session if they were removed, revoked or replaced, or the token
    was cancelled. This checks the obvious open-time race, but **cannot** prevent
    revocation immediately after return; query execution will require its own
    authorization/lease and cancellation policy in 3c.
 
-Transport-readiness and provider exceptions are translated to a generic
+Transport-readiness, provider-state and cleanup exceptions are translated to a generic
 security-unavailable error without inner exception details or credentials.
 Cancellation propagates when the caller cancels. The *transport itself* must
 guarantee cleanup of partially opened sockets and sessions on every failed or
 cancelled attempt. Managed strings cannot be reliably zeroed; credentials
 must be kept out of diagnostic contexts and any future connection pool.
+
+The older server-side `IConnectionCredentialReader` port now also requires a
+server-authenticated actor, verifies tenant membership and source/provider
+ownership before decryption, and rechecks membership before returning the
+secret. It is **not** a network authorization or execution port and remains
+unreachable from HTTP.
 
 ## Provider API decision record (2026-11-15)
 
@@ -91,8 +97,9 @@ Authoritative references consulted:
 
 The new admission tests use real SQLite catalog persistence, encrypted credential
 envelopes and a **test-only** in-memory fake provider session. They exercise
-cross-tenant/unknown callers, missing and revoked profiles, readiness fail-
-closed ordering, per-attempt DNS changes, blocked and mixed DNS answers,
+cross-tenant/unknown callers, missing and revoked profiles, malformed stored
+principals, readiness fail-closed ordering, per-attempt DNS changes, blocked
+destinations and mixed DNS answers, in-flight membership revocation,
 missing historical keys, cancellation, provider errors and revocation races.
 The existing mandatory SQL Server/PostgreSQL integration suite still tests
 restricted *compiler* plans, native parameters and read-only fixture accounts.

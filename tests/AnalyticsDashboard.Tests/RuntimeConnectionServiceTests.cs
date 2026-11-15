@@ -76,6 +76,20 @@ public sealed class RuntimeConnectionServiceTests
         }
     }
 
+    private sealed class RevocableMembership(IOrganizationCatalog inner) : IOrganizationCatalog
+    {
+        public bool Active { get; set; } = true;
+
+        public Task<IReadOnlyList<(Organization Organization, OrganizationRole Role)>>
+            GetOrganizationsAsync(string userId, CancellationToken token) =>
+            inner.GetOrganizationsAsync(userId, token);
+
+        public Task<OrganizationRole?> GetRoleAsync(string organizationId, string userId,
+            CancellationToken token) => Active
+                ? inner.GetRoleAsync(organizationId, userId, token)
+                : Task.FromResult<OrganizationRole?>(null);
+    }
+
     private string path = null!;
     private SqliteCatalog organizations = null!;
     private SqliteDataSourceRepository sources = null!;
@@ -134,8 +148,9 @@ public sealed class RuntimeConnectionServiceTests
         if (File.Exists(path)) File.Delete(path);
     }
 
-    private RuntimeConnectionService NewRuntime(IConnectionSecretProtector? protector = null) =>
-        new(organizations, sources, profiles, destinations, protector ?? secrets, transport);
+    private RuntimeConnectionService NewRuntime(IConnectionSecretProtector? protector = null,
+        IOrganizationCatalog? membership = null) =>
+        new(membership ?? organizations, sources, profiles, destinations, protector ?? secrets, transport);
 
     private Task<DbConnection?> OpenAsync(string organization = "northstar",
         string user = "demo-owner", Guid? id = null, CancellationToken token = default) =>
@@ -169,6 +184,22 @@ public sealed class RuntimeConnectionServiceTests
                 new DataSourceDraft("Unconfigured", DataSourceProvider.SqlServer), CancellationToken.None);
         await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await OpenAsync(id: other.Id));
+        Assert.That(transport.ReadinessChecks, Is.Zero);
+        Assert.That(secrets.Reads, Is.Zero);
+    }
+
+    [Test]
+    public async Task CorruptStoredPrincipalIsRejectedBeforeTransportOrKeyAccess()
+    {
+        await using var connection = new SqliteConnection($"Data Source={path}");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE connection_profiles SET username = NULL WHERE organization_id = $org";
+        command.Parameters.AddWithValue("$org", "northstar");
+        Assert.That(await command.ExecuteNonQueryAsync(), Is.EqualTo(1));
+
+        transport.Ready = true;
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () => await OpenAsync());
         Assert.That(transport.ReadinessChecks, Is.Zero);
         Assert.That(secrets.Reads, Is.Zero);
     }
@@ -255,6 +286,19 @@ public sealed class RuntimeConnectionServiceTests
     }
 
     [Test]
+    public async Task ChangedOperatorAllowlistDeniesWithoutResolvingOrReadingSecret()
+    {
+        transport.Ready = true;
+        destinations = new ApprovedDestinationPolicy(
+            new Dictionary<DataSourceProvider, IReadOnlySet<string>>(), dns);
+        runtime = NewRuntime();
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () => await OpenAsync());
+        Assert.That(dns.Calls, Is.EqualTo(1));
+        Assert.That(secrets.Reads, Is.Zero);
+        Assert.That(transport.Opens, Is.Zero);
+    }
+
+    [Test]
     public async Task RevokedProfileNeverPermitsAdmission()
     {
         await configuration.RevokeAsync("northstar", sourceId, "demo-owner", 1,
@@ -285,6 +329,37 @@ public sealed class RuntimeConnectionServiceTests
         await Assert.ThrowsAsync<ConflictException>(async () => await OpenAsync());
         Assert.That(transport.Opens, Is.Zero);
         Assert.That(secrets.Reads, Is.Zero);
+    }
+
+    [Test]
+    public async Task MembershipRevocationDuringDnsDeniesBeforeKeyAccess()
+    {
+        var roles = new RevocableMembership(organizations);
+        runtime = NewRuntime(membership: roles);
+        transport.Ready = true;
+        dns.BeforeReturn = () =>
+        {
+            roles.Active = false;
+            return Task.CompletedTask;
+        };
+        await Assert.ThrowsAsync<ForbiddenException>(async () => await OpenAsync());
+        Assert.That(secrets.Reads, Is.Zero);
+        Assert.That(transport.Opens, Is.Zero);
+    }
+
+    [Test]
+    public async Task MembershipRevocationDuringOpenDisposesSession()
+    {
+        var roles = new RevocableMembership(organizations);
+        runtime = NewRuntime(membership: roles);
+        transport.Ready = true;
+        transport.BeforeReturn = () =>
+        {
+            roles.Active = false;
+            return Task.CompletedTask;
+        };
+        await Assert.ThrowsAsync<ForbiddenException>(async () => await OpenAsync());
+        Assert.That(transport.LastSession?.State, Is.EqualTo(System.Data.ConnectionState.Closed));
     }
 
     [Test]
