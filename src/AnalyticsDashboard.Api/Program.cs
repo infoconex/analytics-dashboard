@@ -154,7 +154,7 @@ app.Use(async (context, next) =>
             return;
         }
     }
-    await next(context);
+    await next();
 });
 app.UseAuthentication();
 app.UseAuthorization();
