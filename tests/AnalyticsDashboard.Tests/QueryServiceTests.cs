@@ -46,7 +46,8 @@ public sealed class QueryServiceTests
         }
         sources = new SqliteDataSourceRepository(databasePath);
         await sources.InitializeAsync();
-        var dataSource = new DataSourceService(sources, organizations, TimeProvider.System);
+        var dataSource = new DataSourceService(sources, organizations,
+            new SqliteConnectionRepository(databasePath), TimeProvider.System);
         sourceId = (await dataSource.CreateAsync("northstar", "demo-owner",
             new DataSourceDraft("Sales reporting", DataSourceProvider.Sqlite), CancellationToken.None)).Id;
         datasets = new FakeDatasetCatalog(sourceId, Sales);
@@ -148,7 +149,8 @@ public sealed class QueryServiceTests
     [Test]
     public async Task ProviderCapabilitiesDifferAndAreEnforced()
     {
-        var dataSource = new DataSourceService(sources, organizations, TimeProvider.System);
+        var dataSource = new DataSourceService(sources, organizations,
+            new SqliteConnectionRepository(databasePath), TimeProvider.System);
         var elasticId = (await dataSource.CreateAsync("northstar", "demo-owner",
             new DataSourceDraft("Search", DataSourceProvider.Elasticsearch), CancellationToken.None)).Id;
         datasets.AllowedSources.Add(elasticId);

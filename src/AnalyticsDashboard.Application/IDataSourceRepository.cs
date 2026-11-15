@@ -12,5 +12,6 @@ public interface IDataSourceRepository
 
     Task<bool> ReplaceAsync(DataSourceDefinition definition, int expectedRevision, CancellationToken cancellationToken);
 
-    Task<bool> DeleteAsync(string organizationId, Guid id, int expectedRevision, CancellationToken cancellationToken);
+    Task<bool> DeleteAsync(string organizationId, Guid id, int expectedRevision,
+        CancellationToken cancellationToken, bool requireUnconfigured = false);
 }

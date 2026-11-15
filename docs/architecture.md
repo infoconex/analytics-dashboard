@@ -42,6 +42,7 @@ Domain and Application have no database or UI package dependencies. Infrastructu
 - Resolve the user from validated server-side identity claims.
 - Check membership and the required role on every organization-scoped operation.
 - Include `organization_id` in all dashboard and data-source database predicates, including updates and deletes; constrain data-source updates **and deletions** with the expected revision.
+- A data-source registration that has a protected connection profile or revocation tombstone can only be deleted by an owner. An editor may delete an unconfigured registration; the storage DELETE predicate atomically verifies it remains unconfigured, preventing a race with credential creation.
 - Never expose another organization's resources when a caller guesses identifiers.
 - A dashboard link is a *pointer*, not an authorization grant.
 - A future embed token must bind organization, subject, scopes and short expiration.

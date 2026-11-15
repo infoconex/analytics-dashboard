@@ -42,7 +42,7 @@ public sealed class ConnectionServiceTests
         await definitions.InitializeAsync();
         repository = new SqliteConnectionRepository(databasePath);
         await repository.InitializeAsync();
-        var source = await new DataSourceService(definitions, organizations, TimeProvider.System)
+        var source = await new DataSourceService(definitions, organizations, repository, TimeProvider.System)
             .CreateAsync("northstar", "demo-owner",
                 new DataSourceDraft("Reporting", DataSourceProvider.PostgreSql), CancellationToken.None);
         sourceId = source.Id;
@@ -218,9 +218,41 @@ public sealed class ConnectionServiceTests
     {
         await service.ConfigureAsync("northstar", sourceId, "demo-owner",
             Request("to-be-erased", 0), CancellationToken.None);
-        await new DataSourceService(definitions, organizations, TimeProvider.System)
+        await new DataSourceService(definitions, organizations, repository, TimeProvider.System)
             .DeleteAsync("northstar", sourceId, "demo-owner", 1, CancellationToken.None);
         Assert.That(await repository.FindAsync("northstar", sourceId, CancellationToken.None), Is.Null);
+    }
+
+    [Test]
+    public async Task EditorCannotBypassCredentialRevocationByDeletingRegisteredSource()
+    {
+        await using (var connection = new SqliteConnection($"Data Source={databasePath}"))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO memberships(organization_id, user_id, role)
+                VALUES ('northstar', 'test-editor', 1)
+                """;
+            await command.ExecuteNonQueryAsync();
+        }
+        var registration = new DataSourceService(definitions, organizations, repository, TimeProvider.System);
+        var metadataOnly = await registration.CreateAsync("northstar", "test-editor",
+            new DataSourceDraft("Metadata", DataSourceProvider.MySql), CancellationToken.None);
+        Assert.That(await registration.DeleteAsync("northstar", metadataOnly.Id, "test-editor", 1,
+            CancellationToken.None), Is.True);
+
+        await service.ConfigureAsync("northstar", sourceId, "demo-owner",
+            Request("owner-credential", 0), CancellationToken.None);
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await registration.DeleteAsync("northstar", sourceId, "test-editor", 1,
+                CancellationToken.None));
+        // Defense in depth at the atomic SQL boundary covers concurrent profile creation.
+        Assert.That(await definitions.DeleteAsync("northstar", sourceId, 1,
+            CancellationToken.None, requireUnconfigured: true), Is.False);
+        Assert.That(await repository.FindAsync("northstar", sourceId, CancellationToken.None), Is.Not.Null);
+        Assert.That(await registration.DeleteAsync("northstar", sourceId, "demo-owner", 1,
+            CancellationToken.None), Is.True);
     }
 
     [Test]
@@ -279,7 +311,7 @@ public sealed class ConnectionServiceTests
         await File.WriteAllTextAsync(file, "test");
         try
         {
-            var sqlite = await new DataSourceService(definitions, organizations, TimeProvider.System)
+            var sqlite = await new DataSourceService(definitions, organizations, repository, TimeProvider.System)
                 .CreateAsync("northstar", "demo-owner",
                     new DataSourceDraft("Local", DataSourceProvider.Sqlite), CancellationToken.None);
             var configured = new ConnectionService(definitions, organizations, repository, protector,
@@ -313,7 +345,7 @@ public sealed class ConnectionServiceTests
     [Test]
     public async Task ElasticsearchRejectsRelationalFieldsAndUsesOnlyApprovedHttpsEndpoint()
     {
-        var elastic = await new DataSourceService(definitions, organizations, TimeProvider.System)
+        var elastic = await new DataSourceService(definitions, organizations, repository, TimeProvider.System)
             .CreateAsync("northstar", "demo-owner",
                 new DataSourceDraft("Search", DataSourceProvider.Elasticsearch), CancellationToken.None);
         var configured = new ConnectionService(definitions, organizations, repository, protector,

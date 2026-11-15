@@ -83,3 +83,7 @@ They never contain credential, hostname, database or username. Revocation keeps
 a secret-free revision tombstone to prevent stale configuration replay. Denials and runtime
 security telemetry need a separately hardened gateway/SIEM integration before
 production. See [connection security operations](connection-security.md).
+
+Editor deletion of a metadata-only registration remains supported. Deleting a
+registration with a protected connection profile, including a revoked tombstone,
+requires owner permission to prevent bypass of the credential lifecycle.

@@ -5,6 +5,7 @@ namespace AnalyticsDashboard.Application;
 public sealed class DataSourceService(
     IDataSourceRepository definitions,
     IOrganizationCatalog organizations,
+    IConnectionRepository connections,
     TimeProvider clock)
 {
     public async Task<IReadOnlyList<DataSourceDefinition>> ListAsync(
@@ -67,7 +68,16 @@ public sealed class DataSourceService(
         var existing = await definitions.FindAsync(organizationId, id, cancellationToken);
         if (existing is null) return false;
         if (existing.Revision != expectedRevision) throw new ConflictException();
-        if (!await definitions.DeleteAsync(organizationId, id, expectedRevision, cancellationToken))
+        // An editor may delete metadata-only registrations, but must not bypass
+        // owner-only credential revocation by deleting a connected registration.
+        var isOwner = await organizations.GetRoleAsync(organizationId, userId, cancellationToken)
+            == OrganizationRole.Owner;
+        if (!isOwner && await connections.FindAsync(organizationId, id, cancellationToken) is not null)
+            throw new ForbiddenException();
+        // The repository checks this in the DELETE predicate too, so a profile
+        // created concurrently cannot be removed by an editor between checks.
+        if (!await definitions.DeleteAsync(organizationId, id, expectedRevision, cancellationToken,
+                requireUnconfigured: !isOwner))
             throw new ConflictException();
         return true;
     }

@@ -15,6 +15,9 @@ actor information. An authenticated organization **owner** is required for each
 connection operation; editor/member access is deliberately denied. A missing
 source returns 404 only after membership authorization. The registration and
 query-validation endpoints retain their existing contracts and permissions.
+Editors may still delete metadata-only registrations; a registration with an
+active or revoked connection profile requires an owner to delete it so that
+editor access cannot bypass the protected connection lifecycle.
 
 | Method | Suffix | Request | Result |
 | --- | --- | --- | --- |
