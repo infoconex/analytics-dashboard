@@ -114,18 +114,18 @@ public sealed class ConnectionServiceTests
             Request("first-credential", 0), CancellationToken.None);
         foreach (var actor in new[] { "demo-viewer", "another-user", "unknown" })
         {
-            Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await Assert.ThrowsAsync<ForbiddenException>(async () =>
                 await service.FindAsync("northstar", sourceId, actor, CancellationToken.None));
-            Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await Assert.ThrowsAsync<ForbiddenException>(async () =>
                 await service.ConfigureAsync("northstar", sourceId, actor,
                     Request("replacement", 1), CancellationToken.None));
-            Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await Assert.ThrowsAsync<ForbiddenException>(async () =>
                 await service.RotateAsync("northstar", sourceId, actor,
                     new ConnectionCredentialRotation("replacement", 1), CancellationToken.None));
-            Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await Assert.ThrowsAsync<ForbiddenException>(async () =>
                 await service.RevokeAsync("northstar", sourceId, actor, 1, CancellationToken.None));
         }
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.FindAsync("isolated", sourceId, "demo-owner", CancellationToken.None));
         Assert.That(await service.FindAsync("northstar", Guid.NewGuid(), "demo-owner",
             CancellationToken.None), Is.Null);
@@ -138,13 +138,13 @@ public sealed class ConnectionServiceTests
             Request("first", 0), CancellationToken.None);
         await service.ConfigureAsync("northstar", sourceId, "demo-owner",
             Request("second", 1), CancellationToken.None);
-        Assert.ThrowsAsync<ConflictException>(async () =>
+        await Assert.ThrowsAsync<ConflictException>(async () =>
             await service.ConfigureAsync("northstar", sourceId, "demo-owner",
                 Request("stale", 1), CancellationToken.None));
-        Assert.ThrowsAsync<ConflictException>(async () =>
+        await Assert.ThrowsAsync<ConflictException>(async () =>
             await service.RotateAsync("northstar", sourceId, "demo-owner",
                 new ConnectionCredentialRotation("stale", 1), CancellationToken.None));
-        Assert.ThrowsAsync<ConflictException>(async () =>
+        await Assert.ThrowsAsync<ConflictException>(async () =>
             await service.RevokeAsync("northstar", sourceId, "demo-owner", 1, CancellationToken.None));
         var profile = (await repository.FindAsync("northstar", sourceId, CancellationToken.None))!;
         Assert.That(await repository.SaveAsync(profile with { OrganizationId = "isolated" },
@@ -190,16 +190,16 @@ public sealed class ConnectionServiceTests
     }
 
     [Test]
-    public void IncompatibleShapesAndInvalidCredentialsAreRejected()
+    public async Task IncompatibleShapesAndInvalidCredentialsAreRejected()
     {
-        Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await service.ConfigureAsync("northstar", sourceId, "demo-owner",
                 new ConnectionConfigurationRequest(null, new SqliteConnectionRequest("data"),
                     "secret", 0), CancellationToken.None));
-        Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await service.ConfigureAsync("northstar", sourceId, "demo-owner",
                 Request("\nsecret", 0), CancellationToken.None));
-        Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await service.ConfigureAsync("northstar", sourceId, "demo-owner",
                 Request("secret", 0) with
                 {
@@ -222,7 +222,7 @@ public sealed class ConnectionServiceTests
         await guarded.ConfigureAsync("northstar", sourceId, "demo-owner",
             Request("good-credential", 0), CancellationToken.None);
         resolver.Rebound = true;
-        Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await guarded.RotateAsync("northstar", sourceId, "demo-owner",
                 new ConnectionCredentialRotation("rejected-credential", 1), CancellationToken.None));
         Assert.That(await new ConnectionCredentialReader(repository, protector)
@@ -258,7 +258,7 @@ public sealed class ConnectionServiceTests
                 Assert.That(saved?.SqliteFileId, Is.EqualTo("approved"));
                 Assert.That(saved?.Secret, Is.Null);
             });
-            Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+            await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
                 await configured.ConfigureAsync("northstar", sqlite.Id, "demo-owner",
                     new ConnectionConfigurationRequest(null, new SqliteConnectionRequest(file), null, 1),
                     CancellationToken.None));
@@ -283,7 +283,7 @@ public sealed class ConnectionServiceTests
                 }, new PublicDns()),
             new MappedSqliteFilePolicy(null, new Dictionary<string, string>(), databasePath),
             TimeProvider.System);
-        Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await configured.ConfigureAsync("northstar", elastic.Id, "demo-owner",
                 new ConnectionConfigurationRequest(new NetworkConnectionRequest(
                     "search.example.com", 443, "index", null), null, "token", 0),

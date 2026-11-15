@@ -25,10 +25,10 @@ public sealed class ConnectionDestinationPolicyTests
             Assert.That(approved.Host, Is.EqualTo("db.example.com"));
             Assert.That(approved.Addresses, Has.Count.EqualTo(1));
         });
-        Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await policy.ValidateAsync(DataSourceProvider.MySql,
                 new NetworkConnectionDetails("db.example.com", 5432, "a", "b"), CancellationToken.None));
-        Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await policy.ValidateAsync(DataSourceProvider.PostgreSql,
                 new NetworkConnectionDetails("db.example.com", 5433, "a", "b"), CancellationToken.None));
     }
@@ -48,17 +48,17 @@ public sealed class ConnectionDestinationPolicyTests
     [TestCase("fe80::1")]
     [TestCase("2001:db8::1")]
     [TestCase("::ffff:8.8.8.8")]
-    public void NonPublicDnsAnswersAreRejected(string ip)
+    public async Task NonPublicDnsAnswersAreRejected(string ip)
     {
         var policy = Create([IPAddress.Parse(ip)]);
-        Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await policy.ValidateAsync(DataSourceProvider.PostgreSql,
                 new NetworkConnectionDetails("db.example.com", 5432, "analytics", "reader"),
                 CancellationToken.None));
     }
 
     [Test]
-    public void MixedOrMissingDnsAnswersAreRejected()
+    public async Task MixedOrMissingDnsAnswersAreRejected()
     {
         foreach (var answers in new[]
         {
@@ -68,7 +68,7 @@ public sealed class ConnectionDestinationPolicyTests
         })
         {
             var policy = Create(answers);
-            Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+            await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
                 await policy.ValidateAsync(DataSourceProvider.PostgreSql,
                     new NetworkConnectionDetails("db.example.com", 5432, "a", "b"),
                     CancellationToken.None));
