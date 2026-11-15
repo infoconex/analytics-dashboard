@@ -1,10 +1,15 @@
 # Connection security and credential protection — capability 2c
 
-This increment is **configuration-only and pre-alpha**. It makes no customer
+Capability 2c is **configuration-only and pre-alpha**. It makes no customer
 database connections, executes no SQL or Elasticsearch request, and does not
 read a customer SQLite database. The deployed `UnconfiguredQueryDatasetCatalog`
 continues to deny all datasets. Do not enter real customer credentials into a
 publicly accessible or development/demo installation.
+
+Roadmap 3b-1 (Issue #14) subsequently added an internal admission use case,
+but the deployed runtime transport still always refuses connections. See
+[runtime connection admission](runtime-connection-admission.md). No customer
+socket or query execution is enabled.
 
 ## Authority and lifecycle
 

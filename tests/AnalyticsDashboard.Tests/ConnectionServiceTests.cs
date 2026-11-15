@@ -71,7 +71,7 @@ public sealed class ConnectionServiceTests
     {
         var created = await service.ConfigureAsync("northstar", sourceId, "demo-owner",
             Request("sentinel-secret-one", 0), CancellationToken.None);
-        var reader = new ConnectionCredentialReader(repository, protector);
+        var reader = new ConnectionCredentialReader(organizations, definitions, repository, protector);
         Assert.Multiple(() =>
         {
             Assert.That(created?.Revision, Is.EqualTo(1));
@@ -82,8 +82,9 @@ public sealed class ConnectionServiceTests
             new ConnectionCredentialRotation("sentinel-secret-two", 1), CancellationToken.None);
         var rewrapped = await service.RewrapAsync("northstar", sourceId, "demo-owner",
             new ConnectionRevisionRequest(2), CancellationToken.None);
-        var secret = await reader.ReadAsync("northstar", sourceId, CancellationToken.None);
-        var otherTenant = await reader.ReadAsync("isolated", sourceId, CancellationToken.None);
+        var secret = await reader.ReadAsync("northstar", sourceId, "demo-owner", CancellationToken.None);
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await reader.ReadAsync("isolated", sourceId, "demo-owner", CancellationToken.None));
         var saved = await repository.FindAsync("northstar", sourceId, CancellationToken.None);
         var revoked = await service.RevokeAsync("northstar", sourceId, "demo-owner", 3,
             CancellationToken.None);
@@ -93,11 +94,10 @@ public sealed class ConnectionServiceTests
             Assert.That(rotated?.Revision, Is.EqualTo(2));
             Assert.That(rewrapped?.Revision, Is.EqualTo(3));
             Assert.That(secret, Is.EqualTo("sentinel-secret-two"));
-            Assert.That(otherTenant, Is.Null);
             Assert.That(saved?.Secret?.Ciphertext, Is.Not.Null.And.Not.EqualTo("sentinel-secret-two"));
             Assert.That(revoked, Is.True);
         });
-        Assert.That(await reader.ReadAsync("northstar", sourceId, CancellationToken.None), Is.Null);
+        Assert.That(await reader.ReadAsync("northstar", sourceId, "demo-owner", CancellationToken.None), Is.Null);
         var tombstone = await repository.FindAsync("northstar", sourceId, CancellationToken.None);
         Assert.Multiple(() =>
         {
@@ -137,6 +137,22 @@ public sealed class ConnectionServiceTests
             await service.FindAsync("isolated", sourceId, "demo-owner", CancellationToken.None));
         Assert.That(await service.FindAsync("northstar", Guid.NewGuid(), "demo-owner",
             CancellationToken.None), Is.Null);
+    }
+
+    [Test]
+    public async Task PrivilegedCredentialReaderRequiresTenantMembershipBeforeDecrypting()
+    {
+        await service.ConfigureAsync("northstar", sourceId, "demo-owner",
+            Request("reader-test-secret", 0), CancellationToken.None);
+        var reader = new ConnectionCredentialReader(organizations, definitions, repository, protector);
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await reader.ReadAsync("northstar", sourceId, "not-a-member", CancellationToken.None));
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await reader.ReadAsync("isolated", sourceId, "demo-owner", CancellationToken.None));
+        Assert.That(await reader.ReadAsync("northstar", Guid.NewGuid(), "demo-owner",
+            CancellationToken.None), Is.Null);
+        Assert.That(await reader.ReadAsync("northstar", sourceId, "demo-owner",
+            CancellationToken.None), Is.EqualTo("reader-test-secret"));
     }
 
     [Test]
@@ -181,8 +197,8 @@ public sealed class ConnectionServiceTests
         await Assert.ThrowsAsync<ConflictException>(async () =>
             await service.ConfigureAsync("northstar", sourceId, "demo-owner",
                 Request("replayed-previous", 1), CancellationToken.None));
-        Assert.That(await new ConnectionCredentialReader(repository, protector)
-            .ReadAsync("northstar", sourceId, CancellationToken.None), Is.Null);
+        Assert.That(await new ConnectionCredentialReader(organizations, definitions, repository, protector)
+            .ReadAsync("northstar", sourceId, "demo-owner", CancellationToken.None), Is.Null);
         var reactivated = await service.ConfigureAsync("northstar", sourceId, "demo-owner",
             Request("new-credential", 2), CancellationToken.None);
         Assert.That(reactivated?.Revision, Is.EqualTo(3));
@@ -298,8 +314,8 @@ public sealed class ConnectionServiceTests
         await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
             await guarded.RotateAsync("northstar", sourceId, "demo-owner",
                 new ConnectionCredentialRotation("rejected-credential", 1), CancellationToken.None));
-        Assert.That(await new ConnectionCredentialReader(repository, protector)
-            .ReadAsync("northstar", sourceId, CancellationToken.None), Is.EqualTo("good-credential"));
+        Assert.That(await new ConnectionCredentialReader(organizations, definitions, repository, protector)
+            .ReadAsync("northstar", sourceId, "demo-owner", CancellationToken.None), Is.EqualTo("good-credential"));
     }
 
     [Test]

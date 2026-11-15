@@ -4,7 +4,7 @@
 
 Analytics Dashboard is an independent analytics experience for software vendors incorporating dashboards into customer-facing applications. Each customer organization has independently authenticated users, connections, dashboard definitions, authorization, audit events, and resource limits.
 
-The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata; Issue #8 adds non-executing query contract validation. Issue #10 adds protected connection profiles and lifecycle operations without connecting to providers. Roadmap 3a (Issue #12) adds inert SQL Server/PostgreSQL query compilation and native command-binding conformance tests against disposable provider instances, without production execution. Live customer connectors remain planned.
+The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata; Issue #8 adds non-executing query contract validation. Issue #10 adds protected connection profiles and lifecycle operations without connecting to providers. Roadmap 3a (Issue #12) adds inert SQL Server/PostgreSQL query compilation and native command-binding conformance tests against disposable provider instances, without production execution. Roadmap 3b-1 (Issue #14) adds an internal authorization-first runtime session acquisition port that is **hard-disabled** in production. Live customer connectors remain planned.
 
 ## Logical components
 
@@ -31,7 +31,7 @@ Domain and Application have no database or UI package dependencies. Infrastructu
 | Dashboard | Organization-owned, revisioned collection of widgets | Implemented |
 | Widget | Chart kind, dataset, metric and dimension | Implemented for sample data |
 | Data-source registration | Tenant-owned provider/name definition with revisions and provenance, but no connection configuration | Implemented in SQLite/API/UI; no connectivity |
-| Connection | Secured configuration, credential envelopes and lifecycle | Implemented as **configuration only**; live connectivity unavailable |
+| Connection | Secured configuration, credential envelopes and lifecycle | Configuration implemented; runtime admission port implemented but transport **always unavailable** |
 | Query definition | Restricted, provider-neutral contract and tenant-scoped validation against a trusted allowlist | Implemented in Issue #8; deployed allowlist empty, no execution |
 | Relational query compilation | SQL Server/PostgreSQL typed SELECT synthesis and native command parameter binding | Implemented for test-bound inert plans in Issue #12; no app/API integration or live customer connections |
 | Data access policy | Connection permissions, quotas and timeouts | Planned |
@@ -99,6 +99,15 @@ dataset catalog still denies all datasets by default. Full details and remaining
 runtime controls: [connection security](connection-security.md).
 
 ## Connector architecture (3a and future)
+
+Roadmap 3b-1 adds an internal `RuntimeConnectionService` and `IRuntimeRelationalTransport`
+application port. Application code checks membership and tenant-owned source/profile
+before consulting runtime transport readiness; only an eligible transport can
+receive per-attempt approved DNS addresses and decrypted credentials. The
+deployed `UnavailableRuntimeRelationalTransport` always rejects, and no route
+uses this service. Actual network socket binding, provider TLS/SNI and egress
+enforcement must be owned and proven by a future privileged infrastructure
+adapter or independently enforced broker. See [runtime connection admission](runtime-connection-admission.md).
 
 Roadmap 3a provides SQL Server and PostgreSQL **compiler-only** infrastructure adapters and native command factories. `QueryShapeValidator` is shared between the authorization-first validation service and the compiler, which checks typed shape and trusted metadata again before producing a plan. The physical schema/table and stable unique ordering key come only from an operator-supplied `RelationalDatasetBinding`, never a request. Compiled SQL and native commands are not connected to the API, connection profiles or production execution. No new application execution port is enabled; that port will be defined after runtime authorization and transport boundaries are ready. See [relational adapter conformance](relational-adapters.md).
 

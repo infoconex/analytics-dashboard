@@ -17,7 +17,7 @@ This document distinguishes **implemented** protections from production work sti
 | Forged identity | Production requires trusted OIDC authority/audience; no dev identity outside Development | Browser OIDC session flow, lifecycle and rotation |
 | Lost updates | Compare-and-swap revisions on dashboard updates and data-source renames/deletes | Client conflict resolution and auditing |
 | SQL injection | No execution API; typed allowlists and parameterized SQL Server/PostgreSQL compilers tested with real disposable read-only provider instances | Secure production connections, trusted tenant dataset provisioning and runtime execution authorization |
-| SSRF and secret disclosure | Connection profiles owner-only; exact host:port allowlist, public DNS screening, authenticated encryption with externally supplied keys, sanitized responses and audit fields; no active sockets | Connect-time pinned IP and TLS identity enforcement, production secret/KMS, network egress controls, operational rotation |
+| SSRF and secret disclosure | Connection profiles owner-only; exact host:port allowlist, public DNS screening, authenticated encryption with externally supplied keys, sanitized responses and audit fields. Internal runtime admission checks membership and destination again but deployed transport **refuses all sockets** | Actual pinned IP and TLS identity enforcement, production secret/KMS, independently enforced deny-by-default egress, operational rotation |
 | Expensive queries | Validation and disconnected compilers enforce shape, pagination and complexity ceilings; no production execution | Runtime timeouts, result-byte limits, concurrency and rate budgets |
 | Sensitive errors | API omits raw server exception details for credential operations; no secrets in connection status or successful-mutation audit | Centralized safe audit of denied attempts, log retention and monitoring |
 
@@ -48,6 +48,24 @@ pinning, TLS hostname/chain validation, deny-by-default egress, KMS/HSM
 integration, read-only customer principals, cancellation, concurrency/byte
 limits and security-event export remain blocking. See
 [relational adapter operations](relational-adapters.md).
+
+## Runtime relational admission (Issue #14)
+
+An internal application service now requires organization membership, an exact
+tenant/source-owned active relational profile, a privileged transport readiness
+gate and a fresh exact-allowlist/DNS validation **before** decrypting a secret.
+It rechecks revisions around opening to reject basic revoke/rotation races.
+The API registers only a permanently unavailable transport, so no SQL Server or
+PostgreSQL runtime session or customer query can be opened. The existing
+credential reader now also requires tenant/source/member authorization and
+remains a privileged server-side port never mapped over HTTP. See
+[runtime admission and unresolved gates](runtime-connection-admission.md).
+
+**No provider TLS/socket evidence exists for runtime connections yet.** Existing
+real DBMS tests concern compiler conformance and use isolated test-only TLS
+exceptions. A secure provider/broker implementation, independently enforced
+egress, production KMS, denial-event export and adversarial TLS/DNS tests remain
+blocking.
 
 ## Development identity
 
