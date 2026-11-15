@@ -2,7 +2,7 @@
 
 An enterprise-oriented, multi-tenant analytics and visualization application inspired by Kibana, designed to connect to relational databases and Elasticsearch without requiring customers to adopt one storage engine.
 
-> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source registration, non-executing query validation, protected connection-configuration management and disconnected relational compiler conformance. Live connectors, customer-managed sign-in, production provisioning, production KMS/egress controls and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
+> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source registration, non-executing query validation, protected connection-configuration management, disconnected relational compiler conformance and a hard-disabled runtime session admission boundary. Live connectors, customer-managed sign-in, production provisioning, production KMS/egress controls and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
 
 ## Current capabilities
 
@@ -16,6 +16,7 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 | Restricted provider-neutral query contracts | Typed request/result schemas, tenant-scoped validation, trusted allowlists and prospective resource budgets; no execution |
 | Connection security and credential protection | Owner-only configuration, authenticated-encryption envelope, rotation/revocation, host allowlists, SQLite file IDs and redacted audit; **no connections opened** |
 | SQL Server and PostgreSQL compilation (roadmap 3a) | Trusted schema binding, typed parameterized SELECTs, native commands and real read-only provider conformance tests; **no production connections** |
+| Runtime relational admission (roadmap 3b-1) | Internal authorization, fresh destination validation and secret-access ordering; deployed transport unconditionally refuses provider sockets |
 | Tenant isolation and owner/editor/viewer authorization | Server-enforced and tested |
 | OIDC/JWT bearer validation in the API | Configurable; production API fails closed without identity configuration |
 | SQL Server, MySQL, PostgreSQL, SQLite, Elasticsearch | Provider identifiers available for metadata registration; SQL Server/PostgreSQL have disconnected compilers; no live connectivity |
@@ -63,6 +64,10 @@ mappings deny configuration. There are no built-in sample secrets or targets.
 See [connection security and operations](docs/connection-security.md) for exact
 contracts, key provisioning, rotation, encryption, DNS/SSRF limitations, TLS
 gates and required production controls.
+
+The internal runtime admission port is documented separately in
+[runtime connection admission](docs/runtime-connection-admission.md). It cannot
+open a customer session with the deployed adapter and exposes no query route.
 
 ## Technology
 
