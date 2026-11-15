@@ -92,11 +92,18 @@ public sealed class SqliteDataSourceRepository(string databasePath) : IDataSourc
     }
 
     public async Task<bool> DeleteAsync(
-        string organizationId, Guid id, int expectedRevision, CancellationToken cancellationToken)
+        string organizationId, Guid id, int expectedRevision, CancellationToken cancellationToken,
+        bool requireUnconfigured = false)
     {
         await using var connection = await OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
-        command.CommandText = """
+        command.CommandText = requireUnconfigured ? """
+            DELETE FROM data_source_definitions
+            WHERE organization_id = $orgId AND id = $id AND revision = $expectedRevision
+              AND NOT EXISTS (
+                  SELECT 1 FROM connection_profiles
+                  WHERE organization_id = $orgId AND data_source_id = $id)
+            """ : """
             DELETE FROM data_source_definitions
             WHERE organization_id = $orgId AND id = $id AND revision = $expectedRevision
             """;

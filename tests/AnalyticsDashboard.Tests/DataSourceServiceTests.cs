@@ -10,6 +10,7 @@ public sealed class DataSourceServiceTests
     private string databasePath = null!;
     private SqliteCatalog catalog = null!;
     private SqliteDataSourceRepository repository = null!;
+    private SqliteConnectionRepository connections = null!;
     private DataSourceService service = null!;
 
     [SetUp]
@@ -21,7 +22,9 @@ public sealed class DataSourceServiceTests
         await catalog.SeedDevelopmentAsync();
         repository = new SqliteDataSourceRepository(databasePath);
         await repository.InitializeAsync();
-        service = new DataSourceService(repository, catalog, TimeProvider.System);
+        connections = new SqliteConnectionRepository(databasePath);
+        await connections.InitializeAsync();
+        service = new DataSourceService(repository, catalog, connections, TimeProvider.System);
     }
 
     [TearDown]
