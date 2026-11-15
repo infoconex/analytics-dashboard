@@ -1,7 +1,9 @@
 # Restricted query contracts (Issue #8)
 
-**Validation only; no queries run.** The API does not compile SQL or Elasticsearch DSL,
-contact customer systems, inspect schemas, or return rows. Registrations remain
+**Validation only; no queries run through the API.** The API does not compile SQL or Elasticsearch DSL,
+contact customer systems, inspect schemas, or return rows. Roadmap 3a provides disconnected
+SQL Server/PostgreSQL compilation and native command-binding code, verified exclusively
+against disposable test databases. Registrations remain
 metadata-only. The production dataset allowlist is intentionally empty; even a valid
 query shape returns 400 until trusted dataset metadata is provisioned in a future issue.
 The `executable` response property is always `false`.
@@ -111,6 +113,13 @@ are **prospective execution requirements only**. They are not enforced by this
 non-executing validation route. Future adapters must independently enforce server-side
 read-only permissions, parameterization, timeout/cancellation, deterministic ordering,
 byte limits, concurrency, network policy and execution authorization.
+
+Roadmap 3a shares the same `QueryShapeValidator` between API validation and a
+second validation inside the compiler, without turning validation into an
+execution grant. Trusted physical schema/table names and a stable ordering key
+are mandatory, and user strings become native parameters, not SQL fragments.
+These compilers do not supply a tenant dataset catalog or an API execution path.
+See [relational conformance](relational-adapters.md).
 
 The future `QueryResult` contract declares ordered typed columns, nullable typed
 row values, offset, limit, `hasMore`, and `truncated`. No route exposes that result

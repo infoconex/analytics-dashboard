@@ -116,8 +116,8 @@ public sealed class RelationalProviderIntegrationTests(DataSourceProvider provid
             [new QueryFilter("region", QueryOperator.Equal,
                 [new QueryScalar(QueryValueType.Text, Text: "' OR 1=1; DROP TABLE sales; --")])]);
         await using var command = CreateCompiledCommand(query);
-        await using var rows = await command.ExecuteReaderAsync();
-        Assert.That(await rows.ReadAsync(), Is.False);
+        await using (var rows = await command.ExecuteReaderAsync())
+            Assert.That(await rows.ReadAsync(), Is.False);
 
         // Confirm the table was not modified even though the attack text was passed.
         await using var count = reader.CreateCommand();

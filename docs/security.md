@@ -16,9 +16,9 @@ This document distinguishes **implemented** protections from production work sti
 | Unauthorized mutation | Owner/editor role required; viewer read-only | Admin provisioning, invitations and policy management |
 | Forged identity | Production requires trusted OIDC authority/audience; no dev identity outside Development | Browser OIDC session flow, lifecycle and rotation |
 | Lost updates | Compare-and-swap revisions on dashboard updates and data-source renames/deletes | Client conflict resolution and auditing |
-| SQL injection | No execution API; validation accepts typed operators and allowlisted fields, never SQL or DSL; catalog SQL uses parameters | Restricted provider compilers, read-only credentials and adapter security tests |
+| SQL injection | No execution API; typed allowlists and parameterized SQL Server/PostgreSQL compilers tested with real disposable read-only provider instances | Secure production connections, trusted tenant dataset provisioning and runtime execution authorization |
 | SSRF and secret disclosure | Connection profiles owner-only; exact host:port allowlist, public DNS screening, authenticated encryption with externally supplied keys, sanitized responses and audit fields; no active sockets | Connect-time pinned IP and TLS identity enforcement, production secret/KMS, network egress controls, operational rotation |
-| Expensive queries | Validation enforces shape, pagination and complexity ceilings; no execution | Runtime timeouts, result-byte limits, concurrency and rate budgets |
+| Expensive queries | Validation and disconnected compilers enforce shape, pagination and complexity ceilings; no production execution | Runtime timeouts, result-byte limits, concurrency and rate budgets |
 | Sensitive errors | API omits raw server exception details for credential operations; no secrets in connection status or successful-mutation audit | Centralized safe audit of denied attempts, log retention and monitoring |
 
 ## Production hardening blockers
@@ -28,6 +28,26 @@ This document distinguishes **implemented** protections from production work sti
 3. Read-only, parameterized and bounded query adapters.
 4. Auditing, rate limits, metrics, backups, recovery and operational safeguards.
 5. Threat-model review, penetration testing and incident-response runbooks.
+
+## Restricted relational provider conformance (Issue #12)
+
+SQL Server/PostgreSQL compilers accept only typed query requests plus trusted
+physical bindings and enforce the allowlist again before constructing inert
+SQL SELECT plans. Driver commands bind scalar values as native parameters and
+apply a 10-second command timeout. Neither compiler nor command factory opens
+a socket or retrieves credentials. SQL metacharacters and `LIKE` wildcards in
+user values remain literal data. Real-provider tests run with dedicated
+read-only principals in disposable SQL Server and PostgreSQL containers;
+they verify denial of DML operations. Provider test fixtures intentionally
+trust SQL Server's self-signed local certificate and disable PostgreSQL TLS,
+**only** on loopback and **never** in production configuration code.
+
+This is **not** permission to activate customer data access. Trusted dataset
+provisioning, tenant-bound execution authorization, connect-time DNS/public-IP
+pinning, TLS hostname/chain validation, deny-by-default egress, KMS/HSM
+integration, read-only customer principals, cancellation, concurrency/byte
+limits and security-event export remain blocking. See
+[relational adapter operations](relational-adapters.md).
 
 ## Development identity
 
