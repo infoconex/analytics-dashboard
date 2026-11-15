@@ -15,6 +15,8 @@ test('editor explores sample data and saves a dashboard', async ({ page }) => {
   await page.getByRole('button', { name: 'Create dashboard' }).click();
   await expect(page.getByRole('heading', { name: 'Acquisition overview' })).toBeVisible();
   await expect(page.getByText('Traffic sources')).toBeVisible();
+  await page.getByRole('button', { name: 'Share', exact: true }).click();
+  await expect(page.getByText(/Dashboard link copied|Link: http/)).toBeVisible();
   await page.reload();
   await expect(page.getByText('Traffic sources')).toBeVisible();
 });
