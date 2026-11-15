@@ -1,6 +1,23 @@
 export type OrganizationRole = 'viewer' | 'editor' | 'owner';
 export type WidgetKind = 'metric' | 'line' | 'area' | 'bar' | 'donut' | 'table';
 export type DatasetKey = 'commerce' | 'channels';
+export type DataSourceProvider = 'sqlServer' | 'mySql' | 'postgreSql' | 'sqlite' | 'elasticsearch';
+
+export interface DataSourceDefinition {
+  id: string;
+  organizationId: string;
+  name: string;
+  provider: DataSourceProvider;
+  revision: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DataSourceDraft {
+  name: string;
+  provider: DataSourceProvider;
+}
 
 export interface Membership {
   id: string;

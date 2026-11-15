@@ -5,7 +5,9 @@ The first milestone establishes a secure foundation; it is not yet a production-
 | Sequence | Capability | Acceptance focus |
 | --- | --- | --- |
 | 1 | Foundation — [Issue #1](https://github.com/infoconex/analytics-dashboard/issues/1) | Dashboard CRUD, organization isolation, demo visuals, verification |
-| 2 | Data-source connection model and restricted query contract | Connection metadata, authorization, query planning and limits |
+| 2a | Data-source registration metadata — [Issue #4](https://github.com/infoconex/analytics-dashboard/issues/4) | Tenant-scoped provider/name records, role enforcement, revision-safe CRUD; no connection configuration |
+| 2b | Restricted provider-neutral query contracts | Read-only query shape, allowed datasets/operators, limits and response contracts; no live execution initially |
+| 2c | Connection security and credential protection | Tenant-bound secret storage, destination controls and secure connection lifecycle before live adapter activation |
 | 3 | SQL Server and PostgreSQL adapters | Real queries, provider compatibility and integration tests |
 | 4 | MySQL and SQLite adapters | Real queries, provider compatibility and integration tests |
 | 5 | Elasticsearch adapter | Structured search and aggregation mapped to common responses |
