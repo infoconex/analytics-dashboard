@@ -29,7 +29,7 @@ Each implementation issue owns one PR. Split an increment further when necessary
 | Increment | Experience | Outcome |
 | --- | --- | --- |
 | UX-1 — [Issue #16](https://github.com/infoconex/analytics-dashboard/issues/16) | Guided sample-data Explore → visualize → create dashboard | First meaningful creator journey with sample-only boundary and keyboard-friendly controls |
-| UX-2 | Dashboard composition | Accessible layout, rearrangement, edit/undo and consistent empty/loading/error states |
+| UX-2 — [Issue #18](https://github.com/infoconex/analytics-dashboard/issues/18) | Interactive dashboard composition | Sample-only chart gallery, ordered drag/keyboard rearrangement, draft/Save/Cancel states and responsive canvas; sizing and free-form grids deferred |
 | UX-3 | Consumer interaction | Cross-widget filters, date controls, drill-down and useful sharing states |
 | UX-4 | Design system and accessibility | Tokens, light/dark, component states, focus/dialog semantics and WCAG 2.2 AA audits |
 | UX-5 | Embedded customer experience | Scoped embedding, branding, host integration, security and developer onboarding |

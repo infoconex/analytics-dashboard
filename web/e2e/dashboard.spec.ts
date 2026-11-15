@@ -15,13 +15,93 @@ test('a tenant editor creates, edits and reloads a saved dashboard', async ({ pa
   await page.getByRole('button', { name: /Add visualization/ }).click();
 
   await page.getByRole('textbox', { name: 'Title' }).fill('Monthly revenue');
-  await page.getByRole('combobox', { name: 'Chart type' }).selectOption('area');
+  await page.getByRole('button', { name: /Area chart/ }).click();
   await page.getByRole('button', { name: 'Add to dashboard' }).click();
   await page.getByRole('button', { name: 'Save changes' }).click();
 
   await expect(page.getByText('Monthly revenue')).toBeVisible();
   await page.reload();
   await expect(page.getByText('Monthly revenue')).toBeVisible();
+});
+
+test('keyboard move persists dashboard order and cancel discards later changes', async ({ page }) => {
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  const titles = page.locator('.canvas-item .widget-title');
+  const original = await titles.allTextContents();
+  expect(original.length).toBeGreaterThan(2);
+
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(page.getByText('No changes yet')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await page.getByRole('button', { name: `Move ${original[0]} later` }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'moved to position 2' })).toBeAttached();
+  await expect(page.getByText('Unsaved changes')).toBeVisible();
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await page.reload();
+  await expect(titles.first()).toHaveText(original[1]!);
+  await expect(titles.nth(1)).toHaveText(original[0]!);
+
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: `Move ${original[1]} later` }).click();
+  page.once('dialog', dialog => void dialog.accept());
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
+  await expect(titles.first()).toHaveText(original[1]!);
+});
+
+test('dragging rearranges a preview and navigation protects unsaved work', async ({ page }) => {
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  const titles = page.locator('.canvas-item .widget-title');
+  const original = await titles.allTextContents();
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: `Drag to move ${original[0]}` }).dragTo(page.locator('.canvas-item').nth(2));
+  await expect(titles.nth(2)).toHaveText(original[0]!);
+  await expect(page.getByText('Unsaved changes')).toBeVisible();
+
+  page.once('dialog', dialog => void dialog.dismiss());
+  await page.getByRole('button', { name: 'Back to dashboards' }).click();
+  await expect(page.getByText('Composition mode')).toBeVisible();
+  page.once('dialog', dialog => void dialog.accept());
+  await page.getByRole('button', { name: 'Back to dashboards' }).click();
+  await expect(page.getByRole('heading', { name: 'Dashboards' })).toBeVisible();
+});
+
+test('empty dashboard offers chart gallery and responsive keyboard movement', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'New dashboard' }).click();
+  await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Mobile composition');
+  await page.getByRole('button', { name: 'Create dashboard' }).click();
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(page.getByText('Your canvas is ready')).toBeVisible();
+  await page.getByRole('button', { name: /Add visualization/ }).click();
+  await expect(page.getByRole('button', { name: /Data table/ })).toBeVisible();
+  await page.getByRole('button', { name: /Bar chart/ }).click();
+  await page.getByRole('textbox', { name: 'Title' }).fill('Mobile orders');
+  await page.getByRole('button', { name: 'Add to dashboard' }).click();
+  await expect(page.locator('.canvas-item')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Move Mobile orders earlier' })).toBeDisabled();
+  await page.getByRole('button', { name: /Add visualization/ }).click();
+  await page.getByRole('textbox', { name: 'Title' }).fill('Mobile revenue');
+  await page.getByRole('button', { name: 'Add to dashboard' }).click();
+  await page.getByRole('button', { name: 'Move Mobile revenue earlier' }).click();
+  await expect(page.locator('.canvas-item .widget-title').first()).toHaveText('Mobile revenue');
+  await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await page.reload();
+  await expect(page.locator('.canvas-item .widget-title').first()).toHaveText('Mobile revenue');
+});
+
+test('viewer has no dashboard composition controls', async ({ page }) => {
+  await page.route('**/api/organizations', route => route.fulfill({ json: [
+    { id: 'northstar', name: 'Northstar Commerce', role: 'viewer' },
+  ] }));
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Drag to move/ })).toHaveCount(0);
 });
 
 test('tenant-isolated demo dashboard loads six visualizations', async ({ page }) => {
