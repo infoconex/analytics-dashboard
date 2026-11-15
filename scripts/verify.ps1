@@ -11,7 +11,8 @@ try {
     dotnet restore AnalyticsDashboard.slnx -p:RestoreUseStaticGraphEvaluation=true
     if ($LASTEXITCODE -ne 0) { throw 'Solution restore failed.' }
 
-    dotnet test AnalyticsDashboard.slnx --no-restore --nologo -m:1
+    # Real DBMS conformance runs separately against disposable provider fixtures.
+    dotnet test AnalyticsDashboard.slnx --no-restore --nologo -m:1 --filter 'TestCategory!=ProviderIntegration'
     if ($LASTEXITCODE -ne 0) { throw '.NET tests failed.' }
 
     npm --prefix web ci --no-audit --no-fund
