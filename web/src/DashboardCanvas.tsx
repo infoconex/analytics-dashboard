@@ -45,11 +45,10 @@ export function DashboardCanvas({ widgets, period, editing, onChange, onEdit, on
             setOver(null);
           }}>
           {editing && <div className="canvas-move-controls">
-            <button
-              className="drag-handle" draggable aria-label={`Drag to move ${widget.title}`}
-              aria-describedby="canvas-instructions" title="Drag to rearrange"
+            <div
+              className="drag-handle" draggable aria-hidden="true" title="Drag to rearrange"
               onDragStart={event => { event.dataTransfer.setData('text/plain', widget.id); event.dataTransfer.effectAllowed = 'move'; setDragged(widget.id); }}
-              onDragEnd={() => { setDragged(null); setOver(null); }}><GripVertical size={18} /> <span>Drag</span></button>
+              onDragEnd={() => { setDragged(null); setOver(null); }}><GripVertical size={18} /> <span>Drag</span></div>
             <span className="canvas-position">{index + 1} / {widgets.length}</span>
             <button className="icon-button" aria-label={`Move ${widget.title} earlier`} title="Move earlier" disabled={index === 0} onClick={() => announceMove(moveWidget(widgets, widget.id, -1), widget.id)}><ArrowUp size={17} /></button>
             <button className="icon-button" aria-label={`Move ${widget.title} later`} title="Move later" disabled={index === widgets.length - 1} onClick={() => announceMove(moveWidget(widgets, widget.id, 1), widget.id)}><ArrowDown size={17} /></button>

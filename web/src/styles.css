@@ -198,7 +198,7 @@ h1 { font-size: clamp(27px,2.55vw,35px); font-weight: 800; color: #19253b; lette
 .canvas-drop-target { outline:3px solid #6d83ec; outline-offset:2px; background:#f1f5ff !important; }
 .canvas-move-controls { display:flex; align-items:center; gap:7px; padding:0 6px 8px; border-bottom:1px solid #eef1f8; }
 .canvas-move-controls .icon-button { width:30px; height:30px; }
-.drag-handle { display:flex; align-items:center; gap:6px; padding:6px 9px; border:0; border-radius:7px; background:#f0f3fc; color:#586ba5; font-size:11px; font-weight:750; cursor:grab; }
+.drag-handle { display:flex; align-items:center; gap:6px; padding:6px 9px; border:0; border-radius:7px; background:#f0f3fc; color:#586ba5; font-size:11px; font-weight:750; cursor:grab; user-select:none; -webkit-user-drag:element; }
 .drag-handle:active { cursor:grabbing; }
 .canvas-position { color:#8b98af; font-size:10px; margin-left:auto; font-variant-numeric:tabular-nums; }
 .canvas-empty { padding:40px 24px; border:1px dashed #d9e2f4; border-radius:13px; background:#fff; color:#415271; text-align:center; }

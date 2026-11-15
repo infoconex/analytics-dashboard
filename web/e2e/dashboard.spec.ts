@@ -56,20 +56,9 @@ test('dragging rearranges a preview and navigation protects unsaved work', async
   const titles = page.locator('.canvas-item .widget-title');
   const original = await titles.allTextContents();
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await page.evaluate(() => {
-    const events: string[] = [];
-    (window as Window & { __dragEvents?: string[] }).__dragEvents = events;
-    for (const name of ['dragstart', 'dragenter', 'dragover', 'drop', 'dragend']) {
-      document.addEventListener(name, event => {
-        const target = event.target instanceof Element ? event.target.closest('.canvas-item')?.querySelector('.widget-title')?.textContent : null;
-        const data = event instanceof DragEvent ? event.dataTransfer?.getData('text/plain') : null;
-        const entry = `${name}:${target ?? 'outside'}:${data ?? ''}:${event.defaultPrevented}`;
-        if (events.length < 40 || name !== 'dragover') events.push(entry);
-      }, true);
-    }
-  });
-  await page.getByRole('button', { name: `Drag to move ${original[0]}` }).dragTo(page.locator('.canvas-item').nth(2));
-  console.log('Drag event diagnostics', await page.evaluate(() => (window as Window & { __dragEvents?: string[] }).__dragEvents));
+  const handle = page.locator('.canvas-item .drag-handle').first();
+  await expect(handle).toHaveAttribute('draggable', 'true');
+  await handle.dragTo(page.locator('.canvas-item').nth(2));
   await expect(titles.nth(2)).toHaveText(original[0]!);
   await expect(page.getByText('Unsaved changes')).toBeVisible();
 
@@ -114,7 +103,7 @@ test('viewer has no dashboard composition controls', async ({ page }) => {
   await page.goto('/#/dashboards');
   await page.getByRole('button', { name: /Open Business performance/ }).click();
   await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Drag to move/ })).toHaveCount(0);
+  await expect(page.locator('.drag-handle')).toHaveCount(0);
 });
 
 test('revision conflict keeps unsaved editor work available', async ({ page }) => {
