@@ -25,6 +25,7 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
     if (!canEdit || !dashboardName.trim() || !title.trim() || saving) return;
     setSaving(true);
     try { await onCreate(dashboardName.trim(), { ...widget, id: crypto.randomUUID() }); }
+    catch { /* The application shell displays the sanitized API error. */ }
     finally { setSaving(false); }
   }
 
@@ -34,7 +35,7 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
     <div className="explore-grid">
       <section className="explore-panel" aria-label="Visualization settings">
         <div className="explore-step">01 / CHOOSE DATA</div><h2>What would you like to explore?</h2>
-        <label className="form-label">Sample dataset<select value={datasetKey} onChange={event => { const next = event.target.value as DatasetKey; setDatasetKey(next); setMetricKey(metrics[next][0].key); setTitle(metrics[next][0].label + ' by ' + dimensions[next]); setPeriod('12m'); }}>
+        <label className="form-label">Sample dataset<select value={datasetKey} onChange={event => { const next = event.target.value as DatasetKey; setDatasetKey(next); setMetricKey(metrics[next][0]?.key ?? 'orders'); setTitle((metrics[next][0]?.label ?? 'Measure') + ' by ' + dimensions[next]); setPeriod('12m'); }}>
           {datasetOptions.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}
         </select></label>
         <p className="explore-hint"><Database size={14} aria-hidden="true" /> {rows.length} sample records · Dimension: {dimensionKey}</p>
