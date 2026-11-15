@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity, ArrowDownRight, ArrowLeft, ArrowRight, BarChart3, Bell, BookOpen,
   CalendarDays, Check, ChevronDown, ChevronRight, CircleHelp, Clock3,
@@ -37,7 +37,10 @@ export default function App() {
   const [organizations, setOrganizations] = useState<Membership[]>([]);
   const [identity, setIdentity] = useState<CurrentIdentity | null>(null);
   const [organizationId, setOrganizationId] = useState('');
-  const [dashboards, setDashboards] = useState<Dashboard[]>([]);
+  const [dashboardList, setDashboardList] = useState<{ organizationId: string; items: Dashboard[] } | null>(null);
+  const loadVersion = useRef(0);
+  const activeOrganization = useRef(organizationId);
+  activeOrganization.current = organizationId;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
@@ -51,13 +54,22 @@ export default function App() {
 
   const organization = organizations.find(item => item.id === organizationId);
   const canEdit = organization?.role === 'owner' || organization?.role === 'editor';
+  const dashboards = dashboardList?.organizationId === organizationId ? dashboardList.items : [];
   const activeDashboard = dashboards.find(item => item.id === view.id);
 
   useEffect(() => {
-    const handleHash = () => { setView(currentView()); setEditMode(false); setDraft(null); };
+    const handleHash = () => {
+      const next = currentView();
+      setView(next);
+      if (next.organizationId && organizations.some(item => item.id === next.organizationId)) {
+        setOrganizationId(next.organizationId);
+      }
+      setEditMode(false);
+      setDraft(null);
+    };
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
+  }, [organizations]);
 
   useEffect(() => {
     Promise.all([dashboardApi.organizations(), dashboardApi.identity()]).then(([items, user]) => {
@@ -70,18 +82,25 @@ export default function App() {
 
   const loadDashboards = useCallback(async () => {
     if (!organizationId) return;
+    const requestVersion = ++loadVersion.current;
     setLoading(true);
     try {
-      setDashboards(await dashboardApi.list(organizationId));
+      const items = await dashboardApi.list(organizationId);
+      if (requestVersion !== loadVersion.current) return;
+      setDashboardList({ organizationId, items });
       setError('');
     } catch (exception) {
+      if (requestVersion !== loadVersion.current) return;
       setError(exception instanceof Error ? exception.message : 'Unable to load dashboards.');
     } finally {
-      setLoading(false);
+      if (requestVersion === loadVersion.current) setLoading(false);
     }
   }, [organizationId]);
 
-  useEffect(() => { void loadDashboards(); }, [loadDashboards]);
+  useEffect(() => {
+    void loadDashboards();
+    return () => { loadVersion.current++; };
+  }, [loadDashboards]);
 
   useEffect(() => {
     if (!toast) return;
@@ -99,9 +118,12 @@ export default function App() {
 
   async function createDashboard() {
     if (!draft || !organizationId) return;
+    const targetOrganizationId = organizationId;
     try {
-      const created = await dashboardApi.create(organizationId, draft);
-      setDashboards(items => [created, ...items]);
+      const created = await dashboardApi.create(targetOrganizationId, draft);
+      if (activeOrganization.current !== targetOrganizationId) return;
+      setDashboardList(current => current?.organizationId === targetOrganizationId
+        ? { ...current, items: [created, ...current.items] } : current);
       setCreateOpen(false);
       setDraft(null);
       setToast('Dashboard created');
@@ -113,9 +135,12 @@ export default function App() {
 
   async function saveDashboard() {
     if (!draft || !activeDashboard) return;
+    const targetOrganizationId = organizationId;
     try {
-      const updated = await dashboardApi.update(organizationId, activeDashboard, draft);
-      setDashboards(items => items.map(item => item.id === updated.id ? updated : item));
+      const updated = await dashboardApi.update(targetOrganizationId, activeDashboard, draft);
+      if (activeOrganization.current !== targetOrganizationId) return;
+      setDashboardList(current => current?.organizationId === targetOrganizationId
+        ? { ...current, items: current.items.map(item => item.id === updated.id ? updated : item) } : current);
       setDraft(null);
       setEditMode(false);
       setToast('All changes saved');
@@ -126,9 +151,12 @@ export default function App() {
 
   async function removeDashboard(dashboard: Dashboard) {
     if (!window.confirm(`Delete "${dashboard.name}"? This cannot be undone.`)) return;
+    const targetOrganizationId = organizationId;
     try {
-      await dashboardApi.remove(organizationId, dashboard.id);
-      setDashboards(items => items.filter(item => item.id !== dashboard.id));
+      await dashboardApi.remove(targetOrganizationId, dashboard.id);
+      if (activeOrganization.current !== targetOrganizationId) return;
+      setDashboardList(current => current?.organizationId === targetOrganizationId
+        ? { ...current, items: current.items.filter(item => item.id !== dashboard.id) } : current);
       if (view.id === dashboard.id) navigate('dashboards');
       setToast('Dashboard deleted');
     } catch (exception) {
@@ -249,7 +277,7 @@ export default function App() {
       {widgetDraft && editMode && draft && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setWidgetDraft(null); }}><section className="modal" role="dialog" aria-modal="true" aria-label="Configure visualization"><div className="modal-heading"><div><span className="eyebrow">VISUALIZATION BUILDER</span><h2>Configure visualization</h2><p>Choose how you'd like to present your sample data.</p></div><button className="icon-button" aria-label="Close" onClick={() => setWidgetDraft(null)}><X size={20} /></button></div>
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
         <div className="form-grid"><label className="form-label">Chart type<select value={widgetDraft.kind} onChange={event => setWidgetDraft({ ...widgetDraft, kind: event.target.value as WidgetKind })}>{visualizations.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label><label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey: metrics[datasetKey][0]?.key ?? 'orders', dimensionKey: dimensions[datasetKey] }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label></div>
-        <label className="form-label">Metric<select value={widgetDraft.metricKey} onChange={event => setWidgetDraft({ ...widgetDraft, metricKey: event.target.value })}>{metrics[widgetDraft.datasetKey].map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        <label className="form-label">Metric<select value={widgetDraft.metricKey} onChange={event => setWidgetDraft({ ...widgetDraft, metricKey: event.target.value })}>{(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
         <div className="modal-actions"><button className="button button-light" onClick={() => setWidgetDraft(null)}>Cancel</button><button className="button button-primary" disabled={!widgetDraft.title.trim()} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> Add to dashboard</button></div></section></div>}
     </div>
   );

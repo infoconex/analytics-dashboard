@@ -79,6 +79,8 @@ export function formatMetric(value: number, metric: string): string {
 
 export function selectRows(datasetKey: DatasetKey, period: string): Record<string, string | number>[] {
   const values = datasets[datasetKey];
+  // Dashboard definitions may reference datasets supplied by future connector adapters.
+  if (!values) return [];
   if (datasetKey === 'channels') return values;
   return period === '3m' ? values.slice(-3) : period === '6m' ? values.slice(-6) : values;
 }

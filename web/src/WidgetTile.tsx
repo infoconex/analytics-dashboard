@@ -27,6 +27,19 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove }: Props)
     ? ((Number(last?.[metric]) - Number(first?.[metric])) / Number(first?.[metric])) * 100
     : 0;
 
+  if (data.length === 0) {
+    return (
+      <article className="widget-tile">
+        <div className="widget-heading"><div><div className="widget-title">{widget.title}</div></div></div>
+        <p className="widget-empty">No sample data is available for dataset “{widget.datasetKey}”.</p>
+        {editing && <div className="widget-actions">
+          <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
+          <button aria-label={`Remove ${widget.title}`} className="icon-button danger-hover" onClick={() => onRemove?.(widget.id)}><Trash2 size={15} /></button>
+        </div>}
+      </article>
+    );
+  }
+
   return (
     <article className={`widget-tile widget-${widget.kind}`}>
       <div className="widget-heading">

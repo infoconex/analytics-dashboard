@@ -92,6 +92,7 @@ h1 { font-size: clamp(27px,2.55vw,35px); font-weight: 800; color: #19253b; lette
 .widget-tile { background: white; border: 1px solid #edf0f7; border-radius: 12px; min-width: 0; padding: 21px 23px 17px; overflow: hidden; }
 .widget-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 19px; }
 .widget-title { font: 800 13px/1.4 'Manrope',sans-serif; color: #25334c; }
+.widget-empty { padding: 38px 0; color: #728096; font-size: 12px; line-height: 1.6; }
 .widget-subtitle { color: #a3aebe; font-size: 10px; margin-top: 4px; }
 .widget-actions { display: flex; gap: 2px; }.danger-hover:hover { color: #e04e6c; background: #fff0f3; }
 .widget-chart { height: 230px; }

@@ -9,6 +9,10 @@ describe('sample analytics', () => {
     expect(selectRows('channels', '3m')).toHaveLength(5);
   });
 
+  it('gracefully handles a saved widget whose dataset is not available in demo mode', () => {
+    expect(selectRows('future_connector' as 'commerce', '12m')).toEqual([]);
+  });
+
   it('formats amounts and conversion percentages', () => {
     expect(formatMetric(12500, 'revenue')).toBe('$12.5K');
     expect(formatMetric(4.75, 'conversion')).toBe('4.8%');

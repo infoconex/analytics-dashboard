@@ -99,6 +99,11 @@ public sealed class DashboardService(
 
     private static void Validate(DashboardDraft draft)
     {
+        if (draft is null)
+        {
+            throw new InvalidDashboardException("A dashboard definition is required.");
+        }
+
         if (string.IsNullOrWhiteSpace(draft.Name) || draft.Name.Length > 100)
         {
             throw new InvalidDashboardException("Name must contain 1–100 characters.");
@@ -112,6 +117,11 @@ public sealed class DashboardService(
         if (draft.Widgets is null || draft.Widgets.Count > 24)
         {
             throw new InvalidDashboardException("Dashboards may contain at most 24 widgets.");
+        }
+
+        if (draft.Widgets.Any(widget => widget is null))
+        {
+            throw new InvalidDashboardException("Dashboard widgets cannot be null.");
         }
 
         if (draft.Widgets.Select(widget => widget.Id).Distinct().Count() != draft.Widgets.Count)

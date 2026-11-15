@@ -91,6 +91,36 @@ public sealed class DashboardServiceTests
             await service.CreateAsync("northstar", "demo-owner", invalid, CancellationToken.None));
     }
 
+    [Test]
+    public void NullDashboardDefinitionIsRejected()
+    {
+        Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+            await service.CreateAsync("northstar", "demo-owner", null!, CancellationToken.None));
+    }
+
+    [Test]
+    public void NullWidgetIsRejected()
+    {
+        var invalid = Draft() with { Widgets = [null!] };
+        Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+            await service.CreateAsync("northstar", "demo-owner", invalid, CancellationToken.None));
+    }
+
+    [Test]
+    public async Task ViewerCannotUpdateOrDeleteDashboard()
+    {
+        var dashboard = (await service.ListAsync("northstar", "demo-owner", CancellationToken.None))[0];
+
+        Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await service.UpdateAsync("northstar", dashboard.Id, "demo-viewer",
+                Draft(), dashboard.Revision, CancellationToken.None));
+        Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await service.DeleteAsync("northstar", dashboard.Id, "demo-viewer", CancellationToken.None));
+
+        Assert.That(await service.FindAsync("northstar", dashboard.Id, "demo-owner", CancellationToken.None),
+            Is.Not.Null);
+    }
+
     private static DashboardDraft Draft() => new("Test dashboard", "Testing persistent views", [
         new DashboardWidget(Guid.NewGuid(), "Revenue", VisualizationKind.Area,
             "commerce", "revenue", "month")
