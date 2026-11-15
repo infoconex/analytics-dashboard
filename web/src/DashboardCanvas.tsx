@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, GripVertical, Plus } from 'lucide-react';
 import { moveWidget, reorderWidgets } from './composition';
 import type { DashboardWidget } from './model';
@@ -17,6 +17,17 @@ export function DashboardCanvas({ widgets, period, editing, onChange, onEdit, on
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const activePointer = useRef<string | null>(null);
+
+  function widgetAtPoint(x: number, y: number): string | null {
+    return document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-widget-id]')?.dataset.widgetId ?? null;
+  }
+
+  function clearPointer() {
+    activePointer.current = null;
+    setDragged(null);
+    setOver(null);
+  }
 
   function announceMove(next: DashboardWidget[], id: string) {
     if (next === widgets) return;
@@ -28,27 +39,42 @@ export function DashboardCanvas({ widgets, period, editing, onChange, onEdit, on
 
   return (
     <section aria-label={editing ? 'Dashboard composition canvas' : 'Dashboard visualizations'}>
-      {editing && <p className="canvas-instructions" id="canvas-instructions">Drag a handle to rearrange visualizations, or use the Move earlier and Move later buttons. Changes are saved only when you select Save changes.</p>}
+      {editing && <p className="canvas-instructions" id="canvas-instructions">Drag a handle to rearrange visualizations, or use the Move earlier and Move later buttons. The handle also supports the up and down arrow keys. Changes are saved only when you select Save changes.</p>}
       <div className={`widgets-grid ${editing ? 'widgets-grid-editing' : ''}`}>
         {widgets.map((widget, index) => <div
           key={widget.id}
+          data-widget-id={widget.id}
           className={`canvas-item ${over === widget.id && dragged !== widget.id ? 'canvas-drop-target' : ''}`}
-          onDragOver={event => { if (!editing) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; if (dragged && dragged !== widget.id) setOver(widget.id); }}
-          onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOver(null); }}
-          onDrop={event => {
-            event.preventDefault();
-            const source = event.dataTransfer.getData('text/plain');
-            // The drag payload is checked against the current widget list by reorderWidgets.
-            // Do not depend on a possibly stale drag-state render to accept the drop.
-            if (editing && source) announceMove(reorderWidgets(widgets, source, widget.id), source);
-            setDragged(null);
-            setOver(null);
-          }}>
+          >
           {editing && <div className="canvas-move-controls">
-            <div
-              className="drag-handle" draggable aria-hidden="true" title="Drag to rearrange"
-              onDragStart={event => { event.dataTransfer.setData('text/plain', widget.id); event.dataTransfer.effectAllowed = 'move'; setDragged(widget.id); }}
-              onDragEnd={() => { setDragged(null); setOver(null); }}><GripVertical size={18} /> <span>Drag</span></div>
+            <button
+              type="button" className="drag-handle" aria-label={`Drag to move ${widget.title}`}
+              aria-describedby="canvas-instructions" title="Drag or press arrow keys to rearrange"
+              onPointerDown={event => {
+                if (event.button !== 0) return;
+                activePointer.current = widget.id;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                setDragged(widget.id);
+                event.preventDefault();
+              }}
+              onPointerMove={event => {
+                if (activePointer.current !== widget.id) return;
+                const target = widgetAtPoint(event.clientX, event.clientY);
+                setOver(target !== widget.id ? target : null);
+              }}
+              onPointerUp={event => {
+                if (activePointer.current !== widget.id) return;
+                const target = widgetAtPoint(event.clientX, event.clientY);
+                if (target) announceMove(reorderWidgets(widgets, widget.id, target), widget.id);
+                clearPointer();
+              }}
+              onPointerCancel={clearPointer}
+              onKeyDown={event => {
+                const direction = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : null;
+                if (!direction) return;
+                event.preventDefault();
+                announceMove(moveWidget(widgets, widget.id, direction), widget.id);
+              }}><GripVertical size={18} /> <span>Drag</span></button>
             <span className="canvas-position">{index + 1} / {widgets.length}</span>
             <button className="icon-button" aria-label={`Move ${widget.title} earlier`} title="Move earlier" disabled={index === 0} onClick={() => announceMove(moveWidget(widgets, widget.id, -1), widget.id)}><ArrowUp size={17} /></button>
             <button className="icon-button" aria-label={`Move ${widget.title} later`} title="Move later" disabled={index === widgets.length - 1} onClick={() => announceMove(moveWidget(widgets, widget.id, 1), widget.id)}><ArrowDown size={17} /></button>

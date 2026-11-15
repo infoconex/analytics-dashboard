@@ -57,11 +57,9 @@ test('dragging rearranges a preview and navigation protects unsaved work', async
   const original = await titles.allTextContents();
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
   const handle = page.locator('.canvas-item .drag-handle').first();
-  await expect(handle).toHaveAttribute('draggable', 'true');
-  // Two target hovers emit dragover reliably for native HTML drag-and-drop.
+  // A real pointer gesture exercises the same path used by touch and mouse.
   await handle.hover();
   await page.mouse.down();
-  await page.locator('.canvas-item').nth(2).hover();
   await page.locator('.canvas-item').nth(2).hover();
   await page.mouse.up();
   await expect(titles.nth(2)).toHaveText(original[0]!);
@@ -108,7 +106,7 @@ test('viewer has no dashboard composition controls', async ({ page }) => {
   await page.goto('/#/dashboards');
   await page.getByRole('button', { name: /Open Business performance/ }).click();
   await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
-  await expect(page.locator('.drag-handle')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Drag to move/ })).toHaveCount(0);
 });
 
 test('revision conflict keeps unsaved editor work available', async ({ page }) => {

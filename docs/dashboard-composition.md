@@ -19,7 +19,7 @@ Dashboard creation still starts with a name and then enters the same visual edit
 ## Deliberate UX gaps
 
 - Position and span are not separately persisted; no widget resizing, free-form grids, sections or multi-select.
-- Touch users use Move buttons; native HTML drag-and-drop is intended for desktop pointer input.
+- Pointer handles support mouse and touch; labeled Move buttons and arrow keys on the handle remain keyboard alternatives.
 - No undo history beyond Cancel; future UX work can add incremental undo/redo and improved conflict recovery.
 - The app-level token system, comprehensive modal/focus audit and WCAG 2.2 AA verification remain UX-4 work.
 - Real customer data visualization, consumer filters and embedded customization remain gated follow-on capabilities.
