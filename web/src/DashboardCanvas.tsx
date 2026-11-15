@@ -33,12 +33,14 @@ export function DashboardCanvas({ widgets, period, editing, onChange, onEdit, on
         {widgets.map((widget, index) => <div
           key={widget.id}
           className={`canvas-item ${over === widget.id && dragged !== widget.id ? 'canvas-drop-target' : ''}`}
-          onDragOver={event => { if (!editing || !dragged || dragged === widget.id) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; setOver(widget.id); }}
+          onDragOver={event => { if (!editing) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; if (dragged && dragged !== widget.id) setOver(widget.id); }}
           onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOver(null); }}
           onDrop={event => {
             event.preventDefault();
             const source = event.dataTransfer.getData('text/plain');
-            if (editing && source === dragged) announceMove(reorderWidgets(widgets, source, widget.id), source);
+            // The drag payload is checked against the current widget list by reorderWidgets.
+            // Do not depend on a possibly stale drag-state render to accept the drop.
+            if (editing && source) announceMove(reorderWidgets(widgets, source, widget.id), source);
             setDragged(null);
             setOver(null);
           }}>
