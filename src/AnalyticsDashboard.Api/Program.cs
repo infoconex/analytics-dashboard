@@ -75,6 +75,10 @@ builder.Services.AddSingleton<IConnectionSecretProtector>(_ => new AesGcmConnect
     builder.Configuration.GetSection("ConnectionSecurity:Keys").GetChildren()
         .ToDictionary(entry => entry.Key, entry => entry.Value ?? string.Empty)));
 builder.Services.AddScoped<IConnectionCredentialReader, ConnectionCredentialReader>();
+// Runtime connection admission is internal and permanently fails closed with this adapter.
+// No API endpoint is mapped to it and no settings can enable a native provider socket.
+builder.Services.AddSingleton<IRuntimeRelationalTransport, UnavailableRuntimeRelationalTransport>();
+builder.Services.AddScoped<RuntimeConnectionService>();
 builder.Services.AddSingleton<IDnsResolver, SystemDnsResolver>();
 builder.Services.AddSingleton<IConnectionDestinationPolicy>(provider =>
     new ApprovedDestinationPolicy(
