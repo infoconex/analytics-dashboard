@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ArrowRight, Database, ShieldCheck } from 'lucide-react';
-import { datasetOptions, dimensions, metrics, selectRows, visualizations } from './demoData';
+import { ArrowRight, Check, Database, ShieldCheck } from 'lucide-react';
+import { datasetOptions, dimensions, formatMetric, metrics, selectRows, visualizations } from './demoData';
 import { WidgetTile } from './WidgetTile';
 import type { DashboardWidget, DatasetKey, WidgetKind } from './model';
 
@@ -8,6 +8,11 @@ interface Props {
   canEdit: boolean;
   onCreate: (name: string, widget: DashboardWidget) => Promise<void>;
 }
+
+const datasetDescriptions: Record<DatasetKey, string> = {
+  commerce: 'Revenue, orders, and customer activity across the year.',
+  channels: 'Sessions, orders, and conversion across acquisition channels.',
+};
 
 export function ExplorePage({ canEdit, onCreate }: Props) {
   const [datasetKey, setDatasetKey] = useState<DatasetKey>('commerce');
@@ -20,6 +25,13 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
   const rows = selectRows(datasetKey, period);
   const dimensionKey = dimensions[datasetKey];
   const widget: DashboardWidget = { id: 'explore-preview', title: title.trim() || 'Untitled visualization', kind, datasetKey, metricKey, dimensionKey };
+
+  function chooseDataset(next: DatasetKey) {
+    setDatasetKey(next);
+    setMetricKey(metrics[next][0]?.key ?? 'orders');
+    setTitle(`${metrics[next][0]?.label ?? 'Measure'} by ${dimensions[next]}`);
+    setPeriod('12m');
+  }
 
   async function save() {
     if (!canEdit || !dashboardName.trim() || !title.trim() || saving) return;
@@ -35,20 +47,24 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
     <div className="explore-grid">
       <section className="explore-panel" aria-label="Visualization settings">
         <div className="explore-step">01 / CHOOSE DATA</div><h2>What would you like to explore?</h2>
-        <label className="form-label">Sample dataset<select value={datasetKey} onChange={event => { const next = event.target.value as DatasetKey; setDatasetKey(next); setMetricKey(metrics[next][0]?.key ?? 'orders'); setTitle((metrics[next][0]?.label ?? 'Measure') + ' by ' + dimensions[next]); setPeriod('12m'); }}>
-          {datasetOptions.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}
-        </select></label>
-        <p className="explore-hint"><Database size={14} aria-hidden="true" /> {rows.length} sample records · Dimension: {dimensionKey}</p>
+        <div className="explore-datasets" role="group" aria-label="Choose a sample dataset">
+          {datasetOptions.map(option => <button key={option.key} type="button" className={`explore-dataset ${datasetKey === option.key ? 'explore-dataset-active' : ''}`} aria-pressed={datasetKey === option.key} onClick={() => chooseDataset(option.key)}>
+            <span className="explore-dataset-icon"><Database size={19} aria-hidden="true" /></span>
+            <span className="explore-dataset-copy"><strong>{option.label}</strong><small>{datasetDescriptions[option.key]}</small><em>{selectRows(option.key, '12m').length} sample records</em></span>
+            {datasetKey === option.key && <Check size={17} className="explore-dataset-check" aria-hidden="true" />}
+          </button>)}
+        </div>
+        <p className="explore-hint">Explore by {dimensionKey}. All values are deterministic sample data.</p>
         <div className="explore-step">02 / VISUALIZE</div><h2>Make it meaningful</h2>
         <label className="form-label">Measure<select value={metricKey} onChange={event => setMetricKey(event.target.value)}>{metrics[datasetKey].map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
         <label className="form-label">Chart type<select value={kind} onChange={event => setKind(event.target.value as WidgetKind)}>{visualizations.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
-        {datasetKey === 'commerce' && <label className="form-label">Date range<select value={period} onChange={event => setPeriod(event.target.value)}><option value="12m">Last 12 months</option><option value="6m">Last 6 months</option><option value="3m">Last 3 months</option></select></label>}
+        {datasetKey === 'commerce' && <label className="form-label">Preview date range<select value={period} onChange={event => setPeriod(event.target.value)}><option value="12m">Last 12 months</option><option value="6m">Last 6 months</option><option value="3m">Last 3 months</option></select><span className="explore-field-note">This changes the preview only. Dashboard viewers control their own date range.</span></label>}
         <label className="form-label">Visualization title<input maxLength={100} value={title} onChange={event => setTitle(event.target.value)} /></label>
       </section>
       <section className="explore-results" aria-label="Live sample preview">
         <div className="explore-preview-heading"><div><div className="explore-step">03 / PREVIEW</div><h2>Your visualization</h2><p>Updates immediately as you make changes.</p></div><span className="demo-label">SAMPLE PREVIEW</span></div>
         <WidgetTile widget={widget} period={period} />
-        <div className="explore-table"><h3>Underlying sample records</h3><div className="explore-table-scroll"><table><thead><tr><th scope="col">{dimensionKey}</th><th scope="col">{metricKey}</th></tr></thead><tbody>{rows.map((row, index) => <tr key={index}><td>{row[dimensionKey]}</td><td>{row[metricKey]}</td></tr>)}</tbody></table></div></div>
+        <div className="explore-table"><h3>Underlying sample records <span>({rows.length})</span></h3><div className="explore-table-scroll"><table><thead><tr><th scope="col">{dimensionKey}</th><th scope="col">{metrics[datasetKey].find(option => option.key === metricKey)?.label ?? metricKey}</th></tr></thead><tbody>{rows.map((row, index) => <tr key={index}><td>{row[dimensionKey]}</td><td>{formatMetric(Number(row[metricKey] ?? 0), metricKey)}</td></tr>)}</tbody></table></div></div>
         {canEdit ? <div className="explore-save"><div><div className="explore-step">04 / COMPOSE</div><h2>Make it a dashboard</h2><p>Create a saved dashboard with this visualization. You can add more later.</p></div><label className="form-label">Dashboard name<input maxLength={100} value={dashboardName} onChange={event => setDashboardName(event.target.value)} /></label><button className="button button-primary" disabled={saving || !dashboardName.trim() || !title.trim()} onClick={() => void save()}>{saving ? 'Saving…' : 'Create dashboard'} <ArrowRight size={16} /></button></div>
           : <div className="explore-save"><h2>Ready to share your insight?</h2><p>Your organization role permits exploration only. Ask an editor to create dashboards.</p></div>}
       </section>
