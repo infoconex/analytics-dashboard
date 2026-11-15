@@ -26,6 +26,10 @@ public sealed class ApprovedDestinationPolicy(
         {
             throw;
         }
+        catch (OperationCanceledException)
+        {
+            throw new InvalidConnectionException("Network destination could not be verified.");
+        }
         catch (Exception ex) when (ex is System.Net.Sockets.SocketException or ArgumentException)
         {
             throw new InvalidConnectionException("Network destination could not be verified.");

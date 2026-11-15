@@ -141,7 +141,7 @@ public sealed class ConnectionService(
         }
         else if (string.IsNullOrWhiteSpace(value.Database) || string.IsNullOrWhiteSpace(value.Username)
             || value.Database.Length > 128 || value.Username.Length > 128
-            || value.Database.Any(char.IsControl) || value.Username.Any(char.IsControl))
+            || !IsSafeIdentifier(value.Database) || !IsSafeIdentifier(value.Username))
         {
             throw new InvalidConnectionException("Invalid relational connection configuration.");
         }
@@ -155,6 +155,9 @@ public sealed class ConnectionService(
             || credential.Any(char.IsControl))
             throw new InvalidConnectionException("Invalid credential.");
     }
+
+    private static bool IsSafeIdentifier(string value) => value.All(c =>
+        char.IsAsciiLetterOrDigit(c) || c is '_' or '-' or '.' or '@');
 
     private static ConnectionStatus ToStatus(ConnectionProfile profile) =>
         new(profile.Provider, profile.Secret is not null, profile.Revision,

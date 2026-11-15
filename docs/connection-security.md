@@ -39,7 +39,9 @@ credential in examples, source control or a shared shell history):
 Example SQLite PUT: `{ "sqlite": { "fileId": "tenant-report" }, "network": null, "credential": null, "expectedRevision": 0 }`.
 
 Network providers require `credential`, `network.host`, `network.port` and,
-except for Elasticsearch, `network.database` and `network.username`.
+except for Elasticsearch, `network.database` and `network.username`. Relational
+database/username fields use conservative ASCII identifiers (letters, numbers,
+underscore, dash, dot and `@`) to exclude connection-string delimiters.
 Elasticsearch accepts only `host`, `port` and a token credential; no database
 or username. SQL Server, PostgreSQL and MySQL require relational identifiers.
 Every field not explicitly listed is rejected, including raw connection strings,
@@ -185,3 +187,8 @@ This feature is **not a license to connect**. Remaining hard requirements:
    execution with integration and conformance tests.
 5. Production tenant provisioning/SSO, anti-abuse rate limiting, denial-event
    telemetry, security tests and threat-model validation.
+
+Microsoft guidance consulted for the cryptographic and deployment boundaries:
+[AES-GCM authenticated encryption](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.aesgcm),
+[ASP.NET Core key-management configuration](https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/configuration/overview),
+and [protecting key material at rest](https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/implementation/key-encryption-at-rest).

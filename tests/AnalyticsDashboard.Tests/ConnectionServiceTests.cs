@@ -205,6 +205,13 @@ public sealed class ConnectionServiceTests
                 {
                     Network = new NetworkConnectionRequest("db.example.com", 0, "analytics", "reader")
                 }, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidConnectionException>(async () =>
+            await service.ConfigureAsync("northstar", sourceId, "demo-owner",
+                Request("secret", 0) with
+                {
+                    Network = new NetworkConnectionRequest("db.example.com", 5432,
+                        "analytics;Password=stolen", "reader")
+                }, CancellationToken.None));
     }
 
     [Test]

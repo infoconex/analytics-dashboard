@@ -155,6 +155,8 @@ public sealed class ConnectionApiTests
             Assert.That(sqlite.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
             Assert.That(badHost.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
         });
+        var rejection = await raw.Content.ReadAsStringAsync();
+        Assert.That(rejection, Does.Not.Contain("Host=localhost;Password=secret"));
         var find = await client.GetAsync(address);
         Assert.That(find.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
