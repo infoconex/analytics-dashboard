@@ -104,6 +104,22 @@ test('viewer has no dashboard composition controls', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Drag to move/ })).toHaveCount(0);
 });
 
+test('revision conflict keeps unsaved editor work available', async ({ page }) => {
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Unsaved draft');
+  await page.route('**/api/organizations/*/dashboards/*', route => {
+    if (route.request().method() === 'PUT') return route.fulfill({ status: 409, body: 'Conflict' });
+    return route.continue();
+  });
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByRole('alert')).toContainText('This resource changed in another session.');
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Unsaved draft');
+  await expect(page.getByText('Unsaved changes')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+});
+
 test('tenant-isolated demo dashboard loads six visualizations', async ({ page }) => {
   await page.goto('/#/dashboards');
   await page.getByRole('button', { name: /Open Business performance/ }).click();
