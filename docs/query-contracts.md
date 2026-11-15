@@ -85,7 +85,7 @@ Given a synthetic trusted `sales` schema, validation returns an envelope like:
 | `in` | Any | 1–10 |
 | `isNull`, `isNotNull` | Any | Zero |
 | `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual` | Number, timestamp | One |
-| `contains`, `startsWith` | Text, relational providers only | One |
+| `contains`, `startsWith` | Text, relational providers only | One non-empty text value |
 
 Filters are flat and combined with AND; no free-form predicate trees exist. The five
 provider declarations share the common operators and aggregates, but Elasticsearch
@@ -93,7 +93,7 @@ excludes text substring/prefix operators until adapter conformance is establishe
 Capability declarations are provisional and do **not** imply live provider support.
 
 Aggregates: `count` has no input field and yields number; `sum` and `average` require
-a numeric field; `minimum` and `maximum` accept text, number, or timestamp. Aggregate
+a numeric field; `minimum` and `maximum` accept number or timestamp. Aggregate
 aliases must be distinct and must not collide with dataset field names. Grouped
 projections contain exactly the group keys; aggregate-only queries project no raw
 fields. Sort fields must be present in the result schema, unique, and (for raw

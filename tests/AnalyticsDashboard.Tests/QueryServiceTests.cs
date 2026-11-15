@@ -31,6 +31,19 @@ public sealed class QueryServiceTests
         organizations = new SqliteCatalog(databasePath);
         await organizations.InitializeAsync();
         await organizations.SeedDevelopmentAsync();
+        await using (var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = databasePath
+        }.ToString()))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "INSERT INTO memberships (organization_id, user_id, role) VALUES ($org, $user, $role)";
+            command.Parameters.AddWithValue("$org", "northstar");
+            command.Parameters.AddWithValue("$user", "test-editor");
+            command.Parameters.AddWithValue("$role", (int)OrganizationRole.Editor);
+            await command.ExecuteNonQueryAsync();
+        }
         sources = new SqliteDataSourceRepository(databasePath);
         await sources.InitializeAsync();
         var dataSource = new DataSourceService(sources, organizations, TimeProvider.System);
@@ -48,6 +61,7 @@ public sealed class QueryServiceTests
     }
 
     [TestCase("demo-owner")]
+    [TestCase("test-editor")]
     [TestCase("demo-viewer")]
     public async Task MembersCanValidateTypedProjectionAndFiltersWithoutExecution(string user)
     {
@@ -127,6 +141,8 @@ public sealed class QueryServiceTests
             [new QueryScalar(QueryValueType.Number, Number: 12)]));
         AssertInvalid(WithFilter("region", (QueryOperator)100,
             [new QueryScalar(QueryValueType.Text, Text: "west")]));
+        AssertInvalid(WithFilter("region", QueryOperator.Contains,
+            [new QueryScalar(QueryValueType.Text, Text: "")]));
     }
 
     [Test]
@@ -171,6 +187,8 @@ public sealed class QueryServiceTests
             Aggregates: [new QueryAggregate("total", QueryAggregateFunction.Count)]));
         AssertInvalid(new QueryRequest("sales", Aggregates:
             [new QueryAggregate("total", QueryAggregateFunction.Sum, "region")]));
+        AssertInvalid(new QueryRequest("sales", Aggregates:
+            [new QueryAggregate("first", QueryAggregateFunction.Minimum, "region")]));
         AssertInvalid(new QueryRequest("sales", Aggregates:
             [new QueryAggregate("count", QueryAggregateFunction.Count, "amount")]));
         AssertInvalid(new QueryRequest("sales", ["region"], GroupBy: ["region"], Aggregates:

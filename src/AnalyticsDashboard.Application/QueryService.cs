@@ -44,7 +44,8 @@ public sealed class QueryService(
             cancellationToken);
         if (dataset is null || !string.Equals(dataset.Name, request.Dataset, StringComparison.Ordinal)
             || dataset.Fields is null || dataset.Fields.Count == 0
-            || dataset.Fields.Any(field => field is null || !IsIdentifier(field.Name))
+            || dataset.Fields.Any(field => field is null || !IsIdentifier(field.Name)
+                || !Enum.IsDefined(field.Type))
             || HasDuplicates(dataset.Fields.Select(field => field.Name)))
             throw Invalid("Dataset is not available for this data source.");
 
@@ -99,7 +100,7 @@ public sealed class QueryService(
                 }
                 else
                 {
-                    if (field.Type == QueryValueType.Boolean)
+                    if (field.Type is not (QueryValueType.Number or QueryValueType.Timestamp))
                         throw Invalid("Aggregation is not supported for this field type.");
                     outputType = field.Type;
                 }
@@ -140,6 +141,10 @@ public sealed class QueryService(
             foreach (var value in values)
                 if (!IsValidScalar(value, field.Type))
                     throw Invalid("Filter value type does not match the field.");
+
+            if ((filter.Operator is QueryOperator.Contains or QueryOperator.StartsWith)
+                && values[0].Text!.Length == 0)
+                throw Invalid("Text matching requires a non-empty value.");
 
             complexity += 2 + values.Count;
         }
