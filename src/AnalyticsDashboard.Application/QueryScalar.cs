@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
+using AnalyticsDashboard.Domain;
 
-namespace AnalyticsDashboard.Domain;
+namespace AnalyticsDashboard.Application;
 
 /// <summary>A single typed value. Exactly one corresponding payload must be populated.</summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

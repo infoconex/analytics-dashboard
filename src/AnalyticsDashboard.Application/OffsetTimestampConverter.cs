@@ -3,13 +3,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace AnalyticsDashboard.Domain;
+namespace AnalyticsDashboard.Application;
 
 /// <summary>Requires an unambiguous ISO-8601 timestamp with an explicit UTC offset.</summary>
 public sealed class OffsetTimestampConverter : JsonConverter<DateTimeOffset?>
 {
     private static readonly Regex Format = new(
-        @"\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,7})?(?:Z|[+-]\d{2}:\d{2})\z",
+        @"\A[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,7})?(?:Z|[+-][0-9]{2}:[0-9]{2})\z",
         RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     public override DateTimeOffset? Read(ref Utf8JsonReader reader, Type typeToConvert,

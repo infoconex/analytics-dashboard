@@ -1,4 +1,6 @@
-namespace AnalyticsDashboard.Domain;
+using AnalyticsDashboard.Domain;
+
+namespace AnalyticsDashboard.Application;
 
 /// <summary>Future adapter response shape; this issue does not populate or return query rows.</summary>
 public sealed record QueryResult(
