@@ -175,6 +175,14 @@ promoted to success. For production, integrate a rate-limited, tamper-resistant
 security event stream for denied attempts and authentication anomalies at the
 API edge without logging untrusted payloads, plus retention and alert policies.
 
+Connection endpoints reject plain HTTP except for loopback hosts in Development.
+This guard runs before request-body binding. Production deployments behind TLS
+termination must establish a *trusted* forwarded HTTPS scheme at the hosting
+boundary before enabling those routes; never accept arbitrary client-supplied
+`X-Forwarded-Proto` headers. Configure HSTS, TLS policy, proxy allowlists and
+request-size/rate controls at ingress. Local development HTTP must never carry
+real customer credentials.
+
 Restrict SQLite catalog access and backups, avoid HTTP body logging for these
 routes, exclude secrets from traces, telemetry and crash reports, use HTTPS to
 the API under deployment termination, rotate operator and provider credentials,

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -128,6 +129,33 @@ app.UseExceptionHandler(exceptionApp => exceptionApp.Run(async context =>
 }));
 
 app.UseCors();
+// Reject insecure transport for credential routes before minimal-API body binding.
+// Only loopback Development traffic can use HTTP; a production reverse proxy must
+// establish trusted HTTPS scheme forwarding before these routes are enabled.
+app.Use(async (context, next) =>
+{
+    var parts = context.Request.Path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+    if (parts is { Length: >= 6 }
+        && string.Equals(parts[0], "api", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(parts[1], "organizations", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(parts[3], "data-sources", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(parts[5], "connection", StringComparison.OrdinalIgnoreCase))
+    {
+        var host = context.Request.Host.Host;
+        var remote = context.Connection.RemoteIpAddress;
+        var developmentLoopback = app.Environment.IsDevelopment()
+            && (remote is null || IPAddress.IsLoopback(remote))
+            && (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+                || host is "127.0.0.1" or "::1" or "[::1]");
+        if (!context.Request.IsHttps && !developmentLoopback)
+        {
+            await Results.Problem(title: "HTTPS required", statusCode: StatusCodes.Status403Forbidden)
+                .ExecuteAsync(context);
+            return;
+        }
+    }
+    await next(context);
+});
 app.UseAuthentication();
 app.UseAuthorization();
 

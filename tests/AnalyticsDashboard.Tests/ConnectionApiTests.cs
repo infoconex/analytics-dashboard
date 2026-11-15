@@ -166,6 +166,26 @@ public sealed class ConnectionApiTests
         Assert.That(find.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
 
+    [Test]
+    public async Task CredentialRoutesRejectPlainHttpFromNonLoopbackHostsBeforeReadingPayload()
+    {
+        var id = await RegisterAsync();
+        using var request = new HttpRequestMessage(HttpMethod.Put,
+            $"http://public.example.com{Base}/{id}/connection")
+        {
+            Content = JsonContent.Create(Request("must-not-be-accepted", 0))
+        };
+        var denied = await client.SendAsync(request);
+        var text = await denied.Content.ReadAsStringAsync();
+        Assert.Multiple(() =>
+        {
+            Assert.That(denied.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            Assert.That(text, Does.Not.Contain("must-not-be-accepted"));
+        });
+        Assert.That((await client.GetAsync($"{Base}/{id}/connection")).StatusCode,
+            Is.EqualTo(HttpStatusCode.NotFound));
+    }
+
     private async Task<string> RegisterAsync()
     {
         var response = await client.PostAsJsonAsync(Base,
