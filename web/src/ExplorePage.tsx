@@ -24,6 +24,7 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
   const [saving, setSaving] = useState(false);
   const rows = selectRows(datasetKey, period);
   const dimensionKey = dimensions[datasetKey];
+  const defaultTitle = `${metrics[datasetKey].find(option => option.key === metricKey)?.label ?? 'Measure'} by ${dimensionKey}`;
   const widget: DashboardWidget = { id: 'explore-preview', title: title.trim() || 'Untitled visualization', kind, datasetKey, metricKey, dimensionKey };
 
   function chooseDataset(next: DatasetKey) {
@@ -31,6 +32,13 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
     setMetricKey(metrics[next][0]?.key ?? 'orders');
     setTitle(`${metrics[next][0]?.label ?? 'Measure'} by ${dimensions[next]}`);
     setPeriod('12m');
+  }
+
+  function chooseMetric(next: string) {
+    if (title === defaultTitle) {
+      setTitle(`${metrics[datasetKey].find(option => option.key === next)?.label ?? 'Measure'} by ${dimensionKey}`);
+    }
+    setMetricKey(next);
   }
 
   async function save() {
@@ -56,7 +64,7 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
         </div>
         <p className="explore-hint">Explore by {dimensionKey}. All values are deterministic sample data.</p>
         <div className="explore-step">02 / VISUALIZE</div><h2>Make it meaningful</h2>
-        <label className="form-label">Measure<select value={metricKey} onChange={event => setMetricKey(event.target.value)}>{metrics[datasetKey].map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+        <label className="form-label">Measure<select value={metricKey} onChange={event => chooseMetric(event.target.value)}>{metrics[datasetKey].map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
         <label className="form-label">Chart type<select value={kind} onChange={event => setKind(event.target.value as WidgetKind)}>{visualizations.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
         {datasetKey === 'commerce' && <label className="form-label">Preview date range<select value={period} onChange={event => setPeriod(event.target.value)}><option value="12m">Last 12 months</option><option value="6m">Last 6 months</option><option value="3m">Last 3 months</option></select><span className="explore-field-note">This changes the preview only. Dashboard viewers control their own date range.</span></label>}
         <label className="form-label">Visualization title<input maxLength={100} value={title} onChange={event => setTitle(event.target.value)} /></label>
