@@ -12,8 +12,9 @@ import { createWidget, datasetOptions, dimensions, metrics, visualizations } fro
 import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, WidgetKind } from './model';
 import { WidgetTile } from './WidgetTile';
 import { DataSourcesPage } from './DataSourcesPage';
+import { ExplorePage } from './ExplorePage';
 
-type Page = 'overview' | 'dashboards' | 'sources' | 'settings';
+type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
 
 function currentView(): View {
@@ -25,6 +26,7 @@ function currentView(): View {
     }
   }
   if (hash.startsWith('/dashboard/')) return { page: 'dashboards', id: hash.slice('/dashboard/'.length) };
+  if (hash === '/explore') return { page: 'explore' };
   if (hash === '/sources') return { page: 'sources' };
   if (hash === '/settings') return { page: 'settings' };
   if (hash === '/dashboards') return { page: 'dashboards' };
@@ -117,6 +119,21 @@ export default function App() {
     setSidebarOpen(false);
   }
 
+  async function createFromExplore(name: string, widget: DashboardWidget) {
+    const targetOrganizationId = organizationId;
+    if (!canEdit || !targetOrganizationId) return;
+    try {
+      const created = await dashboardApi.create(targetOrganizationId, { name, description: 'Created from sample-data exploration.', widgets: [widget] });
+      if (activeOrganization.current !== targetOrganizationId) return;
+      setDashboardList(current => current?.organizationId === targetOrganizationId ? { ...current, items: [created, ...current.items] } : current);
+      setToast('Dashboard created from sample data');
+      navigate('dashboards', created.id);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : 'Unable to create dashboard.');
+      throw exception;
+    }
+  }
+
   async function createDashboard() {
     if (!draft || !organizationId) return;
     const targetOrganizationId = organizationId;
@@ -198,6 +215,7 @@ export default function App() {
         <div className="sidebar-navigation">
           <span className="nav-caption">WORKSPACE</span>
           <NavButton active={view.page === 'overview'} label="Overview" onClick={() => navigate('overview')} icon={<Gauge size={18} />} />
+          <NavButton active={view.page === 'explore'} label="Explore" onClick={() => navigate('explore')} icon={<Search size={18} />} />
           <NavButton active={view.page === 'dashboards'} label="Dashboards" onClick={() => navigate('dashboards')} icon={<LayoutDashboard size={18} />} count={dashboards.length} />
           <NavButton active={view.page === 'sources'} label="Data sources" onClick={() => navigate('sources')} icon={<Database size={18} />} />
           <div className="sidebar-divider" />
@@ -217,7 +235,7 @@ export default function App() {
           <div className="topbar-left">
             <button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Menu size={21} /></button>
             <span className="crumb-root">Workspace</span><ChevronRight size={15} />
-            <span className="crumb-current">{view.id ? activeDashboard?.name ?? 'Dashboard' : view.page === 'overview' ? 'Overview' : view.page === 'sources' ? 'Data sources' : view.page === 'settings' ? 'Organization' : 'Dashboards'}</span>
+            <span className="crumb-current">{view.id ? activeDashboard?.name ?? 'Dashboard' : view.page === 'overview' ? 'Overview' : view.page === 'explore' ? 'Explore' : view.page === 'sources' ? 'Data sources' : view.page === 'settings' ? 'Organization' : 'Dashboards'}</span>
           </div>
           <div className="topbar-actions">
             <span className="demo-label"><span /> DEMO DATA</span>
@@ -231,6 +249,7 @@ export default function App() {
           {error && <div role="alert" className="error-banner"><span>{error}</span><button onClick={() => { setError(''); void loadDashboards(); }}><X size={17} /></button></div>}
           {loading ? <div className="loading-state"><div className="loading-spinner" /> Loading workspace…</div>
             : organizations.length === 0 ? <EmptyState title="No organizations available" message="Your identity has no assigned organization. Ask your platform administrator for access." />
+            : view.page === 'explore' ? <ExplorePage key={organizationId} canEdit={canEdit} onCreate={createFromExplore} />
             : view.page === 'sources' ? <DataSourcesPage key={organizationId} organizationId={organizationId} canEdit={canEdit} onNotice={setToast} />
             : view.page === 'settings' ? <SettingsPage organization={organization} />
             : view.id ? preview ? (
