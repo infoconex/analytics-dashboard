@@ -4,6 +4,8 @@ import {
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { formatMetric, selectRows } from './demoData';
+import { selectConsumerRows } from './consumerFilters';
+import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 
 const palette = ['#6179f4', '#36b8b0', '#f0b35d', '#a38af4', '#f17f97'];
@@ -14,10 +16,18 @@ interface Props {
   editing?: boolean;
   onEdit?: (widget: DashboardWidget) => void;
   onRemove?: (id: string) => void;
+  filters?: ConsumerFilters;
+  onChannelSelect?: (channel: string) => void;
 }
 
-export function WidgetTile({ widget, period, editing, onEdit, onRemove }: Props) {
-  const data = selectRows(widget.datasetKey, period);
+export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters, onChannelSelect }: Props) {
+  const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
+  const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
+  const selectedChannel = filters?.channel;
+  function selectCategory(index: number) {
+    const category = data[index]?.channel;
+    if (channelInteraction && typeof category === 'string') onChannelSelect?.(category);
+  }
   const value = data.reduce((total, row) => total + Number(row[widget.metricKey] ?? 0), 0);
   const metric = widget.metricKey;
   const axis = widget.dimensionKey;
@@ -31,7 +41,9 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove }: Props)
     return (
       <article className="widget-tile">
         <div className="widget-heading"><div><div className="widget-title">{widget.title}</div></div></div>
-        <p className="widget-empty">No sample data is available for dataset “{widget.datasetKey}”.</p>
+        <p className="widget-empty">{filters && widget.datasetKey === 'channels' && selectedChannel
+          ? 'No sample records match this channel. Remove the filter to see all channels.'
+          : `No sample data is available for dataset “${widget.datasetKey}”.`}</p>
         {editing && <div className="widget-actions">
           <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
           <button aria-label={`Remove ${widget.title}`} className="icon-button danger-hover" onClick={() => onRemove?.(widget.id)}><Trash2 size={15} /></button>
@@ -45,7 +57,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove }: Props)
       <div className="widget-heading">
         <div>
           <div className="widget-title">{widget.title}</div>
-          <div className="widget-subtitle">{widget.datasetKey === 'commerce' ? 'Commerce performance' : 'Marketing channels'}</div>
+          <div className="widget-subtitle">{widget.datasetKey === 'commerce' ? 'Commerce performance' : 'Marketing channels'}{filters && widget.datasetKey === 'channels' && selectedChannel ? ` · ${selectedChannel}` : ''}</div>
         </div>
         {editing ? (
           <div className="widget-actions">
@@ -71,18 +83,18 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove }: Props)
       ) : widget.kind === 'table' ? (
         <div className="widget-table-wrap">
           <table className="widget-table">
-            <thead><tr><th>{axis === 'month' ? 'Month' : 'Channel'}</th><th>{metric}</th><th>Share</th></tr></thead>
+            <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th><th scope="col">Share</th></tr></thead>
             <tbody>{data.map((row) => (
-              <tr key={String(row[axis])}><td>{row[axis]}</td><td>{formatMetric(Number(row[metric] ?? 0), metric)}</td><td>{value ? Math.round(Number(row[metric] ?? 0) / value * 100) : 0}%</td></tr>
+              <tr key={String(row[axis])}><th scope="row">{channelInteraction ? <button type="button" className="table-filter-button" aria-label={selectedChannel === row.channel ? 'Show all channels' : `Show only ${row.channel}`} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button> : row[axis]}</th><td>{formatMetric(Number(row[metric] ?? 0), metric)}</td><td>{value ? Math.round(Number(row[metric] ?? 0) / value * 100) : 0}%</td></tr>
             ))}</tbody>
           </table>
         </div>
       ) : (
-        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart showing ${metric} by ${axis}`}>
+        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart showing ${metric} by ${axis}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' ? (
               <PieChart>
-                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" innerRadius="59%" outerRadius="80%" paddingAngle={3} stroke="none">
+                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" innerRadius="59%" outerRadius="80%" paddingAngle={3} stroke="none" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'}>
                   {data.map((row, index) => <Cell key={String(row[axis])} fill={palette[index % palette.length]} />)}
                 </Pie>
                 <Tooltip />
@@ -93,7 +105,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove }: Props)
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a95a9' }} />
                 <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a95a9' }} width={48} />
                 <Tooltip cursor={{ fill: '#f2f5fd' }} />
-                <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" />
+                <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} />
               </BarChart>
             ) : widget.kind === 'line' ? (
               <LineChart data={data} margin={{ top: 8, right: 10, left: -17, bottom: 0 }}>
@@ -117,8 +129,11 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove }: Props)
         </div>
       )}
       {widget.kind === 'donut' && <div className="donut-legend">
-        {data.slice(0, 4).map((row, index) => <span key={String(row[axis])}><i style={{ background: palette[index] }} />{row[axis]}</span>)}
+        {data.map((row, index) => channelInteraction
+          ? <button type="button" className="donut-legend-button" key={String(row[axis])} aria-label={selectedChannel === row.channel ? 'Show all channels' : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: palette[index % palette.length] }} />{row[axis]}</button>
+          : <span key={String(row[axis])}><i style={{ background: palette[index % palette.length] }} />{row[axis]}</span>)}
       </div>}
+      {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter channel charts, or use the channel selector above.</p>}
     </article>
   );
 }

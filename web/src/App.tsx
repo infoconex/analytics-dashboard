@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity, ArrowDownRight, ArrowLeft, ArrowRight, BarChart3, Bell, BookOpen,
-  CalendarDays, Check, ChevronDown, ChevronRight, CircleHelp, Clock3,
+  CalendarDays, Check, ChevronDown, ChevronRight, CircleHelp,
   Cloud, Database, Ellipsis, ExternalLink, FileBarChart, Filter, FolderKanban,
   Gauge, LayoutDashboard, LockKeyhole, Menu, MoreHorizontal, Plus, Search,
   Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2,
@@ -11,7 +11,7 @@ import { dashboardApi } from './api';
 import { hasDashboardChanges } from './composition';
 import { createWidget, datasetOptions, dimensions, metrics } from './demoData';
 import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership } from './model';
-import { DashboardCanvas } from './DashboardCanvas';
+import { DashboardConsumer } from './DashboardConsumer';
 import { WidgetTile } from './WidgetTile';
 import { DataSourcesPage } from './DataSourcesPage';
 import { ExplorePage } from './ExplorePage';
@@ -338,8 +338,7 @@ export default function App() {
                 </div>
                 {editMode && <div className="composition-status" role="status" aria-live="polite"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Arrange and configure your dashboard before publishing changes to your team.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available.</div>}
-                <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Sample dataset</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> Updated {new Date(preview.updatedAt).toLocaleDateString()}</span></div><PeriodPicker period={period} setPeriod={setPeriod} /></div>
-                <DashboardCanvas widgets={preview.widgets} period={period} editing={editMode} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)} />
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)} />
               </>
             ) : <EmptyState title="Dashboard not found" message="This dashboard may have been deleted or is not in your organization." />
             : view.page === 'dashboards' ? (
