@@ -2,7 +2,7 @@
 
 An enterprise-oriented, multi-tenant analytics and visualization application inspired by Kibana, designed to connect to relational databases and Elasticsearch without requiring customers to adopt one storage engine.
 
-> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data** and tenant-scoped data-source *registration metadata*. Live connectors, customer-managed sign-in, production provisioning, secure credential storage, and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
+> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source *registration metadata* and non-executing query-contract validation. Live connectors, customer-managed sign-in, production provisioning, secure credential storage, and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
 
 ## Current capabilities
 
@@ -13,6 +13,7 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 | Create, edit, delete, and share dashboard links | Working in local development |
 | Dashboard definitions, optimistic revisions, and persistence | SQLite metadata catalog |
 | Register, rename, list and remove data-source definitions | SQLite metadata only, tenant-scoped and revision-protected; no connections |
+| Restricted provider-neutral query contracts | Typed request/result schemas, tenant-scoped validation, trusted allowlists and prospective resource budgets; no execution |
 | Tenant isolation and owner/editor/viewer authorization | Server-enforced and tested |
 | OIDC/JWT bearer validation in the API | Configurable; production API fails closed without identity configuration |
 | SQL Server, MySQL, PostgreSQL, SQLite, Elasticsearch | Provider identifiers available for metadata registration; no live connectivity |
@@ -22,6 +23,8 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 Shared links retain the organization identifier. Recipients must authenticate and belong to that organization; there are no anonymous public dashboards.
 
 Data-source registration stores only a display name, provider identifier, tenant ownership, revision, creator and timestamps. It **does not accept or store connection strings, endpoints, passwords, tokens or API keys**. Do not put connection details or secrets in a display name. Existing demo charts are not linked to registrations.
+
+Query validation is deliberately non-executing. The `/api/organizations/{organizationId}/data-sources/{id}/queries/validate` POST route checks identity, registration ownership, typed query structure, limits and a trusted server allowlist. **The deployed catalog contains no datasets**, so requests presently fail closed. This is neither a connection test nor a data query API. See [query contracts](docs/query-contracts.md) for request/response shapes and operator, type and budget rules.
 
 ### Data-source registration API
 
