@@ -62,14 +62,14 @@ public sealed class DataSourceServiceTests
         var source = await service.CreateAsync("northstar", "demo-owner",
             new DataSourceDraft("Private", DataSourceProvider.Sqlite), CancellationToken.None);
 
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.ListAsync("northstar", "another-user", CancellationToken.None));
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.FindAsync("northstar", source.Id, "another-user", CancellationToken.None));
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.UpdateAsync("northstar", source.Id, "another-user",
                 new DataSourceUpdate("Stolen", 1), CancellationToken.None));
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.DeleteAsync("northstar", source.Id, "another-user", 1, CancellationToken.None));
 
         Assert.That(await repository.FindAsync("isolated", source.Id, CancellationToken.None), Is.Null);
@@ -88,13 +88,13 @@ public sealed class DataSourceServiceTests
             Has.Count.EqualTo(1));
         Assert.That(await service.FindAsync("northstar", source.Id, "demo-viewer", CancellationToken.None),
             Is.Not.Null);
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.CreateAsync("northstar", "demo-viewer",
                 new DataSourceDraft("Denied", DataSourceProvider.MySql), CancellationToken.None));
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.UpdateAsync("northstar", source.Id, "demo-viewer",
                 new DataSourceUpdate("Denied", 1), CancellationToken.None));
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.DeleteAsync("northstar", source.Id, "demo-viewer", 1, CancellationToken.None));
     }
 
@@ -138,10 +138,10 @@ public sealed class DataSourceServiceTests
             new DataSourceUpdate("Latest", 1), CancellationToken.None);
 
         Assert.That(renamed?.Revision, Is.EqualTo(2));
-        Assert.ThrowsAsync<ConflictException>(async () =>
+        await Assert.ThrowsAsync<ConflictException>(async () =>
             await service.UpdateAsync("northstar", source.Id, "demo-owner",
                 new DataSourceUpdate("Stale", 1), CancellationToken.None));
-        Assert.ThrowsAsync<ConflictException>(async () =>
+        await Assert.ThrowsAsync<ConflictException>(async () =>
             await service.DeleteAsync("northstar", source.Id, "demo-owner", 1, CancellationToken.None));
         Assert.That((await repository.FindAsync("northstar", source.Id, CancellationToken.None))?.Name,
             Is.EqualTo("Latest"));
@@ -165,13 +165,13 @@ public sealed class DataSourceServiceTests
     }
 
     [Test]
-    public void InvalidNamesAndProvidersAreRejected()
+    public async Task InvalidNamesAndProvidersAreRejected()
     {
         foreach (var name in new[] { "", "   ", new string('x', 101), "bad\nname" })
-            Assert.ThrowsAsync<InvalidDataSourceException>(async () =>
+            await Assert.ThrowsAsync<InvalidDataSourceException>(async () =>
                 await service.CreateAsync("northstar", "demo-owner",
                     new DataSourceDraft(name, DataSourceProvider.SqlServer), CancellationToken.None));
-        Assert.ThrowsAsync<InvalidDataSourceException>(async () =>
+        await Assert.ThrowsAsync<InvalidDataSourceException>(async () =>
             await service.CreateAsync("northstar", "demo-owner",
                 new DataSourceDraft("Unknown", (DataSourceProvider)999), CancellationToken.None));
     }
