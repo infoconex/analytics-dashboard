@@ -89,4 +89,24 @@ public sealed class DashboardApiTests
             Assert.That(conflict.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
         });
     }
+
+    [Test]
+    public void ProductionRequiresTrustedAuthenticationConfiguration()
+    {
+        using var productionFactory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Production");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+                configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Catalog:Path"] = databasePath,
+                    ["DevelopmentIdentity:Enabled"] = "true",
+                    ["Authentication:Authority"] = "",
+                    ["Authentication:Audience"] = ""
+                }));
+        });
+
+        var error = Assert.Throws<InvalidOperationException>(() => productionFactory.CreateClient());
+        Assert.That(error?.Message, Does.Contain("Authentication:Authority"));
+    }
 }

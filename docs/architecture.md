@@ -30,7 +30,7 @@ Domain and Application have no database or UI package dependencies. Infrastructu
 | Membership | Links identity to organization and role | Implemented; demo seeded |
 | Dashboard | Organization-owned, revisioned collection of widgets | Implemented |
 | Widget | Chart kind, dataset, metric and dimension | Implemented for sample data |
-| Connection | Tenant-owned data-source definition and protected credentials | Planned |
+| Connection | Tenant-owned provider/name definition without connection settings or secrets | Domain contract only; management, storage and execution planned |
 | Query definition | Restricted, provider-neutral query contract | Planned |
 | Data access policy | Connection permissions, quotas and timeouts | Planned |
 | Audit event | Recorded identity, action, resource and outcome | Planned |

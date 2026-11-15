@@ -20,6 +20,8 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 
 Shared links retain the organization identifier. Recipients must authenticate and belong to that organization; there are no anonymous public dashboards.
 
+The domain defines tenant-scoped connection metadata for all five planned providers, but no connection records, credentials, or live query execution are available yet.
+
 ## Technology
 
 - **Backend:** ASP.NET Core on .NET 10 LTS, using Domain → Application → Infrastructure/HTTP adapters.
