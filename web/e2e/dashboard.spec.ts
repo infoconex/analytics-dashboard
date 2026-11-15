@@ -58,7 +58,12 @@ test('dragging rearranges a preview and navigation protects unsaved work', async
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
   const handle = page.locator('.canvas-item .drag-handle').first();
   await expect(handle).toHaveAttribute('draggable', 'true');
-  await handle.dragTo(page.locator('.canvas-item').nth(2));
+  // Two target hovers emit dragover reliably for native HTML drag-and-drop.
+  await handle.hover();
+  await page.mouse.down();
+  await page.locator('.canvas-item').nth(2).hover();
+  await page.locator('.canvas-item').nth(2).hover();
+  await page.mouse.up();
   await expect(titles.nth(2)).toHaveText(original[0]!);
   await expect(page.getByText('Unsaved changes')).toBeVisible();
 
