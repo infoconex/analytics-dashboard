@@ -4,7 +4,7 @@
 
 Analytics Dashboard is an independent analytics experience for software vendors incorporating dashboards into customer-facing applications. Each customer organization has independently authenticated users, connections, dashboard definitions, authorization, audit events, and resource limits.
 
-The first increment implements definition and visualization workflows. Live connectors are planned.
+The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata. Live connectors are planned.
 
 ## Logical components
 
@@ -30,7 +30,8 @@ Domain and Application have no database or UI package dependencies. Infrastructu
 | Membership | Links identity to organization and role | Implemented; demo seeded |
 | Dashboard | Organization-owned, revisioned collection of widgets | Implemented |
 | Widget | Chart kind, dataset, metric and dimension | Implemented for sample data |
-| Connection | Tenant-owned provider/name definition without connection settings or secrets | Domain contract only; management, storage and execution planned |
+| Data-source registration | Tenant-owned provider/name definition with revisions and provenance, but no connection configuration | Implemented in SQLite/API/UI; no connectivity |
+| Connection | Secured network and authentication configuration | Not modeled or implemented |
 | Query definition | Restricted, provider-neutral query contract | Planned |
 | Data access policy | Connection permissions, quotas and timeouts | Planned |
 | Audit event | Recorded identity, action, resource and outcome | Planned |
@@ -40,10 +41,18 @@ Domain and Application have no database or UI package dependencies. Infrastructu
 - Never trust an organization identifier just because the browser supplied it.
 - Resolve the user from validated server-side identity claims.
 - Check membership and the required role on every organization-scoped operation.
-- Include `organization_id` in all dashboard database predicates, including updates and deletes; constrain updates with the expected revision.
+- Include `organization_id` in all dashboard and data-source database predicates, including updates and deletes; constrain data-source updates **and deletions** with the expected revision.
 - Never expose another organization's resources when a caller guesses identifiers.
 - A dashboard link is a *pointer*, not an authorization grant.
 - A future embed token must bind organization, subject, scopes and short expiration.
+
+## Registration-only vertical slice
+
+`DataSourceService` owns application authorization and registration rules. `IDataSourceRepository` is the application storage port. `SqliteDataSourceRepository` is a separate infrastructure adapter with organization-scoped, parameterized SQLite statements. It initializes an additive `data_source_definitions` table; it does not modify existing dashboard metadata.
+
+Definitions have immutable IDs, organization, provider, creator and creation time. Only their display names can change; revisions and update timestamps advance on successful writes. `UPDATE` and `DELETE` use compare-and-swap revision predicates, so stale browser sessions cannot silently overwrite or remove newer registrations. Owner/editor mutations and member reads are authorized by server-side membership lookup before accessing the repository. Unauthorized tenant requests fail without disclosing whether a guessed definition exists.
+
+HTTP requests deliberately have narrow shapes: `DataSourceDraft` accepts only name/provider and `DataSourceUpdate` only name/expected revision. Unknown JSON properties fail deserialization, enum providers are serialized as strings, and unexpected or numeric providers are rejected. No network endpoints, connection configurations, credential fields, connection tests, or query execution exist in this slice. Free-form display names are not an appropriate place for secrets.
 
 ## Connector architecture (future)
 
