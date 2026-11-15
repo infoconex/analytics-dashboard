@@ -104,6 +104,10 @@ public sealed class RelationalQueryCompilerTests
             BoundSales with { Schema = "public.public" }, query));
         Assert.Throws<InvalidQueryException>(() => compiler.Compile(
             BoundSales with { StableOrderField = "missing" }, query));
+        Assert.Throws<InvalidQueryException>(() => compiler.Compile(
+            BoundSales with { Dataset = new QueryDataset("sales",
+                [new QueryField("id", QueryValueType.Number),
+                    new QueryField("region] DROP TABLE sales", QueryValueType.Text)]) }, query));
     }
 
     [TestCase(DataSourceProvider.SqlServer)]

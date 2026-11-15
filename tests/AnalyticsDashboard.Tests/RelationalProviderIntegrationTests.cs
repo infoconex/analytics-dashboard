@@ -148,6 +148,38 @@ public sealed class RelationalProviderIntegrationTests(DataSourceProvider provid
     }
 
     [Test]
+    public async Task NativeInContainsAndNullOperatorsUseLiteralParameters()
+    {
+        var query = new QueryRequest("sales", ["id"],
+        [
+            new QueryFilter("region", QueryOperator.Contains,
+                [new QueryScalar(QueryValueType.Text, Text: "_")]),
+            new QueryFilter("amount", QueryOperator.In,
+                [new QueryScalar(QueryValueType.Number, Number: 12.5m),
+                    new QueryScalar(QueryValueType.Number, Number: 31m)]),
+            new QueryFilter("region", QueryOperator.IsNotNull)
+        ]);
+
+        await using var command = CreateCompiledCommand(query);
+        await using var rows = await command.ExecuteReaderAsync();
+        var ids = new List<int>();
+        while (await rows.ReadAsync()) ids.Add(rows.GetInt32(0));
+        Assert.That(ids, Is.EqualTo(new[] { 1, 3 }));
+    }
+
+    [Test]
+    public async Task AggregateOnlyQueryHasOneResultRow()
+    {
+        var query = new QueryRequest("sales", [],
+            Aggregates: [new QueryAggregate("count", QueryAggregateFunction.Count)]);
+        await using var command = CreateCompiledCommand(query);
+        await using var rows = await command.ExecuteReaderAsync();
+        Assert.That(await rows.ReadAsync(), Is.True);
+        Assert.That(Convert.ToInt32(rows.GetValue(0)), Is.EqualTo(3));
+        Assert.That(await rows.ReadAsync(), Is.False);
+    }
+
+    [Test]
     public async Task NativeTimestampParameterUsesUtc()
     {
         var threshold = new DateTimeOffset(2026, 11, 15, 8, 0, 0, TimeSpan.FromHours(-8));

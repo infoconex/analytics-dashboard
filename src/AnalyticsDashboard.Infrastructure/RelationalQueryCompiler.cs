@@ -7,8 +7,14 @@ namespace AnalyticsDashboard.Infrastructure;
 /// Compiles a restricted query against a trusted physical binding. No API or connection
 /// uses this component until the remaining production security gates are implemented.
 /// </summary>
-public abstract class RelationalQueryCompiler(DataSourceProvider provider)
+public abstract class RelationalQueryCompiler
 {
+    private readonly DataSourceProvider provider;
+
+    // External assemblies cannot derive a dialect that injects arbitrary SQL into
+    // an otherwise unforgeable CompiledRelationalQuery.
+    private protected RelationalQueryCompiler(DataSourceProvider provider) => this.provider = provider;
+
     public CompiledRelationalQuery Compile(RelationalDatasetBinding? binding, QueryRequest? request)
     {
         if (binding?.Dataset is null || !QueryShapeValidator.IsIdentifier(binding.Schema)
@@ -115,9 +121,9 @@ public abstract class RelationalQueryCompiler(DataSourceProvider provider)
             result.Columns.ToArray(), result.Limit, result.Offset);
     }
 
-    protected abstract string Quote(string identifier);
-    protected abstract string TextSearch(string field, string parameter, bool prefix);
-    protected abstract string Page(int limit, int offset);
+    private protected abstract string Quote(string identifier);
+    private protected abstract string TextSearch(string field, string parameter, bool prefix);
+    private protected abstract string Page(int limit, int offset);
 
     private static string Comparison(QueryOperator op) => op switch
     {
