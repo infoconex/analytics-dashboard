@@ -25,7 +25,7 @@ This document distinguishes **implemented** protections from production work sti
 
 1. End-to-end customer OIDC/SSO sign-in, provisioning and identity lifecycle.
 2. Production key management, connect-time DNS/address validation and network egress controls.
-3. Read-only, parameterized and bounded query adapters.
+3. Production-connected read-only, parameterized and fully resource-bounded query adapters.
 4. Auditing, rate limits, metrics, backups, recovery and operational safeguards.
 5. Threat-model review, penetration testing and incident-response runbooks.
 

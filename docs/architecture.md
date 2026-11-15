@@ -62,7 +62,9 @@ HTTP requests deliberately have narrow shapes: `DataSourceDraft` accepts only na
 `IQueryDatasetCatalog` allowlist → typed operator/aggregation/capability validation and
 budget calculation. The deployed `UnconfiguredQueryDatasetCatalog` deliberately denies
 all datasets. `/queries/validate` exposes only schema and limits, never records.
-No schema inspection, endpoint, credentials, compiler or query execution adapter exists.
+The validation route itself performs no schema inspection, credential access,
+SQL compilation or query execution; the disconnected 3a compilers are not wired
+into that route.
 See [query contracts](query-contracts.md) for the type/operator matrix and limits.
 
 ## Connection security (Issue #10)
@@ -96,11 +98,11 @@ socket, or filesystem customer database access is introduced. The trusted query
 dataset catalog still denies all datasets by default. Full details and remaining
 runtime controls: [connection security](connection-security.md).
 
-## Connector architecture (future)
+## Connector architecture (3a and future)
 
 Roadmap 3a provides SQL Server and PostgreSQL **compiler-only** infrastructure adapters and native command factories. `QueryShapeValidator` is shared between the authorization-first validation service and the compiler, which checks typed shape and trusted metadata again before producing a plan. The physical schema/table and stable unique ordering key come only from an operator-supplied `RelationalDatasetBinding`, never a request. Compiled SQL and native commands are not connected to the API, connection profiles or production execution. No new application execution port is enabled; that port will be defined after runtime authorization and transport boundaries are ready. See [relational adapter conformance](relational-adapters.md).
 
-Future providers will implement a shared execution port while retaining provider-specific capabilities. Capability declarations remain conservative until relevant adapter conformance tests succeed. SQL Server, MySQL, PostgreSQL, and SQLite use supported ADO.NET providers; Elasticsearch will use its supported HTTP API and a constrained query DSL.
+Future providers will implement a shared execution port while retaining provider-specific capabilities. Capability declarations remain conservative until relevant adapter conformance tests succeed. SQL Server and PostgreSQL compilers use supported ADO.NET providers in isolated tests; future MySQL and SQLite runtime adapters will use supported ADO.NET providers. Elasticsearch will use its supported HTTP API and a constrained query DSL.
 
 Required query properties:
 
