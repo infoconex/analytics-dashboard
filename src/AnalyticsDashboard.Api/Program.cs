@@ -8,6 +8,7 @@ using AnalyticsDashboard.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -209,7 +210,7 @@ dataSourceRoutes.MapPost("/{id:guid}/queries/validate", async (
 {
     var result = await service.ValidateAsync(organizationId, id, UserId(context), request, token);
     return result is null ? Results.NotFound() : Results.Ok(result);
-});
+}).WithMetadata(new RequestSizeLimitAttribute(64 * 1024));
 
 app.Run();
 

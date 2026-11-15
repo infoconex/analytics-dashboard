@@ -128,10 +128,7 @@ public sealed class QueryApiTests
     [Test]
     public async Task AllowedDatasetReturnsValidationSchemaButNotRows()
     {
-        client.Dispose();
-        factory.Dispose();
-        factory = CreateFactory(true);
-        client = factory.CreateClient();
+        UseTestCatalog();
         var address = await RegisterAsync();
         var response = await client.PostAsJsonAsync(address, new
         {
@@ -147,6 +144,37 @@ public sealed class QueryApiTests
             Assert.That(body.GetProperty("columns")[0].GetProperty("type").GetString(), Is.EqualTo("text"));
             Assert.That(body.TryGetProperty("rows", out _), Is.False);
             Assert.That(body.TryGetProperty("connectionString", out _), Is.False);
+        });
+    }
+
+    [Test]
+    public async Task TimestampLiteralsRequireExplicitTimezoneOffsets()
+    {
+        UseTestCatalog();
+        var address = await RegisterAsync();
+
+        async Task<HttpResponseMessage> SubmitAsync(string timestamp) =>
+            await client.PostAsJsonAsync(address, new
+            {
+                dataset = "sales", projection = new[] { "date" },
+                filters = new[]
+                {
+                    new { field = "date", @operator = "greaterThan", values = new[]
+                    {
+                        new { type = "timestamp", timestamp }
+                    } }
+                }
+            });
+
+        var valid = await SubmitAsync("2026-11-15T08:30:00-08:00");
+        var utc = await SubmitAsync("2026-11-15T16:30:00Z");
+        var ambiguous = await SubmitAsync("2026-11-15T08:30:00");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(valid.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(utc.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(ambiguous.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
         });
     }
 
@@ -174,12 +202,21 @@ public sealed class QueryApiTests
         return $"{Sources}/{body.GetProperty("id").GetString()}/queries/validate";
     }
 
+    private void UseTestCatalog()
+    {
+        client.Dispose();
+        factory.Dispose();
+        factory = CreateFactory(true);
+        client = factory.CreateClient();
+    }
+
     private sealed class TestDatasetCatalog : IQueryDatasetCatalog
     {
         public Task<QueryDataset?> FindAsync(string organizationId, Guid dataSourceId, string dataset,
             CancellationToken cancellationToken) => Task.FromResult<QueryDataset?>(
                 organizationId == "northstar" && dataset == "sales"
-                    ? new QueryDataset("sales", [new QueryField("region", QueryValueType.Text)])
+                    ? new QueryDataset("sales", [new QueryField("region", QueryValueType.Text),
+                        new QueryField("date", QueryValueType.Timestamp)])
                     : null);
     }
 }

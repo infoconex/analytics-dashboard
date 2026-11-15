@@ -73,7 +73,8 @@ Given a synthetic trusted `sales` schema, validation returns an envelope like:
   letters/digits/underscores), maximum length 128. Fields have independent flags
   determining filter, group, sort and aggregate permissions.
 - Values are discriminated by `type`: `text`, `number` (decimal), `boolean`, or
-  `timestamp` (offset-aware). Exactly one matching payload property is non-null.
+  `timestamp` (ISO-8601 with an explicit `Z` or ±HH:MM offset). Exactly one
+  matching payload property is non-null.
   Text is at most 512 characters with no control characters.
 - Unknown JSON properties (even nested), unknown/numeric enums, and malformed typed
   values are rejected. Never submit secrets, endpoints or credentials in any field.
@@ -115,3 +116,6 @@ The future `QueryResult` contract declares ordered typed columns, nullable typed
 row values, offset, limit, `hasMore`, and `truncated`. No route exposes that result
 contract yet. Connection security (roadmap 2c) and real-provider conformance testing
 must precede any live execution.
+
+The validation endpoint additionally limits raw request bodies to 64 KiB, to keep
+JSON deserialization bounded before application-level shape checks.

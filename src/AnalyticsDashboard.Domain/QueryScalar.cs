@@ -9,4 +9,4 @@ public sealed record QueryScalar(
     string? Text = null,
     decimal? Number = null,
     bool? Boolean = null,
-    DateTimeOffset? Timestamp = null);
+    [property: JsonConverter(typeof(OffsetTimestampConverter))] DateTimeOffset? Timestamp = null);
