@@ -2,7 +2,7 @@
 
 An enterprise-oriented, multi-tenant analytics and visualization application inspired by Kibana, designed to connect to relational databases and Elasticsearch without requiring customers to adopt one storage engine.
 
-> **Pre-alpha: not production-ready.** The first increment supports **development/demo dashboards using sample data**. Live connectors, customer-managed sign-in, production provisioning, secure credential storage, and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
+> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data** and tenant-scoped data-source *registration metadata*. Live connectors, customer-managed sign-in, production provisioning, secure credential storage, and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
 
 ## Current capabilities
 
@@ -12,15 +12,30 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 | Metric, line, area, bar, donut, and table visualizations | Working with labeled sample data |
 | Create, edit, delete, and share dashboard links | Working in local development |
 | Dashboard definitions, optimistic revisions, and persistence | SQLite metadata catalog |
+| Register, rename, list and remove data-source definitions | SQLite metadata only, tenant-scoped and revision-protected; no connections |
 | Tenant isolation and owner/editor/viewer authorization | Server-enforced and tested |
 | OIDC/JWT bearer validation in the API | Configurable; production API fails closed without identity configuration |
-| SQL Server, MySQL, PostgreSQL, SQLite, Elasticsearch | Planned; no live connectivity |
+| SQL Server, MySQL, PostgreSQL, SQLite, Elasticsearch | Provider identifiers available for metadata registration; no live connectivity |
 | Customer identity federation and provisioning | Planned |
 | Embed/white-label SDK and enterprise audit controls | Planned |
 
 Shared links retain the organization identifier. Recipients must authenticate and belong to that organization; there are no anonymous public dashboards.
 
-The domain defines tenant-scoped connection metadata for all five planned providers, but no connection records, credentials, or live query execution are available yet.
+Data-source registration stores only a display name, provider identifier, tenant ownership, revision, creator and timestamps. It **does not accept or store connection strings, endpoints, passwords, tokens or API keys**. Do not put connection details or secrets in a display name. Existing demo charts are not linked to registrations.
+
+### Data-source registration API
+
+All routes require an authenticated member of the specified organization. A viewer can list and retrieve; owners and editors can create, rename and delete.
+
+| Method | Route | Input |
+| --- | --- | --- |
+| GET | `/api/organizations/{organizationId}/data-sources` | None |
+| GET | `/api/organizations/{organizationId}/data-sources/{id}` | None |
+| POST | `/api/organizations/{organizationId}/data-sources` | `{ "name": "Reporting", "provider": "postgreSql" }` |
+| PUT | `/api/organizations/{organizationId}/data-sources/{id}` | `{ "name": "Reporting v2", "expectedRevision": 1 }` |
+| DELETE | `/api/organizations/{organizationId}/data-sources/{id}?expectedRevision=2` | None |
+
+Allowed provider strings: `sqlServer`, `mySql`, `postgreSql`, `sqlite`, `elasticsearch`. Provider and organization ownership cannot be changed after registration; renaming increments the revision. Both rename and removal reject stale expected revisions with HTTP 409. Unknown request fields, including connection details, are rejected with HTTP 400. The response contains only registration metadata. Rebooting the API preserves definitions in the SQLite catalog.
 
 ## Technology
 
@@ -77,7 +92,7 @@ Production readiness requires additional work: federation/login experience, orga
 - Work on a dedicated branch; keep checkpoints small and commits reviewable.
 - Follow Microsoft guidance by reference. Record only explicit deviations or decisions Microsoft leaves open.
 - Favor TDD, SOLID, inward dependencies, one primary C# type per file, and reproducible checks.
-- Use squash merges after explicit owner approval; do not merge drafts or release without review.
+- Use squash merges after verified engineering/security review and required checks; the repository owner has granted standing authorization to merge completed issues without additional approval.
 
 ## Licensing
 
