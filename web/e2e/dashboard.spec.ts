@@ -70,3 +70,40 @@ test('switching organizations ignores a late response from the previous tenant',
   await expect(page.getByText('No sample data is available for dataset')).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
+
+test('editor registers, renames and removes source metadata without connecting', async ({ page }) => {
+  await page.goto('/#/sources');
+  await expect(page.getByRole('heading', { name: 'Data sources' })).toBeVisible();
+  await expect(page.getByText('Registration only — no live connections')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Register data source' }).click();
+  await page.getByRole('textbox', { name: 'Display name' }).fill('Reporting warehouse');
+  await page.getByRole('combobox', { name: 'Provider' }).selectOption('postgreSql');
+  await page.getByRole('button', { name: 'Register definition' }).click();
+
+  const registration = page.locator('.registered-source').filter({ hasText: 'Reporting warehouse' });
+  await expect(registration).toContainText('PostgreSQL');
+  await expect(registration).toContainText('Not connected');
+  await page.reload();
+  await expect(registration).toBeVisible();
+
+  await page.getByRole('button', { name: 'Rename Reporting warehouse' }).click();
+  await expect(page.getByRole('combobox', { name: 'Provider' })).toBeDisabled();
+  await page.getByRole('textbox', { name: 'Display name' }).fill('Reporting warehouse v2');
+  await page.getByRole('button', { name: 'Save name' }).click();
+  await expect(page.locator('.registered-source').filter({ hasText: 'Reporting warehouse v2' })).toContainText('Revision 2');
+
+  page.once('dialog', dialog => void dialog.accept());
+  await page.getByRole('button', { name: 'Remove Reporting warehouse v2' }).click();
+  await expect(page.getByText('No data sources registered')).toBeVisible();
+});
+
+test('viewer receives read-only data-source management controls', async ({ page }) => {
+  await page.route('**/api/organizations', route => route.fulfill({ json: [
+    { id: 'northstar', name: 'Northstar Commerce', role: 'viewer' },
+  ] }));
+  await page.goto('/#/sources');
+  await expect(page.getByText('Registration only — no live connections')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Register data source' })).toHaveCount(0);
+  await expect(page.getByText('An organization editor can register a data-source definition.')).toBeVisible();
+});

@@ -11,6 +11,7 @@ import { dashboardApi } from './api';
 import { createWidget, datasetOptions, dimensions, metrics, visualizations } from './demoData';
 import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, WidgetKind } from './model';
 import { WidgetTile } from './WidgetTile';
+import { DataSourcesPage } from './DataSourcesPage';
 
 type Page = 'overview' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
@@ -230,7 +231,7 @@ export default function App() {
           {error && <div role="alert" className="error-banner"><span>{error}</span><button onClick={() => { setError(''); void loadDashboards(); }}><X size={17} /></button></div>}
           {loading ? <div className="loading-state"><div className="loading-spinner" /> Loading workspace…</div>
             : organizations.length === 0 ? <EmptyState title="No organizations available" message="Your identity has no assigned organization. Ask your platform administrator for access." />
-            : view.page === 'sources' ? <SourcesPage />
+            : view.page === 'sources' ? <DataSourcesPage key={organizationId} organizationId={organizationId} canEdit={canEdit} onNotice={setToast} />
             : view.page === 'settings' ? <SettingsPage organization={organization} />
             : view.id ? preview ? (
               <>
@@ -299,18 +300,6 @@ function EmptyState({ title, message }: { title: string; message: string }) {
   return <div className="empty-state"><div><LayoutDashboard size={30} /></div><h2>{title}</h2><p>{message}</p></div>;
 }
 
-const connectors = [
-  { name: 'Microsoft SQL Server', initials: 'SQL', category: 'Relational database', tone: 'source-red' },
-  { name: 'MySQL', initials: 'my', category: 'Relational database', tone: 'source-orange' },
-  { name: 'PostgreSQL', initials: 'Pg', category: 'Relational database', tone: 'source-blue' },
-  { name: 'SQLite', initials: 'Sq', category: 'Embedded database', tone: 'source-cyan' },
-  { name: 'Elasticsearch', initials: 'E', category: 'Search & analytics', tone: 'source-yellow' },
-];
-
-function SourcesPage() {
-  return <><div className="page-heading"><div><div className="eyebrow">DATA INTEGRATIONS</div><h1>Data sources</h1><p>Bring your analytics together across databases and search systems.</p></div><span className="status-pill"><Clock3 size={15} /> Connectors in development</span></div><div className="info-banner"><Sparkles size={19} /><div><strong>Connector development is next</strong><p>Live query execution, encrypted credentials, and customer-scoped connections are planned. The current visualizations use sample data.</p></div></div><div className="source-heading"><h2>Planned connectors</h2><span>5 integrations</span></div><div className="source-grid">{connectors.map(item => <article className="source-card" key={item.name}><div className={`source-avatar ${item.tone}`}>{item.initials}</div><h3>{item.name}</h3><p>{item.category}</p><span><Clock3 size={14} /> Planned</span></article>)}</div></>;
-}
-
 function SettingsPage({ organization }: { organization?: Membership }) {
-  return <><div className="page-heading"><div><div className="eyebrow">ADMINISTRATION</div><h1>Organization</h1><p>Manage your workspace and understand the current access model.</p></div></div><div className="settings-card"><div className="settings-card-icon"><Users size={22} /></div><div><h2>{organization?.name ?? 'Organization'}</h2><p>Organization ID: <code>{organization?.id}</code></p><span className="role-pill"><ShieldCheck size={14} /> {organization?.role ?? 'member'}</span></div></div><div className="settings-grid"><article className="settings-section"><div className="settings-title"><LockKeyhole size={21} /><h3>Identity & access</h3></div><p>Every dashboard operation is validated against organization membership and role permissions on the server.</p><div className="settings-detail"><span>Authorization</span><strong>Organization-scoped RBAC</strong></div><div className="settings-detail"><span>Production authentication</span><strong>OIDC / JWT required</strong></div></article><article className="settings-section"><div className="settings-title"><Database size={21} /><h3>Workspace data</h3></div><p>Dashboard definitions are persisted to SQLite metadata storage with revision protection against conflicting edits.</p><div className="settings-detail"><span>Dashboards</span><strong>Organization-shared</strong></div><div className="settings-detail"><span>Analytics connections</span><strong>Coming next</strong></div></article></div><div className="sample-footnote"><BookOpen size={16} /> Detailed architecture, limitations, and setup instructions live in the repository README.</div></>;
+  return <><div className="page-heading"><div><div className="eyebrow">ADMINISTRATION</div><h1>Organization</h1><p>Manage your workspace and understand the current access model.</p></div></div><div className="settings-card"><div className="settings-card-icon"><Users size={22} /></div><div><h2>{organization?.name ?? 'Organization'}</h2><p>Organization ID: <code>{organization?.id}</code></p><span className="role-pill"><ShieldCheck size={14} /> {organization?.role ?? 'member'}</span></div></div><div className="settings-grid"><article className="settings-section"><div className="settings-title"><LockKeyhole size={21} /><h3>Identity & access</h3></div><p>Every dashboard and data-source registration operation is validated against organization membership and role permissions on the server.</p><div className="settings-detail"><span>Authorization</span><strong>Organization-scoped RBAC</strong></div><div className="settings-detail"><span>Production authentication</span><strong>OIDC / JWT required</strong></div></article><article className="settings-section"><div className="settings-title"><Database size={21} /><h3>Workspace data</h3></div><p>Dashboard and data-source registration metadata is persisted to SQLite. Data-source registration has revision-safe rename and removal.</p><div className="settings-detail"><span>Data-source definitions</span><strong>Metadata only</strong></div><div className="settings-detail"><span>Live connections</span><strong>Not available</strong></div></article></div><div className="sample-footnote"><BookOpen size={16} /> Detailed architecture, limitations, and setup instructions live in the repository README.</div></>;
 }
