@@ -24,7 +24,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove }: Props)
   const first = data[0];
   const last = data[data.length - 1];
   const trend = Number(first?.[metric]) > 0
-    ? ((Number(last?.[metric]) - Number(first[metric])) / Number(first[metric])) * 100
+    ? ((Number(last?.[metric]) - Number(first?.[metric])) / Number(first?.[metric])) * 100
     : 0;
 
   return (
