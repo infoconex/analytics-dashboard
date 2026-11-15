@@ -1,11 +1,14 @@
 namespace AnalyticsDashboard.Domain;
 
 /// <summary>
-/// Tenant-owned connection metadata contract. Connection settings and secrets are not modeled
-/// until the secured data-source management capability is implemented.
+/// Tenant-owned registration metadata. This is not a connection or an executable data source.
 /// </summary>
 public sealed record DataSourceDefinition(
     Guid Id,
     string OrganizationId,
     string Name,
-    DataSourceProvider Provider);
+    DataSourceProvider Provider,
+    int Revision,
+    string CreatedBy,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);

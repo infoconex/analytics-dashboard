@@ -28,16 +28,16 @@ public sealed class DashboardServiceTests
     }
 
     [Test]
-    public void UserWithoutMembershipCannotReadOtherOrganizationsDashboards()
+    public async Task UserWithoutMembershipCannotReadOtherOrganizationsDashboards()
     {
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.ListAsync("isolated", "demo-owner", CancellationToken.None));
     }
 
     [Test]
-    public void ViewerCannotModifyDashboards()
+    public async Task ViewerCannotModifyDashboards()
     {
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.CreateAsync("northstar", "demo-viewer", Draft(), CancellationToken.None));
     }
 
@@ -58,7 +58,7 @@ public sealed class DashboardServiceTests
 
         Assert.That(updated, Is.Not.Null);
         Assert.That(updated!.Revision, Is.EqualTo(2));
-        Assert.ThrowsAsync<ConflictException>(async () =>
+        await Assert.ThrowsAsync<ConflictException>(async () =>
             await service.UpdateAsync("northstar", saved.Id, "demo-owner",
                 Draft() with { Name = "Stale" }, 1, CancellationToken.None));
 
@@ -83,26 +83,26 @@ public sealed class DashboardServiceTests
     }
 
     [Test]
-    public void DuplicateWidgetIdsAreRejected()
+    public async Task DuplicateWidgetIdsAreRejected()
     {
         var widget = Draft().Widgets[0];
         var invalid = new DashboardDraft("Invalid", "", [widget, widget]);
-        Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+        await Assert.ThrowsAsync<InvalidDashboardException>(async () =>
             await service.CreateAsync("northstar", "demo-owner", invalid, CancellationToken.None));
     }
 
     [Test]
-    public void NullDashboardDefinitionIsRejected()
+    public async Task NullDashboardDefinitionIsRejected()
     {
-        Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+        await Assert.ThrowsAsync<InvalidDashboardException>(async () =>
             await service.CreateAsync("northstar", "demo-owner", null!, CancellationToken.None));
     }
 
     [Test]
-    public void NullWidgetIsRejected()
+    public async Task NullWidgetIsRejected()
     {
         var invalid = Draft() with { Widgets = [null!] };
-        Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+        await Assert.ThrowsAsync<InvalidDashboardException>(async () =>
             await service.CreateAsync("northstar", "demo-owner", invalid, CancellationToken.None));
     }
 
@@ -111,10 +111,10 @@ public sealed class DashboardServiceTests
     {
         var dashboard = (await service.ListAsync("northstar", "demo-owner", CancellationToken.None))[0];
 
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.UpdateAsync("northstar", dashboard.Id, "demo-viewer",
                 Draft(), dashboard.Revision, CancellationToken.None));
-        Assert.ThrowsAsync<ForbiddenException>(async () =>
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
             await service.DeleteAsync("northstar", dashboard.Id, "demo-viewer", CancellationToken.None));
 
         Assert.That(await service.FindAsync("northstar", dashboard.Id, "demo-owner", CancellationToken.None),
