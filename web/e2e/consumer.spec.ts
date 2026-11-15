@@ -31,7 +31,7 @@ test('dashboard consumers coordinate date and channel filters and reset independ
   await page.getByRole('button', { name: 'Reset filters' }).click();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
   await expect(channelTable.locator('tbody tr')).toHaveCount(5);
-  await expect(page.getByText('All sample records')).toBeVisible();
+  await expect(page.getByText('All sample records', { exact: true })).toBeVisible();
 });
 
 test('keyboard-operable category controls filter and toggle without edit access', async ({ page }) => {
@@ -78,7 +78,7 @@ test('consumer filters reset on dashboard navigation and never mutate saved dash
   await page.getByRole('button', { name: 'Back to dashboards' }).click();
   await page.getByRole('button', { name: /Open Business performance/ }).click();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
-  await expect(page.getByText('All sample records')).toBeVisible();
+  await expect(page.getByText('All sample records', { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
 });
