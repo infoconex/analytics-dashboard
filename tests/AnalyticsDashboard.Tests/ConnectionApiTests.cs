@@ -73,7 +73,9 @@ public sealed class ConnectionApiTests
         var rewrapped = await client.PostAsJsonAsync($"{address}/rewrap",
             new { expectedRevision = 2 });
         var revoked = await client.DeleteAsync($"{address}?expectedRevision=3");
-        var missing = await client.GetAsync(address);
+        var tombstone = await client.GetAsync(address);
+        var replay = await client.PutAsJsonAsync(address, Request("replayed-old-secret", 0));
+        var tombstoneJson = await tombstone.Content.ReadFromJsonAsync<JsonElement>();
         var originalDefinition = await client.GetAsync($"{Base}/{id}");
         var originalText = await originalDefinition.Content.ReadAsStringAsync();
         var responses = string.Join("\n", await configured.Content.ReadAsStringAsync(),
@@ -89,7 +91,10 @@ public sealed class ConnectionApiTests
             Assert.That(rotated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(rewrapped.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(revoked.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
-            Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+            Assert.That(tombstone.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(tombstoneJson.GetProperty("kind").GetString(), Is.EqualTo("revoked"));
+            Assert.That(tombstoneJson.GetProperty("revision").GetInt32(), Is.EqualTo(4));
+            Assert.That(replay.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
             Assert.That(responses, Does.Not.Contain("credential"));
             Assert.That(responses, Does.Not.Contain("ciphertext"));
             Assert.That(responses, Does.Not.Contain("db.example.com"));

@@ -18,11 +18,15 @@ query-validation endpoints retain their existing contracts and permissions.
 
 | Method | Suffix | Request | Result |
 | --- | --- | --- | --- |
-| GET | `/connection` | None | Sanitized profile status, or 404 |
+| GET | `/connection` | None | Sanitized status (including `kind: revoked` tombstones), or 404 if never configured |
 | PUT | `/connection` | Provider-matching configuration + required `expectedRevision` | Create (`0`) or replace (existing revision) |
 | POST | `/connection/rotate` | `credential`, `expectedRevision` | Encrypt a new credential, revision + 1 |
 | POST | `/connection/rewrap` | `expectedRevision` | Re-encrypt with the active key, revision + 1 |
-| DELETE | `/connection?expectedRevision=N` | Positive expected revision | Remove the profile and encrypted credential |
+| DELETE | `/connection?expectedRevision=N` | Positive expected revision | Clear the active configuration and ciphertext; retain a revision tombstone |
+
+After revocation, a new PUT must supply the tombstone's incremented revision.
+Delayed create/reconfigure requests with older revisions cannot resurrect the
+connection. A tombstone contains no credential, host, username or file ID.
 
 Example relational PUT (illustrative *nonexistent* destination; never use a real
 credential in examples, source control or a shared shell history):
@@ -95,7 +99,8 @@ Key rollover procedure:
    backups **before** retiring it.
 4. Remove obsolete keys from the runtime only after retention policy permits.
 
-Revoke deletes the active encrypted profile, but **does not invalidate an
+Revoke clears the active encrypted profile, leaving a revision tombstone, but
+**does not invalidate an
 already issued database password or API token at the provider**. Operators must
 also revoke the upstream credential and account for WAL, replicas and backups.
 Key loss makes stored ciphertext unrecoverable; restore must include the
@@ -159,7 +164,7 @@ catalog. OS access rights and confined mounts are authoritative safeguards.
 
 Successful changes and their audit records commit atomically in SQLite.
 `connection_security_events` contains only event UUID, tenant ID, data-source
-ID, actor ID, action (`configured`, `reconfigured`, `credential-rotated`,
+ID, actor ID, action (`configured`, `reconfigured`, `reactivated`, `credential-rotated`,
 `key-rewrapped`, `revoked`), `succeeded` outcome and UTC timestamp. No secret,
 host, username, database or raw request content may enter an event. Failed
 validation returns sanitized errors; authorization failures are not silently
@@ -172,7 +177,7 @@ routes, exclude secrets from traces, telemetry and crash reports, use HTTPS to
 the API under deployment termination, rotate operator and provider credentials,
 and test recovery and key escrow in an isolated environment. Apply rate limits
 and body-size limits at the ingress proxy as well as the application. Deleting
-registration metadata cascades removal of the active encrypted profile, while
+registration metadata cascades removal of an active profile or tombstone, while
 historical audit records remain.
 
 ## Open production gates

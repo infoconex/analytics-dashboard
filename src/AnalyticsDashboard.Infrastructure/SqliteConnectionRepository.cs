@@ -139,16 +139,23 @@ public sealed class SqliteConnectionRepository(string databasePath) : IConnectio
         await using var transaction = await connection.BeginTransactionAsync(token);
         await using var command = connection.CreateCommand();
         command.Transaction = (SqliteTransaction)transaction;
+        var now = DateTimeOffset.UtcNow;
         command.CommandText = """
-            DELETE FROM connection_profiles WHERE organization_id = $org
-                AND data_source_id = $id AND revision = $revision
+            UPDATE connection_profiles
+            SET host = NULL, port = NULL, database_name = NULL, username = NULL,
+                sqlite_file_id = NULL, secret_key_id = NULL, secret_nonce = NULL,
+                secret_ciphertext = NULL, secret_tag = NULL,
+                revision = revision + 1, configured_at = $at
+            WHERE organization_id = $org AND data_source_id = $id AND revision = $revision
+                AND (host IS NOT NULL OR sqlite_file_id IS NOT NULL)
             """;
         command.Parameters.AddWithValue("$org", organizationId);
         command.Parameters.AddWithValue("$id", dataSourceId.ToString("D"));
         command.Parameters.AddWithValue("$revision", expectedRevision);
+        command.Parameters.AddWithValue("$at", now.ToString("O"));
         if (await command.ExecuteNonQueryAsync(token) != 1) return false;
         await WriteEventAsync(connection, (SqliteTransaction)transaction,
-            organizationId, dataSourceId, actor, "revoked", DateTimeOffset.UtcNow, token);
+            organizationId, dataSourceId, actor, "revoked", now, token);
         await transaction.CommitAsync(token);
         return true;
     }

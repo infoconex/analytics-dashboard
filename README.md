@@ -46,7 +46,9 @@ Allowed provider strings: `sqlServer`, `mySql`, `postgreSql`, `sqlite`, `elastic
 Under the same data-source resource ID, owners may `GET /connection`,
 `PUT /connection`, `POST /connection/rotate`, `POST /connection/rewrap`, or
 `DELETE /connection?expectedRevision=N`. Create uses `expectedRevision: 0`;
-all other mutations require the current connection revision. Each response
+all other mutations require the current connection revision. Revocation clears
+the active configuration and encrypted secret but retains a revision tombstone,
+preventing replay of stale create requests. Each response
 contains only the provider, configuration kind, `hasCredential`, revision and
 timestamp. Nothing reveals a secret or encrypted envelope. Editors/viewers
 cannot access these routes. Registration CRUD and query-validation contracts

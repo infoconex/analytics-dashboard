@@ -98,6 +98,14 @@ public sealed class ConnectionServiceTests
             Assert.That(revoked, Is.True);
         });
         Assert.That(await reader.ReadAsync("northstar", sourceId, CancellationToken.None), Is.Null);
+        var tombstone = await repository.FindAsync("northstar", sourceId, CancellationToken.None);
+        Assert.Multiple(() =>
+        {
+            Assert.That(tombstone?.IsRevoked, Is.True);
+            Assert.That(tombstone?.Revision, Is.EqualTo(4));
+            Assert.That(tombstone?.Secret, Is.Null);
+            Assert.That(tombstone?.Network, Is.Null);
+        });
         var bytes = await File.ReadAllBytesAsync(databasePath);
         var disk = Encoding.UTF8.GetString(bytes);
         Assert.Multiple(() =>
@@ -152,6 +160,32 @@ public sealed class ConnectionServiceTests
         Assert.That(await repository.DeleteAsync("isolated", sourceId, 2, "other",
             CancellationToken.None), Is.False);
         Assert.That(await repository.FindAsync("isolated", sourceId, CancellationToken.None), Is.Null);
+    }
+
+    [Test]
+    public async Task RevocationTombstoneRejectsDelayedCreateAndRequiresNewRevisionForReactivation()
+    {
+        await service.ConfigureAsync("northstar", sourceId, "demo-owner",
+            Request("first-credential", 0), CancellationToken.None);
+        await service.RevokeAsync("northstar", sourceId, "demo-owner", 1, CancellationToken.None);
+        var status = await service.FindAsync("northstar", sourceId, "demo-owner", CancellationToken.None);
+        Assert.Multiple(() =>
+        {
+            Assert.That(status?.Kind, Is.EqualTo("revoked"));
+            Assert.That(status?.Revision, Is.EqualTo(2));
+            Assert.That(status?.HasCredential, Is.False);
+        });
+        await Assert.ThrowsAsync<ConflictException>(async () =>
+            await service.ConfigureAsync("northstar", sourceId, "demo-owner",
+                Request("replayed-original", 0), CancellationToken.None));
+        await Assert.ThrowsAsync<ConflictException>(async () =>
+            await service.ConfigureAsync("northstar", sourceId, "demo-owner",
+                Request("replayed-previous", 1), CancellationToken.None));
+        Assert.That(await new ConnectionCredentialReader(repository, protector)
+            .ReadAsync("northstar", sourceId, CancellationToken.None), Is.Null);
+        var reactivated = await service.ConfigureAsync("northstar", sourceId, "demo-owner",
+            Request("new-credential", 2), CancellationToken.None);
+        Assert.That(reactivated?.Revision, Is.EqualTo(3));
     }
 
     [Test]

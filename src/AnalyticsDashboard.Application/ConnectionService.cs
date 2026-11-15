@@ -55,7 +55,8 @@ public sealed class ConnectionService(
         var profile = new ConnectionProfile(organizationId, id, source.Provider, network,
             sqliteFileId, secret, request.ExpectedRevision + 1, clock.GetUtcNow());
         if (!await connections.SaveAsync(profile, request.ExpectedRevision, userId,
-                previous is null ? "configured" : "reconfigured", token)) throw new ConflictException();
+                previous is null ? "configured" : previous.IsRevoked ? "reactivated" : "reconfigured", token))
+            throw new ConflictException();
         return ToStatus(profile);
     }
 
@@ -69,7 +70,7 @@ public sealed class ConnectionService(
             throw new InvalidConnectionException("Invalid credential rotation.");
         ValidateCredential(request.Credential);
         var existing = await connections.FindAsync(organizationId, id, token);
-        if (existing is null) return null;
+        if (existing is null || existing.IsRevoked) return null;
         if (existing.Revision != request.ExpectedRevision) throw new ConflictException();
         // Revalidate the destination: stored DNS approval is never a permanent grant.
         await destinations.ValidateAsync(source.Provider, existing.Network!, token);
@@ -93,7 +94,7 @@ public sealed class ConnectionService(
         if (request is null || request.ExpectedRevision < 1)
             throw new InvalidConnectionException("Invalid rewrap revision.");
         var existing = await connections.FindAsync(organizationId, id, token);
-        if (existing is null) return null;
+        if (existing is null || existing.IsRevoked) return null;
         if (existing.Revision != request.ExpectedRevision) throw new ConflictException();
         if (existing.Secret is null)
             throw new InvalidConnectionException("No credential is configured.");
@@ -118,6 +119,7 @@ public sealed class ConnectionService(
         var existing = await connections.FindAsync(organizationId, id, token);
         if (existing is null) return false;
         if (existing.Revision != expectedRevision) throw new ConflictException();
+        if (existing.IsRevoked) return false;
         if (!await connections.DeleteAsync(organizationId, id, expectedRevision, userId, token))
             throw new ConflictException();
         return true;
@@ -161,5 +163,6 @@ public sealed class ConnectionService(
 
     private static ConnectionStatus ToStatus(ConnectionProfile profile) =>
         new(profile.Provider, profile.Secret is not null, profile.Revision,
-            profile.ConfiguredAt, profile.Network is null ? "sqlite" : "network");
+            profile.ConfiguredAt, profile.IsRevoked ? "revoked"
+                : profile.Network is null ? "sqlite" : "network");
 }

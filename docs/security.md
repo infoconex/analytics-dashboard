@@ -79,6 +79,7 @@ arbitrary user paths, but safe filesystem handle-opening is not yet available.
 
 Successful configuration/rotation/rewrap/revocation audits include only actor,
 tenant, source identifier, action, outcome and time, atomically with the mutation.
-They never contain credential, hostname, database or username. Denials and runtime
+They never contain credential, hostname, database or username. Revocation keeps
+a secret-free revision tombstone to prevent stale configuration replay. Denials and runtime
 security telemetry need a separately hardened gateway/SIEM integration before
 production. See [connection security operations](connection-security.md).
