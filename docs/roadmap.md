@@ -8,7 +8,9 @@ The first milestone establishes a secure foundation; it is not yet a production-
 | 2a | Data-source registration metadata — [Issue #4](https://github.com/infoconex/analytics-dashboard/issues/4) | Tenant-scoped provider/name records, role enforcement, revision-safe CRUD; no connection configuration |
 | 2b | Restricted provider-neutral query contracts — [Issue #8](https://github.com/infoconex/analytics-dashboard/issues/8) | Typed queries, trusted allowlist port, tenant-bound validation, provider capabilities, budgets and result schema; **no execution** |
 | 2c | Connection security and credential protection — [Issue #10](https://github.com/infoconex/analytics-dashboard/issues/10) | Owner-authorized profiles, protected credentials, exact destination policy, SQLite mappings and redacted auditing; **no live connections** |
-| 3 | SQL Server and PostgreSQL adapters | Real queries, provider compatibility and integration tests |
+| 3a | Restricted SQL Server and PostgreSQL compilation — [Issue #12](https://github.com/infoconex/analytics-dashboard/issues/12) | Trusted physical bindings, native typed parameters and mandatory real-provider/read-only conformance; **no customer execution** |
+| 3b | Secure runtime connection/session boundary — planned | Connect-time vetted-IP socket binding, TLS identity, deny-by-default egress, production key/secret retrieval and connection authorization |
+| 3c | Tenant-bound live SQL Server/PostgreSQL query execution — planned | Trusted tenant datasets, restricted query plans, runtime quotas/cancellation, result budgets, audit and adversarial provider tests |
 | 4 | MySQL and SQLite adapters | Real queries, provider compatibility and integration tests |
 | 5 | Elasticsearch adapter | Structured search and aggregation mapped to common responses |
 | 6 | Enterprise authentication and provisioning | Customer IdPs, invitations, membership and identity lifecycle |

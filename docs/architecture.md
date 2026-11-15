@@ -4,7 +4,7 @@
 
 Analytics Dashboard is an independent analytics experience for software vendors incorporating dashboards into customer-facing applications. Each customer organization has independently authenticated users, connections, dashboard definitions, authorization, audit events, and resource limits.
 
-The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata; Issue #8 adds non-executing query contract validation. Issue #10 adds protected connection profiles and lifecycle operations without connecting to providers. Live connectors are planned.
+The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata; Issue #8 adds non-executing query contract validation. Issue #10 adds protected connection profiles and lifecycle operations without connecting to providers. Roadmap 3a (Issue #12) adds inert SQL Server/PostgreSQL query compilation and native command-binding conformance tests against disposable provider instances, without production execution. Live customer connectors remain planned.
 
 ## Logical components
 
@@ -16,7 +16,7 @@ flowchart TD
   APP -. "ports" .-> PORT["Repository and query ports"]
   AD["Infrastructure adapters"] --> PORT
   AD --> META["Tenant-scoped metadata catalog"]
-  AD --> SQL["Relational adapters - planned"]
+  AD --> SQL["Restricted SQL compilers - 3a"]
   AD --> ES["Elasticsearch adapter - planned"]
 ```
 
@@ -33,6 +33,7 @@ Domain and Application have no database or UI package dependencies. Infrastructu
 | Data-source registration | Tenant-owned provider/name definition with revisions and provenance, but no connection configuration | Implemented in SQLite/API/UI; no connectivity |
 | Connection | Secured configuration, credential envelopes and lifecycle | Implemented as **configuration only**; live connectivity unavailable |
 | Query definition | Restricted, provider-neutral contract and tenant-scoped validation against a trusted allowlist | Implemented in Issue #8; deployed allowlist empty, no execution |
+| Relational query compilation | SQL Server/PostgreSQL typed SELECT synthesis and native command parameter binding | Implemented for test-bound inert plans in Issue #12; no app/API integration or live customer connections |
 | Data access policy | Connection permissions, quotas and timeouts | Planned |
 | Audit event | Recorded identity, action, resource and outcome | Connection mutation successes transactionally persisted; broader auditing planned |
 
@@ -61,7 +62,9 @@ HTTP requests deliberately have narrow shapes: `DataSourceDraft` accepts only na
 `IQueryDatasetCatalog` allowlist → typed operator/aggregation/capability validation and
 budget calculation. The deployed `UnconfiguredQueryDatasetCatalog` deliberately denies
 all datasets. `/queries/validate` exposes only schema and limits, never records.
-No schema inspection, endpoint, credentials, compiler or query execution adapter exists.
+The validation route itself performs no schema inspection, credential access,
+SQL compilation or query execution; the disconnected 3a compilers are not wired
+into that route.
 See [query contracts](query-contracts.md) for the type/operator matrix and limits.
 
 ## Connection security (Issue #10)
@@ -95,9 +98,11 @@ socket, or filesystem customer database access is introduced. The trusted query
 dataset catalog still denies all datasets by default. Full details and remaining
 runtime controls: [connection security](connection-security.md).
 
-## Connector architecture (future)
+## Connector architecture (3a and future)
 
-Providers will implement a shared execution port while retaining provider-specific capabilities. Current capability declarations are provisional until verified by real adapter conformance tests. SQL Server, MySQL, PostgreSQL, and SQLite will use supported ADO.NET providers. Elasticsearch will use its supported HTTP API and a constrained query DSL.
+Roadmap 3a provides SQL Server and PostgreSQL **compiler-only** infrastructure adapters and native command factories. `QueryShapeValidator` is shared between the authorization-first validation service and the compiler, which checks typed shape and trusted metadata again before producing a plan. The physical schema/table and stable unique ordering key come only from an operator-supplied `RelationalDatasetBinding`, never a request. Compiled SQL and native commands are not connected to the API, connection profiles or production execution. No new application execution port is enabled; that port will be defined after runtime authorization and transport boundaries are ready. See [relational adapter conformance](relational-adapters.md).
+
+Future providers will implement a shared execution port while retaining provider-specific capabilities. Capability declarations remain conservative until relevant adapter conformance tests succeed. SQL Server and PostgreSQL compilers use supported ADO.NET providers in isolated tests; future MySQL and SQLite runtime adapters will use supported ADO.NET providers. Elasticsearch will use its supported HTTP API and a constrained query DSL.
 
 Required query properties:
 

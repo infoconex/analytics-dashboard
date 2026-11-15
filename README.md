@@ -2,7 +2,7 @@
 
 An enterprise-oriented, multi-tenant analytics and visualization application inspired by Kibana, designed to connect to relational databases and Elasticsearch without requiring customers to adopt one storage engine.
 
-> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source registration, non-executing query validation and protected connection-configuration management. Live connectors, customer-managed sign-in, production provisioning, production KMS/egress controls and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
+> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source registration, non-executing query validation, protected connection-configuration management and disconnected relational compiler conformance. Live connectors, customer-managed sign-in, production provisioning, production KMS/egress controls and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
 
 ## Current capabilities
 
@@ -15,9 +15,10 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 | Register, rename, list and remove data-source definitions | SQLite metadata only, tenant-scoped and revision-protected; no connections |
 | Restricted provider-neutral query contracts | Typed request/result schemas, tenant-scoped validation, trusted allowlists and prospective resource budgets; no execution |
 | Connection security and credential protection | Owner-only configuration, authenticated-encryption envelope, rotation/revocation, host allowlists, SQLite file IDs and redacted audit; **no connections opened** |
+| SQL Server and PostgreSQL compilation (roadmap 3a) | Trusted schema binding, typed parameterized SELECTs, native commands and real read-only provider conformance tests; **no production connections** |
 | Tenant isolation and owner/editor/viewer authorization | Server-enforced and tested |
 | OIDC/JWT bearer validation in the API | Configurable; production API fails closed without identity configuration |
-| SQL Server, MySQL, PostgreSQL, SQLite, Elasticsearch | Provider identifiers available for metadata registration; no live connectivity |
+| SQL Server, MySQL, PostgreSQL, SQLite, Elasticsearch | Provider identifiers available for metadata registration; SQL Server/PostgreSQL have disconnected compilers; no live connectivity |
 | Customer identity federation and provisioning | Planned |
 | Embed/white-label SDK and enterprise audit controls | Planned |
 
@@ -68,7 +69,7 @@ gates and required production controls.
 - **Backend:** ASP.NET Core on .NET 10 LTS, using Domain → Application → Infrastructure/HTTP adapters.
 - **Frontend:** TypeScript, React, Vite, Recharts, and accessible browser controls.
 - **Metadata catalog:** SQLite. This is separate from customer analytics data sources.
-- **Tests:** NUnit integration and application tests; Vitest; Playwright browser scenarios.
+- **Tests:** NUnit integration and application tests, disposable real SQL Server/PostgreSQL conformance; Vitest; Playwright browser scenarios.
 - **Automation:** one PowerShell verification script invoked locally and by GitHub Actions, plus CodeQL and grouped Dependabot updates.
 
 ## Run locally
@@ -105,6 +106,8 @@ For browser integration tests, install Chromium using Playwright, then run:
 ```
 
 Playwright browser startup needs a host that permits Chromium subprocess and socket creation. GitHub Actions runs the browser suite. Local environment restrictions may prevent Chromium from launching even when both applications build and all unit/integration tests pass.
+
+To run the real SQL Server/PostgreSQL conformance suite locally on Linux with Docker and PowerShell, source `scripts/start-provider-fixtures.sh` in your shell, then run `pwsh ./scripts/verify-provider-adapters.ps1`. Remove the disposable `analytics-sqlserver-fixture` and `analytics-postgres-fixture` containers afterward. CI always runs these provider tests separately with runtime-generated fixture passwords; missing databases fail rather than silently skipping. See [provider test and security operations](docs/relational-adapters.md).
 
 ## Production configuration (not a deployment guide)
 

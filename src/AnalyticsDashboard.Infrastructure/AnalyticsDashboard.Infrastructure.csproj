@@ -2,5 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="../AnalyticsDashboard.Application/AnalyticsDashboard.Application.csproj" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
   </ItemGroup>
 </Project>
