@@ -8,6 +8,11 @@ export interface Membership {
   role: OrganizationRole;
 }
 
+export interface CurrentIdentity {
+  userId: string;
+  displayName: string;
+}
+
 export interface DashboardWidget {
   id: string;
   title: string;

@@ -9,14 +9,20 @@ import {
 } from 'lucide-react';
 import { dashboardApi } from './api';
 import { createWidget, datasetOptions, dimensions, metrics, visualizations } from './demoData';
-import type { Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, WidgetKind } from './model';
+import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, WidgetKind } from './model';
 import { WidgetTile } from './WidgetTile';
 
 type Page = 'overview' | 'dashboards' | 'sources' | 'settings';
-type View = { page: Page; id?: string };
+type View = { page: Page; id?: string; organizationId?: string };
 
 function currentView(): View {
   const hash = window.location.hash.slice(1);
+  if (hash.startsWith('/organization/')) {
+    const parts = hash.split('/');
+    if (parts.length === 5 && parts[3] === 'dashboard') {
+      return { page: 'dashboards', organizationId: decodeURIComponent(parts[2] ?? ''), id: parts[4] };
+    }
+  }
   if (hash.startsWith('/dashboard/')) return { page: 'dashboards', id: hash.slice('/dashboard/'.length) };
   if (hash === '/sources') return { page: 'sources' };
   if (hash === '/settings') return { page: 'settings' };
@@ -29,6 +35,7 @@ const emptyDraft = (): DashboardDraft => ({ name: '', description: '', widgets: 
 export default function App() {
   const [view, setView] = useState<View>(currentView);
   const [organizations, setOrganizations] = useState<Membership[]>([]);
+  const [identity, setIdentity] = useState<CurrentIdentity | null>(null);
   const [organizationId, setOrganizationId] = useState('');
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,9 +60,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    dashboardApi.organizations().then(items => {
+    Promise.all([dashboardApi.organizations(), dashboardApi.identity()]).then(([items, user]) => {
       setOrganizations(items);
-      setOrganizationId(previous => previous || items[0]?.id || '');
+      setIdentity(user);
+      setOrganizationId(previous => previous || items.find(item => item.id === currentView().organizationId)?.id || items[0]?.id || '');
       if (items.length === 0) setLoading(false);
     }).catch(exception => { setError(exception.message); setLoading(false); });
   }, []);
@@ -82,7 +90,7 @@ export default function App() {
   }, [toast]);
 
   function navigate(next: Page, id?: string) {
-    window.location.hash = id ? `/dashboard/${id}` : next === 'overview' ? '/' : `/${next}`;
+    window.location.hash = id ? `/organization/${encodeURIComponent(organizationId)}/dashboard/${id}` : next === 'overview' ? '/' : `/${next}`;
     setView({ page: next, id });
     setEditMode(false);
     setDraft(null);
@@ -129,7 +137,7 @@ export default function App() {
   }
 
   async function share(dashboard: Dashboard) {
-    const url = `${window.location.origin}${window.location.pathname}#/dashboard/${dashboard.id}`;
+    const url = `${window.location.origin}${window.location.pathname}#/organization/${encodeURIComponent(dashboard.organizationId)}/dashboard/${dashboard.id}`;
     try { await navigator.clipboard.writeText(url); setToast('Dashboard link copied'); }
     catch { setToast(`Link: ${url}`); }
   }
@@ -171,7 +179,7 @@ export default function App() {
 
         <div className="sidebar-bottom">
           <div className="sidebar-tip"><div className="sidebar-tip-icon"><Sparkles size={17} /></div><strong>Insights, simplified.</strong><p>Build a clearer picture of your data with visual dashboards.</p></div>
-          <div className="sidebar-profile"><div className="profile-avatar">JD</div><div><strong>Demo Owner</strong><small>Development workspace</small></div><Ellipsis size={19} /></div>
+          <div className="sidebar-profile"><div className="profile-avatar">{identity?.displayName.slice(0, 2).toUpperCase() ?? 'US'}</div><div><strong>{identity?.displayName ?? 'Signed-in user'}</strong><small>{organization?.name ?? 'Workspace'}</small></div><Ellipsis size={19} /></div>
         </div>
       </aside>
 
@@ -186,7 +194,7 @@ export default function App() {
             <span className="demo-label"><span /> DEMO DATA</span>
             <button className="icon-button topbar-icon" aria-label="Help" title="Documentation is in the repository" onClick={() => navigate('settings')}><CircleHelp size={19} /></button>
             <button className="icon-button topbar-icon" aria-label="Notifications" title="No notifications"><Bell size={19} /></button>
-            <div className="topbar-user">JD</div>
+            <div className="topbar-user">{identity?.displayName.slice(0, 2).toUpperCase() ?? 'US'}</div>
           </div>
         </header>
 
@@ -224,7 +232,7 @@ export default function App() {
                 {canEdit && filtered.length > 0 && <section className="manage-section"><h2>Manage dashboards</h2><p>Editors can remove dashboards. All organization members can view and share dashboard links.</p><div>{filtered.map(item => <div className="manage-row" key={item.id}><span>{item.name}</span><button className="icon-button danger-hover" onClick={() => void removeDashboard(item)} title={`Delete ${item.name}`} aria-label={`Delete ${item.name}`}><Trash2 size={16} /></button></div>)}</div></section>}
               </>
             ) : <>
-              <div className="page-heading overview-heading"><div><div className="eyebrow">YOUR ANALYTICS AT A GLANCE <span className="eyebrow-dot" /></div><h1>Good morning, Jim <span className="wave">✳</span></h1><p>Here's what's happening across your workspace today.</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
+              <div className="page-heading overview-heading"><div><div className="eyebrow">YOUR ANALYTICS AT A GLANCE <span className="eyebrow-dot" /></div><h1>Welcome back, {identity?.displayName.split(' ')[0] ?? 'there'} <span className="wave">✳</span></h1><p>Here's what's happening across your workspace today.</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
               <div className="summary-row"><SummaryCard icon={<BarChart3 size={20} />} title="Total revenue" value="$375.3K" trend="+24.8%" color="blue" /><SummaryCard icon={<FolderKanban size={20} />} title="Total orders" value="7,891" trend="+18.2%" color="violet" /><SummaryCard icon={<Users size={20} />} title="New customers" value="5,014" trend="+12.6%" color="mint" /><SummaryCard icon={<Activity size={20} />} title="Conversion rate" value="4.82%" trend="+2.1%" color="peach" /></div>
               <div className="section-title-row"><div><h2>Performance overview</h2><p>Your key metrics, all in one place.</p></div><PeriodPicker period={period} setPeriod={setPeriod} /></div>
               <div className="overview-charts"><WidgetTile widget={{ id: 'overview-revenue', title: 'Revenue trends', kind: 'area', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month' }} period={period} /><WidgetTile widget={{ id: 'overview-sources', title: 'Traffic by channel', kind: 'donut', datasetKey: 'channels', metricKey: 'sessions', dimensionKey: 'channel' }} period={period} /></div>

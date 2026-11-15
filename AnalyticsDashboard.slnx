@@ -5,4 +5,7 @@
     <Project Path="src/AnalyticsDashboard.Domain/AnalyticsDashboard.Domain.csproj" />
     <Project Path="src/AnalyticsDashboard.Infrastructure/AnalyticsDashboard.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AnalyticsDashboard.Tests/AnalyticsDashboard.Tests.csproj" />
+  </Folder>
 </Solution>

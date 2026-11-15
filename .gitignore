@@ -8,6 +8,8 @@ TestResults/
 **/node_modules/
 web/dist/
 web/coverage/
+web/playwright-report/
+web/test-results/
 
 # Development state and secrets
 **/.env

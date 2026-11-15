@@ -1,4 +1,4 @@
-import { ApiError, type Dashboard, type DashboardDraft, type Membership } from './model';
+import { ApiError, type CurrentIdentity, type Dashboard, type DashboardDraft, type Membership } from './model';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
@@ -31,6 +31,7 @@ const prefix = (organizationId: string) =>
   `/organizations/${encodeURIComponent(organizationId)}/dashboards`;
 
 export const dashboardApi = {
+  identity: () => request<CurrentIdentity>('/identity'),
   organizations: () => request<Membership[]>('/organizations'),
   list: (organizationId: string) => request<Dashboard[]>(prefix(organizationId)),
   find: (organizationId: string, id: string) => request<Dashboard>(`${prefix(organizationId)}/${id}`),

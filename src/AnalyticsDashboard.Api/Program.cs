@@ -90,6 +90,15 @@ app.UseAuthorization();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy" }));
 
+app.MapGet("/api/identity", (HttpContext context) => Results.Ok(new
+{
+    UserId = UserId(context),
+    DisplayName = context.User.FindFirstValue(ClaimTypes.Name)
+        ?? context.User.FindFirstValue("name")
+        ?? context.User.FindFirstValue("preferred_username")
+        ?? UserId(context)
+})).RequireAuthorization();
+
 app.MapGet("/api/organizations", async (
     HttpContext context, IOrganizationCatalog catalog, CancellationToken token) =>
 {
