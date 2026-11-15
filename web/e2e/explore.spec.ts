@@ -7,6 +7,7 @@ test('editor explores sample data and saves a dashboard', async ({ page }) => {
   await page.getByRole('button', { name: /Marketing channels/ }).click();
   await expect(page.getByRole('button', { name: /Marketing channels/ })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('combobox', { name: 'Measure' }).selectOption('sessions');
+  await expect(page.getByRole('textbox', { name: 'Visualization title' })).toHaveValue('Sessions by channel');
   await page.getByRole('combobox', { name: 'Chart type' }).selectOption('bar');
   await page.getByRole('textbox', { name: 'Visualization title' }).fill('Traffic sources');
   await expect(page.getByRole('img', { name: /Traffic sources bar chart/ })).toBeVisible();
