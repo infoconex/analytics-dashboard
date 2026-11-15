@@ -70,7 +70,7 @@ test('dragging rearranges a preview and navigation protects unsaved work', async
   await expect(page.getByText('Composition mode')).toBeVisible();
   page.once('dialog', dialog => void dialog.accept());
   await page.getByRole('button', { name: 'Back to dashboards' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboards' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeVisible();
 });
 
 test('empty dashboard offers chart gallery and responsive keyboard movement', async ({ page }) => {
