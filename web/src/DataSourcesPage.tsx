@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Clock3, Database, Pencil, Plus, ShieldCheck, Trash2, X } from 'lucide-react';
 import { dataSourceApi } from './api';
-import type { DataSourceDefinition, DataSourceProvider } from './model';
+import { ApiError, type DataSourceDefinition, type DataSourceProvider } from './model';
 
 const providers: { id: DataSourceProvider; name: string; initials: string; category: string; tone: string }[] = [
   { id: 'sqlServer', name: 'Microsoft SQL Server', initials: 'SQL', category: 'Relational database', tone: 'source-red' },
@@ -57,6 +57,7 @@ export function DataSourcesPage({ organizationId, canEdit, onNotice }: {
       setError(exception instanceof Error ? exception.message : 'Unable to save the data source.');
       // Refresh revision metadata after a possible concurrent edit.
       try { await reload(); } catch { /* Keep the original error visible. */ }
+      if (exception instanceof ApiError && exception.status === 409) setEdit(null);
     } finally {
       setBusy(false);
     }

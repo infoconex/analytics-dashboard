@@ -82,6 +82,7 @@ app.UseExceptionHandler(exceptionApp => exceptionApp.Run(async context =>
         ConflictException => (StatusCodes.Status409Conflict, "The resource was modified"),
         InvalidDashboardException => (StatusCodes.Status400BadRequest, "Invalid dashboard"),
         InvalidDataSourceException => (StatusCodes.Status400BadRequest, "Invalid data source"),
+        BadHttpRequestException badRequest => (badRequest.StatusCode, "Invalid request"),
         _ => (StatusCodes.Status500InternalServerError, "Unexpected error")
     };
 
