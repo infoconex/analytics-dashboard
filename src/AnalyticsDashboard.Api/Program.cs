@@ -159,10 +159,4 @@ static string UserId(HttpContext context) =>
     ?? context.User.FindFirstValue("sub")
     ?? throw new ForbiddenException();
 
-public sealed record DashboardUpdate(
-    string Name,
-    string Description,
-    IReadOnlyList<DashboardWidget> Widgets,
-    int ExpectedRevision);
-
 public partial class Program;
