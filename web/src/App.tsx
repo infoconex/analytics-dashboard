@@ -212,7 +212,7 @@ export default function App() {
           </select>}
         </div>
 
-        <div className="sidebar-navigation">
+        <nav className="sidebar-navigation" aria-label="Workspace navigation">
           <span className="nav-caption">WORKSPACE</span>
           <NavButton active={view.page === 'overview'} label="Overview" onClick={() => navigate('overview')} icon={<Gauge size={18} />} />
           <NavButton active={view.page === 'explore'} label="Explore" onClick={() => navigate('explore')} icon={<Search size={18} />} />
@@ -221,8 +221,7 @@ export default function App() {
           <div className="sidebar-divider" />
           <span className="nav-caption">MANAGEMENT</span>
           <NavButton active={view.page === 'settings'} label="Organization" onClick={() => navigate('settings')} icon={<Users size={18} />} />
-          <NavButton active={false} label="Security" onClick={() => navigate('settings')} icon={<ShieldCheck size={18} />} />
-        </div>
+        </nav>
 
         <div className="sidebar-bottom">
           <div className="sidebar-tip"><div className="sidebar-tip-icon"><Sparkles size={17} /></div><strong>Insights, simplified.</strong><p>Build a clearer picture of your data with visual dashboards.</p></div>
@@ -304,7 +303,7 @@ export default function App() {
 }
 
 function NavButton({ active, label, icon, onClick, count }: { active: boolean; label: string; icon: React.ReactNode; onClick: () => void; count?: number }) {
-  return <button className={`nav-button ${active ? 'nav-active' : ''}`} onClick={onClick}>{icon}<span>{label}</span>{count !== undefined && <small>{count}</small>}</button>;
+  return <button className={`nav-button ${active ? 'nav-active' : ''}`} aria-current={active ? 'page' : undefined} onClick={onClick}>{icon}<span>{label}</span>{count !== undefined && <small>{count}</small>}</button>;
 }
 
 function PeriodPicker({ period, setPeriod }: { period: string; setPeriod: (period: string) => void }) {
