@@ -2,7 +2,7 @@
 
 An enterprise-oriented, multi-tenant analytics and visualization application inspired by Kibana, designed to connect to relational databases and Elasticsearch without requiring customers to adopt one storage engine.
 
-> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source *registration metadata* and non-executing query-contract validation. Live connectors, customer-managed sign-in, production provisioning, secure credential storage, and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
+> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source registration, non-executing query validation and protected connection-configuration management. Live connectors, customer-managed sign-in, production provisioning, production KMS/egress controls and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
 
 ## Current capabilities
 
@@ -14,6 +14,7 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 | Dashboard definitions, optimistic revisions, and persistence | SQLite metadata catalog |
 | Register, rename, list and remove data-source definitions | SQLite metadata only, tenant-scoped and revision-protected; no connections |
 | Restricted provider-neutral query contracts | Typed request/result schemas, tenant-scoped validation, trusted allowlists and prospective resource budgets; no execution |
+| Connection security and credential protection | Owner-only configuration, authenticated-encryption envelope, rotation/revocation, host allowlists, SQLite file IDs and redacted audit; **no connections opened** |
 | Tenant isolation and owner/editor/viewer authorization | Server-enforced and tested |
 | OIDC/JWT bearer validation in the API | Configurable; production API fails closed without identity configuration |
 | SQL Server, MySQL, PostgreSQL, SQLite, Elasticsearch | Provider identifiers available for metadata registration; no live connectivity |
@@ -22,7 +23,7 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 
 Shared links retain the organization identifier. Recipients must authenticate and belong to that organization; there are no anonymous public dashboards.
 
-Data-source registration stores only a display name, provider identifier, tenant ownership, revision, creator and timestamps. It **does not accept or store connection strings, endpoints, passwords, tokens or API keys**. Do not put connection details or secrets in a display name. Existing demo charts are not linked to registrations.
+Data-source registration stores only a display name, provider identifier, tenant ownership, revision, creator and timestamps. It **still does not accept connection strings, endpoints, passwords, tokens or API keys**. Separate owner-only connection endpoints can store protected credentials when an external key and destination policy have been configured. Do not put connection details or secrets in a display name. Existing demo charts are not linked to registrations.
 
 Query validation is deliberately non-executing. The `/api/organizations/{organizationId}/data-sources/{id}/queries/validate` POST route checks identity, registration ownership, typed query structure, limits and a trusted server allowlist. **The deployed catalog contains no datasets**, so requests presently fail closed. This is neither a connection test nor a data query API. See [query contracts](docs/query-contracts.md) for request/response shapes and operator, type and budget rules.
 
@@ -39,6 +40,26 @@ All routes require an authenticated member of the specified organization. A view
 | DELETE | `/api/organizations/{organizationId}/data-sources/{id}?expectedRevision=2` | None |
 
 Allowed provider strings: `sqlServer`, `mySql`, `postgreSql`, `sqlite`, `elasticsearch`. Provider and organization ownership cannot be changed after registration; renaming increments the revision. Both rename and removal reject stale expected revisions with HTTP 409. Unknown request fields, including connection details, are rejected with HTTP 400. The response contains only registration metadata. Rebooting the API preserves definitions in the SQLite catalog.
+
+### Connection configuration API (owner only; no live connections)
+
+Under the same data-source resource ID, owners may `GET /connection`,
+`PUT /connection`, `POST /connection/rotate`, `POST /connection/rewrap`, or
+`DELETE /connection?expectedRevision=N`. Create uses `expectedRevision: 0`;
+all other mutations require the current connection revision. Each response
+contains only the provider, configuration kind, `hasCredential`, revision and
+timestamp. Nothing reveals a secret or encrypted envelope. Editors/viewers
+cannot access these routes. Registration CRUD and query-validation contracts
+are unchanged.
+
+Network configuration requires a strict provider-specific shape and an explicit
+operator-defined hostname/port allowlist; secrets require a separately supplied
+32-byte encryption key. A SQLite configuration uses an operator-mapped logical
+file ID, never a client-provided path. Missing keys, host allowances or file
+mappings deny configuration. There are no built-in sample secrets or targets.
+See [connection security and operations](docs/connection-security.md) for exact
+contracts, key provisioning, rotation, encryption, DNS/SSRF limitations, TLS
+gates and required production controls.
 
 ## Technology
 
@@ -87,7 +108,7 @@ Playwright browser startup needs a host that permits Chromium subprocess and soc
 
 The API has no production demo-user bypass. To start outside Development, configure a trusted OIDC issuer (`Authentication:Authority`) and expected access-token audience (`Authentication:Audience`). Authorized identities additionally require membership provisioning in the metadata catalog, which is not yet exposed as a production administration workflow.
 
-Production readiness requires additional work: federation/login experience, organization provisioning, application/data-source authorization, encrypted secret handling, audited query execution, limits, hardening, operations, and deployment. See [architecture](docs/architecture.md), [security boundaries](docs/security.md), and the [roadmap](docs/roadmap.md).
+Production readiness requires additional work: federation/login experience, organization provisioning, production KMS, socket-level DNS rebinding/SSRF defenses and network egress, read-only connector execution, audited query limits, hardening, operations, and deployment. See [architecture](docs/architecture.md), [security boundaries](docs/security.md), and the [roadmap](docs/roadmap.md).
 
 ## Engineering workflow
 

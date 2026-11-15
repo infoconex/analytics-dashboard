@@ -73,6 +73,7 @@ builder.Services.AddSingleton<IConnectionSecretProtector>(_ => new AesGcmConnect
     builder.Configuration["ConnectionSecurity:ActiveKeyId"],
     builder.Configuration.GetSection("ConnectionSecurity:Keys").GetChildren()
         .ToDictionary(entry => entry.Key, entry => entry.Value ?? string.Empty)));
+builder.Services.AddScoped<IConnectionCredentialReader, ConnectionCredentialReader>();
 builder.Services.AddSingleton<IDnsResolver, SystemDnsResolver>();
 builder.Services.AddSingleton<IConnectionDestinationPolicy>(provider =>
     new ApprovedDestinationPolicy(

@@ -4,7 +4,7 @@
 
 Analytics Dashboard is an independent analytics experience for software vendors incorporating dashboards into customer-facing applications. Each customer organization has independently authenticated users, connections, dashboard definitions, authorization, audit events, and resource limits.
 
-The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata; Issue #8 adds non-executing query contract validation. Live connectors are planned.
+The foundation implements dashboard definition and demonstration visualization workflows. Issue #4 adds tenant-owned data-source registration metadata; Issue #8 adds non-executing query contract validation. Issue #10 adds protected connection profiles and lifecycle operations without connecting to providers. Live connectors are planned.
 
 ## Logical components
 
@@ -31,10 +31,10 @@ Domain and Application have no database or UI package dependencies. Infrastructu
 | Dashboard | Organization-owned, revisioned collection of widgets | Implemented |
 | Widget | Chart kind, dataset, metric and dimension | Implemented for sample data |
 | Data-source registration | Tenant-owned provider/name definition with revisions and provenance, but no connection configuration | Implemented in SQLite/API/UI; no connectivity |
-| Connection | Secured network and authentication configuration | Not modeled or implemented |
+| Connection | Secured configuration, credential envelopes and lifecycle | Implemented as **configuration only**; live connectivity unavailable |
 | Query definition | Restricted, provider-neutral contract and tenant-scoped validation against a trusted allowlist | Implemented in Issue #8; deployed allowlist empty, no execution |
 | Data access policy | Connection permissions, quotas and timeouts | Planned |
-| Audit event | Recorded identity, action, resource and outcome | Planned |
+| Audit event | Recorded identity, action, resource and outcome | Connection mutation successes transactionally persisted; broader auditing planned |
 
 ## Tenant isolation
 
@@ -62,6 +62,37 @@ budget calculation. The deployed `UnconfiguredQueryDatasetCatalog` deliberately 
 all datasets. `/queries/validate` exposes only schema and limits, never records.
 No schema inspection, endpoint, credentials, compiler or query execution adapter exists.
 See [query contracts](query-contracts.md) for the type/operator matrix and limits.
+
+## Connection security (Issue #10)
+
+`ConnectionService` requires an organization **owner** through `IOrganizationCatalog`,
+then resolves the registered data source using the existing tenant-scoped repository.
+The HTTP input is distinct from registration and query inputs. Provider-specific
+network configuration or server-mapped SQLite file identifiers are validated by
+application ports implemented in infrastructure. Connection-profile revisions
+are independent of registration-definition revisions.
+
+`IConnectionRepository` stores encrypted secret envelopes, source-bound non-secret
+configuration and transactional successful-mutation audit records. A successful
+operation cannot commit without its audit event. `IConnectionSecretProtector` is
+independent of the selected infrastructure cryptographic/key-management adapter.
+`IConnectionCredentialReader` is server-side-only and has no HTTP route; future
+query execution must enforce user query permission **before** trusted adapters
+can request any credential. Secret envelopes are authenticated against tenant ID,
+source ID and provider to prevent cross-context substitution.
+
+`IConnectionDestinationPolicy` and `IDnsResolver` provide preliminary hostname,
+exact allowlist and public-IP verification. `ApprovedNetworkDestination` carries
+the vetted IP set and original hostname for *future* socket-bound enforcement.
+The approved result is transient; configuration persistence is never authority
+to connect. Connect-time DNS and destination enforcement, TLS verification and
+egress policy remain mandatory adapter prerequisites. SQLite profile storage
+contains an operator-defined logical file ID, not a customer-controlled path.
+
+No new data query execution, active credential usage, schema inspection, network
+socket, or filesystem customer database access is introduced. The trusted query
+dataset catalog still denies all datasets by default. Full details and remaining
+runtime controls: [connection security](connection-security.md).
 
 ## Connector architecture (future)
 
