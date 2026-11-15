@@ -21,3 +21,18 @@ The first milestone establishes a secure foundation; it is not yet a production-
 | 10 | Deployment and supported release | Container deployment, upgrade strategy, documentation, license |
 
 Each implementation issue owns one PR. Split an increment further when necessary for coherent review. No feature is recorded as delivered until its scenarios have been verified against real implementations.
+
+## UI/UX product experience workstream — current priority
+
+**Principle:** simple by default, powerful when needed. The product is designed around dashboard consumers, creators, organization administrators, and embedding developers; avoid copying Kibana's complexity. Current React/Vite/Recharts shell, sample dashboards, role-aware CRUD and five Playwright scenarios are foundations, **not** evidence of validated usability. The present custom CSS lacks a mature token system, accessible dialogs, and theme variants.
+
+| Increment | Experience | Outcome |
+| --- | --- | --- |
+| UX-1 — [Issue #16](https://github.com/infoconex/analytics-dashboard/issues/16) | Guided sample-data Explore → visualize → create dashboard | First meaningful creator journey with sample-only boundary and keyboard-friendly controls |
+| UX-2 | Dashboard composition | Accessible layout, rearrangement, edit/undo and consistent empty/loading/error states |
+| UX-3 | Consumer interaction | Cross-widget filters, date controls, drill-down and useful sharing states |
+| UX-4 | Design system and accessibility | Tokens, light/dark, component states, focus/dialog semantics and WCAG 2.2 AA audits |
+| UX-5 | Embedded customer experience | Scoped embedding, branding, host integration, security and developer onboarding |
+| UX-6 | Organization experience | Permission clarity, data-source status and administration without overwhelming consumers |
+
+Usability research targets (not yet measured): first visualization under 3 minutes; first useful dashboard under 10 minutes; filter adjustment under 15 seconds; share under 30 seconds. Recruit representative users, record task success/time/error rates and refine. SQL knowledge must not be required for standard workflows. Production connections and arbitrary query execution remain disabled until their independent security gates are verified. Sample datasets are not registered customer datasets.
