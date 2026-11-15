@@ -3,17 +3,19 @@ import { ArrowDown, ArrowUp, GripVertical, Plus } from 'lucide-react';
 import { moveWidget, reorderWidgets } from './composition';
 import type { DashboardWidget } from './model';
 import { WidgetTile } from './WidgetTile';
+import type { ConsumerFilters } from './consumerFilters';
 
 interface Props {
   widgets: DashboardWidget[];
-  period: string;
+  filters: ConsumerFilters;
   editing: boolean;
   onChange: (widgets: DashboardWidget[]) => void;
   onEdit: (widget: DashboardWidget) => void;
   onAdd: () => void;
+  onChannelSelect: (channel: string) => void;
 }
 
-export function DashboardCanvas({ widgets, period, editing, onChange, onEdit, onAdd }: Props) {
+export function DashboardCanvas({ widgets, filters, editing, onChange, onEdit, onAdd, onChannelSelect }: Props) {
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -79,7 +81,7 @@ export function DashboardCanvas({ widgets, period, editing, onChange, onEdit, on
             <button className="icon-button" aria-label={`Move ${widget.title} earlier`} title="Move earlier" disabled={index === 0} onClick={() => announceMove(moveWidget(widgets, widget.id, -1), widget.id)}><ArrowUp size={17} /></button>
             <button className="icon-button" aria-label={`Move ${widget.title} later`} title="Move later" disabled={index === widgets.length - 1} onClick={() => announceMove(moveWidget(widgets, widget.id, 1), widget.id)}><ArrowDown size={17} /></button>
           </div>}
-          <WidgetTile widget={widget} period={period} editing={editing} onEdit={onEdit} onRemove={id => onChange(widgets.filter(item => item.id !== id))} />
+          <WidgetTile widget={widget} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined} />
         </div>)}
         {editing && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Choose a chart and see it on your dashboard</small></button>}
       </div>
