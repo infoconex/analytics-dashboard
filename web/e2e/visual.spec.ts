@@ -420,7 +420,7 @@ async function zoomPageMetrics(page: Page) {
 test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and filter journey', async ({}, testInfo) => {
   const extension = join(dirname(fileURLToPath(import.meta.url)), 'zoom-extension');
   const context = await chromium.launchPersistentContext('', {
-    channel: 'chromium', headless: true, viewport: null, deviceScaleFactor: 1,
+    channel: 'chromium', headless: true, viewport: null,
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`, '--window-size=1280,900'],
   });
   const observations: Array<Record<string, unknown>> = [];
