@@ -35,6 +35,16 @@ describe('semantic color-token contrast guardrails', () => {
     expect(contrast('focus', 'surface')).toBeGreaterThanOrEqual(3);
     expect(contrast('focus', 'canvas')).toBeGreaterThanOrEqual(3);
   });
+
+  it('interactive control edges remain distinguishable from light surfaces', () => {
+    expect(contrast('control-border', 'surface')).toBeGreaterThanOrEqual(3);
+    expect(contrast('control-border', 'surface-muted')).toBeGreaterThanOrEqual(3);
+    expect(contrast('selected-border', 'surface')).toBeGreaterThanOrEqual(3);
+  });
+
+  it('dark navigation uses a contrasting focus indicator', () => {
+    expect(contrast('focus-on-dark', 'nav')).toBeGreaterThanOrEqual(3);
+  });
 });
 
 describe('accessible typography contract', () => {

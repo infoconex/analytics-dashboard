@@ -1,6 +1,6 @@
 # UX-4a — Design system, accessible dialogs and visual evaluation
 
-UX-4b extends these foundations with [accessible typography and responsive readability](accessibility-ux4b.md). The WCAG and screen-reader limitations documented below still apply.
+UX-4b extends these foundations with [accessible typography and responsive readability](accessibility-ux4b.md). UX-4g distinguishes [interactive control boundaries and dark-navigation focus rings](accessibility-ux4g.md) from decorative borders. The WCAG and screen-reader limitations documented below still apply.
 
 Issue: [#22](https://github.com/infoconex/analytics-dashboard/issues/22).
 
