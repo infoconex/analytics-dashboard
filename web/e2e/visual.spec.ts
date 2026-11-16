@@ -319,6 +319,19 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await capture(page, testInfo, '31-chart-insights-mobile');
   await page.setViewportSize({ width: 320, height: 900 });
   await assertNoDocumentOverflow(page, 320);
+  // Scope the WCAG 2.2 AA target inspection to the dense consumer workflow.
+  // A full site-wide target inventory (including spacing exceptions) remains open.
+  for (const locator of [
+    index.getByRole('button').first(),
+    lastCard.getByRole('button', { name: /Back to visualization list/ }),
+    lastCard.getByRole('button', { name: 'Show only Direct' }),
+    page.getByRole('combobox', { name: 'Marketing channel' }),
+  ]) {
+    const bounds = await locator.boundingBox();
+    expect(bounds, 'Dense consumer target must have a measurable box').not.toBeNull();
+    expect(bounds!.width).toBeGreaterThanOrEqual(24);
+    expect(bounds!.height).toBeGreaterThanOrEqual(24);
+  }
   await capture(page, testInfo, '32-chart-insights-reflow-320');
   await lastCard.getByRole('button', { name: /Back to visualization list/ }).focus();
   await expect(lastCard.getByRole('button', { name: /Back to visualization list/ })).toBeFocused();

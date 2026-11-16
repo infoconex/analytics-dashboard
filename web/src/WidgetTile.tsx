@@ -98,9 +98,9 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
         <div className="widget-table-wrap" role="region" aria-label={`Scrollable ${widget.title} table`} tabIndex={0}>
           <table className="widget-table">
             <caption className="sr-only">{widget.title}: sample {metric} values by {axis}</caption>
-            <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th><th scope="col">Share</th></tr></thead>
+            <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th><th scope="col">Share (rounded)</th></tr></thead>
             <tbody>{data.map((row) => (
-              <tr key={String(row[axis])}><th scope="row">{channelInteraction ? <button type="button" className="table-filter-button" aria-label={selectedChannel === row.channel ? 'Show all channels' : `Show only ${row.channel}`} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button> : row[axis]}</th><td>{formatMetric(Number(row[metric] ?? 0), metric)}</td><td>{value ? Math.round(Number(row[metric] ?? 0) / value * 100) : 0}%</td></tr>
+              <tr key={String(row[axis])}><th scope="row">{channelInteraction ? <button type="button" className="table-filter-button" aria-label={selectedChannel === row.channel ? 'Show all channels' : `Show only ${row.channel}`} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button> : row[axis]}</th><td>{formatDetailedMetric(Number(row[metric] ?? 0), metric)}</td><td>{value ? Math.round(Number(row[metric] ?? 0) / value * 100) : 0}%</td></tr>
             ))}</tbody>
           </table>
         </div>
