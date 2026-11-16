@@ -418,6 +418,23 @@ async function zoomPageMetrics(page: Page) {
   });
 }
 
+// Chromium's Playwright screenshot clip can be displaced when an extension
+// changes the browser's real tab zoom. Retain a separate raw view capture from
+// Chrome itself so the actual painted viewport can be inspected independently.
+async function captureChromeZoomView(page: Page, testInfo: TestInfo, label: string) {
+  const client = await page.context().newCDPSession(page);
+  try {
+    const { data } = await client.send('Page.captureScreenshot', {
+      format: 'png', fromSurface: false, captureBeyondViewport: false,
+    });
+    const path = testInfo.outputPath(`${label}-chrome-view.png`);
+    await writeFile(path, Buffer.from(data, 'base64'));
+    await testInfo.attach(`${label}-chrome-view`, { path, contentType: 'image/png' });
+  } finally {
+    await client.detach();
+  }
+}
+
 test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and filter journey', async ({}, testInfo) => {
   const extension = join(dirname(fileURLToPath(import.meta.url)), 'zoom-extension');
   const context = await chromium.launchPersistentContext('', {
@@ -474,6 +491,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       const indexScreenshot = testInfo.outputPath(`38-native-zoom-${target * 100}-index-focus.png`);
       await page.screenshot({ path: indexScreenshot, animations: 'disabled', scale: 'device' });
       await testInfo.attach(`38-native-zoom-${target * 100}-index-focus`, { path: indexScreenshot, contentType: 'image/png' });
+      await captureChromeZoomView(page, testInfo, `38-native-zoom-${target * 100}-index-focus`);
 
       const bar = page.getByRole('article', { name: 'Orders by channel', exact: true });
       if (!(await bar.getByRole('table').isVisible())) {
@@ -497,6 +515,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       const filterScreenshot = testInfo.outputPath(`39-native-zoom-${target * 100}-filter-focus.png`);
       await page.screenshot({ path: filterScreenshot, animations: 'disabled', scale: 'device' });
       await testInfo.attach(`39-native-zoom-${target * 100}-filter-focus`, { path: filterScreenshot, contentType: 'image/png' });
+      await captureChromeZoomView(page, testInfo, `39-native-zoom-${target * 100}-filter-focus`);
     }
     await readBrowserZoom(worker, 1);
   } finally {
