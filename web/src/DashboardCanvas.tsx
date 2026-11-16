@@ -46,7 +46,9 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
 
   function focusWidget(id: string) {
     const heading = document.getElementById(`widget-heading-${id}`);
-    heading?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    // Center the destination in the usable viewport: at high browser zoom the
+    // sticky top bar can obscure a heading aligned to the document's top.
+    heading?.scrollIntoView({ block: 'center', behavior: 'instant' });
     heading?.focus({ preventScroll: true });
   }
 
@@ -54,7 +56,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
     if (!indexRef.current) return;
     indexRef.current.open = true;
     const target = indexButtons.current.get(id);
-    target?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    target?.scrollIntoView({ block: 'center', behavior: 'instant' });
     target?.focus({ preventScroll: true });
   }
 

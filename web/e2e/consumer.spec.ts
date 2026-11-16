@@ -23,6 +23,8 @@ test('dashboard consumers coordinate date and channel filters and reset independ
   await expect(page.getByRole('button', { name: 'Remove Direct filter' })).toBeVisible();
   await expect(channels.locator('.donut-legend')).toContainText('Direct');
   await expect(channels.locator('.donut-legend')).not.toContainText('Organic search');
+  await expect(channels.locator('.donut-legend').getByRole('button', { name: 'Show all channels instead of Direct' }))
+    .toHaveAttribute('aria-pressed', 'true');
   await expect(channelTable.locator('tbody tr')).toHaveCount(1);
   await expect(channelTable.getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
 
@@ -36,12 +38,17 @@ test('dashboard consumers coordinate date and channel filters and reset independ
 });
 
 test('keyboard-operable category controls filter and toggle without edit access', async ({ page }) => {
-  await page.locator('.widget-tile').filter({ hasText: 'Traffic sources' }).getByRole('button', { name: 'Show only Organic search' }).focus();
+  const legend = page.getByRole('article', { name: 'Traffic sources' });
+  await legend.getByRole('button', { name: 'Show only Organic search' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Organic search');
   await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Organic search');
-  await page.locator('.widget-tile').filter({ hasText: 'Traffic sources' }).getByRole('button', { name: 'Show all channels' }).press('Space');
+  const selected = legend.getByRole('button', { name: 'Show all channels instead of Organic search' });
+  await expect(selected).toHaveAttribute('aria-pressed', 'true');
+  await expect(selected).toBeFocused();
+  await page.keyboard.press('Space');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
+  await expect(legend.getByRole('button', { name: 'Show only Organic search' })).toBeFocused();
 });
 
 test('clicking a channel bar selects the category, and clicking it again restores the dashboard', async ({ page }) => {
