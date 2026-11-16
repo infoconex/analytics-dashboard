@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import type { Dashboard, DashboardDraft } from '../src/model';
 
 // The real React application renders these fixed demonstration API contracts.
@@ -21,8 +22,16 @@ const sampleDashboard: Dashboard = {
   })),
 };
 
-async function fixedDemoApi(page: Page) {
-  const dashboards = [sampleDashboard];
+const denseDashboard: Dashboard = {
+  ...sampleDashboard,
+  widgets: [...sampleDashboard.widgets, ...sampleDashboard.widgets.map((widget, index) => ({
+    ...widget, id: `806e3063-18e9-4ddb-887a-229198c6dd${String(index + 7).padStart(2, '0')}`,
+    title: `${widget.title} — regional`,
+  }))],
+};
+
+async function fixedDemoApi(page: Page, dashboard = sampleDashboard) {
+  const dashboards = [dashboard];
   await page.route('**/api/identity', route => route.fulfill({ json: { userId: 'demo-owner', displayName: 'Demo Analyst' } }));
   await page.route('**/api/organizations', route => route.fulfill({ json: [{ id: 'northstar', name: 'Northstar Commerce', role: 'owner' }] }));
   await page.route('**/api/organizations/northstar/dashboards', async route => {
@@ -49,10 +58,31 @@ async function fixedDemoApi(page: Page) {
 async function capture(page: Page, testInfo: TestInfo, label: string) {
   // Full-page screenshots otherwise paint fixed/sticky controls at the current
   // scroll offset after the preceding interaction instead of their natural top.
-  if (!label.includes('dialog')) await page.evaluate(() => window.scrollTo(0, 0));
+  if (!label.includes('dialog') && !label.includes('keyboard-focus')) await page.evaluate(() => window.scrollTo(0, 0));
   const path = testInfo.outputPath(`${label}.png`);
-  await page.screenshot({ path, fullPage: !label.includes('dialog'), animations: 'disabled' });
+  await page.screenshot({ path, fullPage: !label.includes('dialog') && !label.includes('keyboard-focus'), animations: 'disabled' });
   await testInfo.attach(label, { path, contentType: 'image/png' });
+}
+
+async function assertNoDocumentOverflow(page: Page, width: number) {
+  const layout = await page.evaluate(() => ({
+    pageWidth: document.documentElement.scrollWidth,
+    overflowing: [...document.querySelectorAll<HTMLElement>('body *')]
+      .filter(element => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.width && (bounds.right > window.innerWidth + 1 || bounds.left < -1)
+          && getComputedStyle(element).position !== 'fixed';
+      })
+      .slice(0, 12).map(element => ({
+        tag: element.tagName.toLowerCase(), className: typeof element.className === 'string' ? element.className : '',
+        right: Math.round(element.getBoundingClientRect().right),
+        width: Math.round(element.getBoundingClientRect().width),
+      })),
+  }));
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth), {
+    message: `Persistent horizontal overflow at ${width}px (initial width ${layout.pageWidth}): ${JSON.stringify(layout.overflowing)}`,
+    timeout: 5_000,
+  }).toBeLessThanOrEqual(width);
 }
 
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
@@ -135,7 +165,7 @@ test('tablet, narrow reflow and forced-colors views preserve readable sample dat
   await capture(page, testInfo, '17-consumption-tablet');
 
   await page.setViewportSize({ width: 320, height: 900 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await assertNoDocumentOverflow(page, 320);
   await capture(page, testInfo, '18-consumption-reflow-320');
 
   await page.getByText('View data table').first().click();
@@ -143,4 +173,75 @@ test('tablet, narrow reflow and forced-colors views preserve readable sample dat
 
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
   await capture(page, testInfo, '20-forced-colors-320');
+});
+
+test('dense dashboard preserves reading order and supports keyboard jump navigation', async ({ page }, testInfo) => {
+  await fixedDemoApi(page, denseDashboard);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+
+  const cards = page.locator('.canvas-item');
+  await expect(cards).toHaveCount(12);
+  await expect(page.getByRole('navigation', { name: 'Jump to visualization' })).toHaveCount(0);
+  const index = page.locator('details.dashboard-index');
+  await index.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await expect(index).toHaveAttribute('open', '');
+  await expect(page.getByRole('navigation', { name: 'Jump to visualization' })).toBeVisible();
+  await capture(page, testInfo, '21-dense-dashboard-desktop');
+
+  const jump = page.getByRole('button', { name: /12\. Channel details — regional/ });
+  await jump.focus();
+  await page.keyboard.press('Enter');
+  const lastHeading = cards.last().getByRole('heading', { name: 'Channel details — regional' });
+  await expect(lastHeading).toBeFocused();
+  await capture(page, testInfo, '22-dense-keyboard-focus');
+
+  const headings = await cards.locator('h2.widget-title').allTextContents();
+  expect(headings).toEqual(denseDashboard.widgets.map(widget => widget.title));
+  const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+  expect(scan.violations).toEqual([]);
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await capture(page, testInfo, '23-dense-dashboard-tablet');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertNoDocumentOverflow(page, 390);
+  await capture(page, testInfo, '24-dense-dashboard-mobile');
+  await page.setViewportSize({ width: 320, height: 900 });
+  await assertNoDocumentOverflow(page, 320);
+  await capture(page, testInfo, '25-dense-reflow-320');
+  await cards.first().getByText('View data table').press('Enter');
+  await expect(cards.first().getByRole('table', { name: /Total revenue/ })).toBeVisible();
+  await capture(page, testInfo, '26-dense-data-table-320');
+  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+  await capture(page, testInfo, '27-dense-forced-colors-320');
+});
+
+test('compact metrics do not stretch to match chart cards and short dashboards avoid an index', async ({ page }) => {
+  await fixedDemoApi(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  await expect(page.locator('.dashboard-index')).toHaveCount(0);
+  const sizes = await page.locator('.canvas-item').evaluateAll(items => items.slice(0, 2).map(item => item.getBoundingClientRect().height));
+  expect(sizes[0]).toBeLessThan(sizes[1] - 45);
+  const widths = await page.locator('.canvas-item').evaluateAll(items => items.slice(0, 2).map(item => item.getBoundingClientRect().width));
+  expect(widths[0]).toBeGreaterThan(widths[1] * 1.8);
+});
+
+test('chart data alternative exposes an announced keyboard channel selection', async ({ page }) => {
+  await fixedDemoApi(page);
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  const bar = page.getByRole('article', { name: 'Orders by channel' });
+  await expect(bar.getByRole('img', { name: /keyboard-accessible channel filters/ })).toBeVisible();
+  await bar.getByText('View data table').focus();
+  await page.keyboard.press('Enter');
+  const category = bar.getByRole('button', { name: 'Show only Direct' });
+  await category.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Direct');
+  await expect(bar.getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(bar.getByRole('heading', { name: 'Orders by channel' })).toBeVisible();
 });

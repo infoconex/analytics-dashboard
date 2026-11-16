@@ -42,14 +42,30 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
     if (moved) setAnnouncement(`${moved.title} moved to position ${position} of ${next.length}.`);
   }
 
+  function focusWidget(id: string) {
+    const heading = document.getElementById(`widget-heading-${id}`);
+    heading?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    heading?.focus({ preventScroll: true });
+  }
+
   return (
     <section aria-label={editing ? 'Dashboard composition canvas' : 'Dashboard visualizations'}>
       {editing && <p className="canvas-instructions" id="canvas-instructions">Drag a handle to rearrange visualizations, or use the Move earlier and Move later buttons. The handle also supports the up and down arrow keys. Changes are saved only when you select Save changes.</p>}
+      {widgets.length >= 8 && <details className="dashboard-index">
+        <summary>Jump to visualization <span className="dashboard-index-count">({widgets.length})</span></summary>
+        <nav aria-label="Jump to visualization">
+          <ol>{widgets.map((widget, index) => <li key={widget.id}>
+            <button type="button" onClick={() => focusWidget(widget.id)} aria-label={`${index + 1}. ${widget.title}`}>
+              <span aria-hidden="true">{index + 1}.</span> {widget.title}
+            </button>
+          </li>)}</ol>
+        </nav>
+      </details>}
       <div className={`widgets-grid ${editing ? 'widgets-grid-editing' : ''}`}>
         {widgets.map((widget, index) => <div
           key={widget.id}
           data-widget-id={widget.id}
-          className={`canvas-item ${over === widget.id && dragged !== widget.id ? 'canvas-drop-target' : ''}`}
+          className={`canvas-item canvas-item-${widget.kind} ${over === widget.id && dragged !== widget.id ? 'canvas-drop-target' : ''}`}
           >
           {editing && <div className="canvas-move-controls">
             <button
@@ -84,7 +100,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
             <button className="icon-button" aria-label={`Move ${widget.title} earlier`} title="Move earlier" disabled={index === 0} onClick={() => announceMove(moveWidget(widgets, widget.id, -1), widget.id)}><ArrowUp size={17} /></button>
             <button className="icon-button" aria-label={`Move ${widget.title} later`} title="Move later" disabled={index === widgets.length - 1} onClick={() => announceMove(moveWidget(widgets, widget.id, 1), widget.id)}><ArrowDown size={17} /></button>
           </div>}
-          <WidgetTile widget={widget} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined} />
+          <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined} />
         </div>)}
         {editing && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Choose a chart and see it on your dashboard</small></button>}
       </div>
