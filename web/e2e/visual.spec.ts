@@ -245,3 +245,99 @@ test('chart data alternative exposes an announced keyboard channel selection', a
   await expect(bar.getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
   await expect(bar.getByRole('heading', { name: 'Orders by channel' })).toBeVisible();
 });
+
+test('dense keyboard journey returns to the index and compares filtered chart facts with exact table values', async ({ page }, testInfo) => {
+  await fixedDemoApi(page, denseDashboard);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+
+  const index = page.locator('details.dashboard-index');
+  await index.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  const lastEntry = index.getByRole('button', { name: '12. Channel details — regional' });
+  await lastEntry.focus();
+  await page.keyboard.press('Enter');
+  const lastCard = page.getByRole('article', { name: 'Channel details — regional' });
+  await expect(lastCard.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
+
+  const returnAction = lastCard.getByRole('button', { name: 'Back to visualization list from Channel details — regional' });
+  await returnAction.focus();
+  await page.keyboard.press('Enter');
+  await expect(lastEntry).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(index.getByRole('button', { name: '11. Monthly orders — regional' })).toBeFocused();
+  await capture(page, testInfo, '28-return-to-index-desktop');
+
+  const bar = page.getByRole('article', { name: 'Orders by channel', exact: true });
+  await expect(bar.getByText('At a glance:')).toBeVisible();
+  await expect(bar.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders across 5 channels.');
+  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
+  await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Direct');
+  await expect(bar.locator('.chart-insight')).toContainText('Showing Direct: 1,530 orders (1 channel).');
+  await bar.getByText('View data table').focus();
+  await page.keyboard.press('Enter');
+  await expect(bar.getByRole('table', { name: /Orders by channel/ }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
+  await capture(page, testInfo, '29-filtered-chart-insight-and-table');
+  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await expect(bar.locator('.chart-insight')).toContainText('Highest: Organic search');
+  await expect(bar.getByRole('rowheader', { name: 'Organic search' })).toBeVisible();
+
+  const timeSeries = page.getByRole('article', { name: 'Revenue over time', exact: true });
+  await expect(timeSeries.locator('.chart-insight')).toContainText('From Jan ($18,400) to Dec ($48,300): increased across 12 months.');
+  const tree = await index.ariaSnapshot();
+  expect(tree).toContain('navigation "Jump to visualization"');
+  expect(tree).toContain('12. Channel details — regional');
+  const cardTree = await bar.ariaSnapshot();
+  expect(cardTree).toContain('At a glance:');
+  expect(cardTree).toContain('table');
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await assertNoDocumentOverflow(page, 768);
+  await capture(page, testInfo, '30-chart-insights-tablet');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertNoDocumentOverflow(page, 390);
+  await capture(page, testInfo, '31-chart-insights-mobile');
+  await page.setViewportSize({ width: 320, height: 900 });
+  await assertNoDocumentOverflow(page, 320);
+  await capture(page, testInfo, '32-chart-insights-reflow-320');
+  await lastCard.getByRole('button', { name: /Back to visualization list/ }).focus();
+  await expect(lastCard.getByRole('button', { name: /Back to visualization list/ })).toBeFocused();
+  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+  await capture(page, testInfo, '33-chart-insights-forced-colors');
+});
+
+test('browser zoom attempts report genuine viewport changes rather than treating CSS reflow as zoom', async ({ page }, testInfo) => {
+  await fixedDemoApi(page, denseDashboard);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  const baseline = await page.evaluate(() => ({ width: window.innerWidth, dpr: window.devicePixelRatio }));
+  const observed: { target: number; width: number; dpr: number; achieved: boolean }[] = [];
+
+  for (const target of [2, 4]) {
+    let state = baseline;
+    for (let attempt = 0; attempt < 14; attempt++) {
+      await page.keyboard.press('Control+Equal');
+      state = await page.evaluate(() => ({ width: window.innerWidth, dpr: window.devicePixelRatio }));
+      if (state.width <= baseline.width / target + 2 && state.dpr >= baseline.dpr * (target - 0.1)) break;
+      // The headless browser may not implement Chrome's browser-UI zoom shortcut.
+      if (attempt === 1 && state.width === baseline.width && state.dpr === baseline.dpr) break;
+    }
+    const achieved = state.width <= baseline.width / target + 2
+      && state.dpr >= baseline.dpr * (target - 0.1);
+    observed.push({ target, ...state, achieved });
+    if (achieved) {
+      await assertNoDocumentOverflow(page, state.width);
+      await capture(page, testInfo, `34-actual-browser-zoom-${target * 100}`);
+    }
+    if (!achieved && target === 2) break;
+  }
+  await page.keyboard.press('Control+0');
+  console.log(`[UX-4d browser zoom evidence] ${JSON.stringify({ baseline, observed })}`);
+  await testInfo.attach('actual-browser-zoom-attempt.json', {
+    body: JSON.stringify({ baseline, observed, note: 'Only a changed CSS viewport AND devicePixelRatio count as actual zoom evidence. Failed targets are untested.' }, null, 2),
+    contentType: 'application/json',
+  });
+  expect(observed).toHaveLength(observed[0]?.achieved ? 2 : 1);
+});
