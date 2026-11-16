@@ -3,12 +3,12 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { formatMetric, selectRows } from './demoData';
+import { formatDetailedMetric, formatMetric, selectRows } from './demoData';
 import { selectConsumerRows } from './consumerFilters';
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 
-const palette = ['#6179f4', '#36b8b0', '#f0b35d', '#a38af4', '#f17f97'];
+const palette = ['#435bc9', '#087b75', '#99620a', '#714eaf', '#b03057'];
 const axisTick = { fontSize: 12, fill: '#566780' };
 const formatAxisValue = (value: number) => new Intl.NumberFormat('en-US', {
   notation: 'compact', maximumFractionDigits: 1,
@@ -75,7 +75,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
         <div className="metric-content">
           <div className="metric-number">{formatMetric(value, metric)}</div>
           <div className="metric-trend"><TrendingUp size={14} /> {trend > 0 ? '+' : ''}{trend.toFixed(1)}% <span>across selected period</span></div>
-          <div className="metric-sparkline">
+          <div className="metric-sparkline" aria-hidden="true">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data}>
                 <defs><linearGradient id={`gradient-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.22} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0} /></linearGradient></defs>
@@ -85,8 +85,9 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
           </div>
         </div>
       ) : widget.kind === 'table' ? (
-        <div className="widget-table-wrap">
+        <div className="widget-table-wrap" role="region" aria-label={`Scrollable ${widget.title} table`} tabIndex={0}>
           <table className="widget-table">
+            <caption className="sr-only">{widget.title}: sample {metric} values by {axis}</caption>
             <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th><th scope="col">Share</th></tr></thead>
             <tbody>{data.map((row) => (
               <tr key={String(row[axis])}><th scope="row">{channelInteraction ? <button type="button" className="table-filter-button" aria-label={selectedChannel === row.channel ? 'Show all channels' : `Show only ${row.channel}`} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button> : row[axis]}</th><td>{formatMetric(Number(row[metric] ?? 0), metric)}</td><td>{value ? Math.round(Number(row[metric] ?? 0) / value * 100) : 0}%</td></tr>
@@ -94,7 +95,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
           </table>
         </div>
       ) : (
-        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart showing ${metric} by ${axis}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}`}>
+        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart showing ${metric} by ${axis}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. Exact values are available in the data table below.`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' ? (
               <PieChart>
@@ -138,6 +139,21 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
           : <span key={String(row[axis])}><i style={{ background: palette[index % palette.length] }} />{row[axis]}</span>)}
       </div>}
       {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter channel charts, or use the channel selector above.</p>}
+      {widget.kind !== 'table' && <details className="chart-data">
+        <summary>View data table <span className="chart-data-count">({data.length} records)</span></summary>
+        <div className="chart-data-scroll" role="region" aria-label={`Scrollable ${widget.title} data`} tabIndex={0}>
+          <table className="widget-table">
+            <caption>{widget.title} — sample values by {axis}</caption>
+            <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th></tr></thead>
+            <tbody>{data.map(row => <tr key={String(row[axis])}>
+              <th scope="row">{channelInteraction
+                ? <button type="button" className="table-filter-button" aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button>
+                : row[axis]}</th>
+              <td>{formatDetailedMetric(Number(row[metric] ?? 0), metric)}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </details>}
     </article>
   );
 }

@@ -77,6 +77,16 @@ export function formatMetric(value: number, metric: string): string {
   return Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }
 
+// Keep full values when a chart is consumed as a data table. Abbreviations
+// are suitable for axis ticks, but can obscure differences between records.
+export function formatDetailedMetric(value: number, metric: string): string {
+  if (metric === 'revenue') return Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2,
+  }).format(value);
+  if (metric === 'conversion') return `${value.toFixed(1)}%`;
+  return Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
+}
+
 export function selectRows(datasetKey: DatasetKey, period: string): Record<string, string | number>[] {
   const values = datasets[datasetKey];
   // Dashboard definitions may reference datasets supplied by future connector adapters.

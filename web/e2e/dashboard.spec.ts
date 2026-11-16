@@ -19,9 +19,9 @@ test('a tenant editor creates, edits and reloads a saved dashboard', async ({ pa
   await page.getByRole('button', { name: 'Add to dashboard' }).click();
   await page.getByRole('button', { name: 'Save changes' }).click();
 
-  await expect(page.getByText('Monthly revenue')).toBeVisible();
+  await expect(page.getByText('Monthly revenue', { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByText('Monthly revenue')).toBeVisible();
+  await expect(page.getByText('Monthly revenue', { exact: true })).toBeVisible();
 });
 
 test('keyboard move persists dashboard order and cancel discards later changes', async ({ page }) => {
@@ -128,7 +128,7 @@ test('revision conflict keeps unsaved editor work available', async ({ page }) =
 test('tenant-isolated demo dashboard loads six visualizations', async ({ page }) => {
   await page.goto('/#/dashboards');
   await page.getByRole('button', { name: /Open Business performance/ }).click();
-  await expect(page.getByText('Revenue over time')).toBeVisible();
+  await expect(page.getByText('Revenue over time', { exact: true })).toBeVisible();
   await expect(page.locator('.widget-tile')).toHaveCount(6);
 });
 

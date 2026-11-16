@@ -1,10 +1,11 @@
-/* UX-4a semantic token contract. Keep components independent of specific brand hex values. */
+/* Semantic light-theme contract; minimum readable informational text is 0.75rem. */
 :root {
   --font-body: 'DM Sans', 'Segoe UI', sans-serif;
   --font-heading: 'Manrope', 'Segoe UI', sans-serif;
-  --type-body: 0.875rem;
-  --type-label: 0.8125rem;
+  --type-body: 1rem;
+  --type-label: 0.875rem;
   --type-caption: 0.75rem;
+  --type-heading-sm: 1.125rem;
   --color-canvas: #f7f9fd;
   --color-surface: #ffffff;
   --color-surface-muted: #f1f4fb;

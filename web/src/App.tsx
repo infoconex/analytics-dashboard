@@ -62,6 +62,9 @@ export default function App() {
   const [createError, setCreateError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  const mainContent = useRef<HTMLElement>(null);
   const skipNextHashPrompt = useRef(false);
   const acceptedHash = useRef(window.location.hash);
 
@@ -72,6 +75,15 @@ export default function App() {
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
 
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
+
+  useEffect(() => {
+    if (sidebarOpen) sidebar.current?.querySelector<HTMLButtonElement>('.nav-button')?.focus();
+  }, [sidebarOpen]);
+
+  function closeSidebar() {
+    setSidebarOpen(false);
+    window.requestAnimationFrame(() => menuButton.current?.focus());
+  }
 
   function confirmDiscard(): boolean {
     return !hasChanges || window.confirm('Discard your unsaved dashboard changes?');
@@ -182,6 +194,7 @@ export default function App() {
     setDraft(null);
     setWidgetDraft(null);
     setSaveError('');
+    if (sidebarOpen) window.requestAnimationFrame(() => mainContent.current?.focus());
     setSidebarOpen(false);
   }
 
@@ -266,9 +279,19 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {sidebarOpen && <button className="mobile-overlay" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-        <button className="brand" onClick={() => navigate('overview')} aria-label="Analytics Dashboard home">
+      <button className="skip-link" onClick={() => mainContent.current?.focus()}>Skip to main content</button>
+      {sidebarOpen && <button className="mobile-overlay" aria-label="Close navigation" onClick={closeSidebar} />}
+      <aside ref={sidebar} className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} onKeyDown={event => {
+        if (!sidebarOpen) return;
+        if (event.key === 'Escape') { event.stopPropagation(); closeSidebar(); }
+        if (event.key !== 'Tab') return;
+        const controls = [...(sidebar.current?.querySelectorAll<HTMLElement>('button:not([disabled]),select:not([disabled])') ?? [])];
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }}>
+        <button className="brand" onClick={() => navigate('overview')} aria-label="nexa. ANALYTICS STUDIO home">
           <div className="brand-mark"><Activity size={23} strokeWidth={2.4} /></div>
           <div><span className="brand-name">nexa<span>.</span></span><span className="brand-subtitle">ANALYTICS STUDIO</span></div>
         </button>
@@ -299,10 +322,10 @@ export default function App() {
         </div>
       </aside>
 
-      <div className="main-layout">
+      <div className="main-layout" inert={sidebarOpen}>
         <header className="topbar">
           <div className="topbar-left">
-            <button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Menu size={21} /></button>
+            <button ref={menuButton} className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(true)}><Menu size={21} /></button>
             <span className="crumb-root">Workspace</span><ChevronRight size={15} />
             <span className="crumb-current">{view.id ? activeDashboard?.name ?? 'Dashboard' : view.page === 'overview' ? 'Overview' : view.page === 'explore' ? 'Explore' : view.page === 'sources' ? 'Data sources' : view.page === 'settings' ? 'Organization' : 'Dashboards'}</span>
           </div>
@@ -313,7 +336,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className="main-content">
+        <main ref={mainContent} id="main-content" className="main-content" tabIndex={-1}>
           {error && <div role="alert" className="error-banner"><span>{error}</span><button className="error-retry" onClick={() => { void (organizations.length === 0 ? loadWorkspace() : loadDashboards()); }}>Retry</button></div>}
           {loading ? <div className="loading-state" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /> Loading workspace…</div>
             : organizations.length === 0 ? <EmptyState title={error ? 'Workspace unavailable' : 'No organizations available'} message={error ? 'We could not load your organization and identity. Retry when the service is available.' : 'Your identity has no assigned organization. Ask your platform administrator for access.'} />
@@ -342,7 +365,7 @@ export default function App() {
               <>
                 <div className="page-heading"><div><div className="eyebrow">YOUR WORKSPACE</div><h1>Dashboards</h1><p>Explore insights and keep your entire team on the same page.</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
                 <div className="list-toolbar"><div className="list-search"><Search size={18} /><input aria-label="Search dashboards" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search dashboards..." /></div><div className="list-count"><LayoutDashboard size={16} /> {filtered.length} dashboards</div></div>
-                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => navigate('dashboards', item.id)} aria-label={`Open ${item.name}`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><TrendingUp size={14} /> +24.8%</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Copy share link" onClick={() => void share(item)}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => navigate('dashboards', item.id)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
+                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => navigate('dashboards', item.id)} aria-label={`Open ${item.name} sample preview, +24.8% illustration`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><TrendingUp size={14} /> +24.8%</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Copy share link" onClick={() => void share(item)}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => navigate('dashboards', item.id)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
                   {canEdit && <button className="new-dashboard-card" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><div><Plus size={26} /></div><strong>Create new dashboard</strong><p>Bring your data together in a new view.</p></button>}</div>
                 {filtered.length === 0 && !canEdit && <EmptyState title="No dashboards found" message="Try another search, or ask an editor to create a dashboard." />}
                 {canEdit && filtered.length > 0 && <section className="manage-section"><h2>Manage dashboards</h2><p>Editors can remove dashboards. All organization members can view and share dashboard links.</p><div>{filtered.map(item => <div className="manage-row" key={item.id}><span>{item.name}</span><button className="icon-button danger-hover" onClick={() => void removeDashboard(item)} title={`Delete ${item.name}`} aria-label={`Delete ${item.name}`}><Trash2 size={16} /></button></div>)}</div></section>}

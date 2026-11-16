@@ -1,5 +1,7 @@
 # UX-4a — Design system, accessible dialogs and visual evaluation
 
+UX-4b extends these foundations with [accessible typography and responsive readability](accessibility-ux4b.md). The WCAG and screen-reader limitations documented below still apply.
+
 Issue: [#22](https://github.com/infoconex/analytics-dashboard/issues/22).
 
 The goal is a coherent, approachable **light theme** and repeatable visual evidence, not a claim that the application already satisfies WCAG 2.2 AA. The product principle remains *simple by default, powerful when needed*.
