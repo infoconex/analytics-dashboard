@@ -454,6 +454,8 @@ button:disabled { opacity:.6; }
 .widget-position { flex-shrink:0; color:var(--color-muted); font-size:var(--type-caption); font-variant-numeric:tabular-nums; }
 .widget-chart,.widget-donut .widget-chart { height:clamp(220px,19vw,255px); min-height:220px; }
 .metric-sparkline { height:56px; }
+.metric-trend { color:var(--color-success); }
+.metric-trend span { color:var(--color-muted); }
 .widget-metric { min-height:0; }
 .widget-table { min-height:0; }
 .widget-table-wrap { max-height:300px; }

@@ -64,6 +64,25 @@ async function capture(page: Page, testInfo: TestInfo, label: string) {
   await testInfo.attach(label, { path, contentType: 'image/png' });
 }
 
+async function assertNoDocumentOverflow(page: Page, width: number) {
+  const layout = await page.evaluate(() => ({
+    pageWidth: document.documentElement.scrollWidth,
+    overflowing: [...document.querySelectorAll<HTMLElement>('body *')]
+      .filter(element => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.width && (bounds.right > window.innerWidth + 1 || bounds.left < -1)
+          && getComputedStyle(element).position !== 'fixed';
+      })
+      .slice(0, 12).map(element => ({
+        tag: element.tagName.toLowerCase(), className: typeof element.className === 'string' ? element.className : '',
+        right: Math.round(element.getBoundingClientRect().right),
+        width: Math.round(element.getBoundingClientRect().width),
+      })),
+  }));
+  expect(layout.pageWidth, `Horizontal overflow at ${width}px: ${JSON.stringify(layout.overflowing)}`)
+    .toBeLessThanOrEqual(width);
+}
+
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
 
 test('desktop UX journey captures all primary states using fixed sample data', async ({ page }, testInfo) => {
@@ -144,7 +163,7 @@ test('tablet, narrow reflow and forced-colors views preserve readable sample dat
   await capture(page, testInfo, '17-consumption-tablet');
 
   await page.setViewportSize({ width: 320, height: 900 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await assertNoDocumentOverflow(page, 320);
   await capture(page, testInfo, '18-consumption-reflow-320');
 
   await page.getByText('View data table').first().click();
@@ -185,10 +204,10 @@ test('dense dashboard preserves reading order and supports keyboard jump navigat
   await page.setViewportSize({ width: 768, height: 1024 });
   await capture(page, testInfo, '23-dense-dashboard-tablet');
   await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await assertNoDocumentOverflow(page, 390);
   await capture(page, testInfo, '24-dense-dashboard-mobile');
   await page.setViewportSize({ width: 320, height: 900 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await assertNoDocumentOverflow(page, 320);
   await capture(page, testInfo, '25-dense-reflow-320');
   await cards.first().getByText('View data table').press('Enter');
   await expect(cards.first().getByRole('table', { name: /Total revenue/ })).toBeVisible();

@@ -81,7 +81,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           <div className="metric-trend"><TrendingUp size={14} /> {trend > 0 ? '+' : ''}{trend.toFixed(1)}% <span>across selected period</span></div>
           <div className="metric-sparkline" aria-hidden="true">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
+              <AreaChart data={data} accessibilityLayer={false}>
                 <defs><linearGradient id={`gradient-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.22} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0} /></linearGradient></defs>
                 <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.2} fill={`url(#gradient-${widget.id})`} />
               </AreaChart>
