@@ -4,18 +4,21 @@ import { moveWidget, reorderWidgets } from './composition';
 import type { DashboardWidget } from './model';
 import { WidgetTile } from './WidgetTile';
 import type { ConsumerFilters } from './consumerFilters';
+import { Button } from './ui/Button';
 
 interface Props {
   widgets: DashboardWidget[];
   filters: ConsumerFilters;
   editing: boolean;
+  canEdit: boolean;
+  onStartEdit: () => void;
   onChange: (widgets: DashboardWidget[]) => void;
   onEdit: (widget: DashboardWidget) => void;
   onAdd: () => void;
   onChannelSelect: (channel: string) => void;
 }
 
-export function DashboardCanvas({ widgets, filters, editing, onChange, onEdit, onAdd, onChannelSelect }: Props) {
+export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onChannelSelect }: Props) {
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -85,7 +88,7 @@ export function DashboardCanvas({ widgets, filters, editing, onChange, onEdit, o
         </div>)}
         {editing && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Choose a chart and see it on your dashboard</small></button>}
       </div>
-      {widgets.length === 0 && !editing && <div className="canvas-empty"><strong>No visualizations yet</strong><p>An editor can add the first visualization to this dashboard.</p></div>}
+      {widgets.length === 0 && !editing && <div className="canvas-empty"><strong>No visualizations yet</strong><p>{canEdit ? 'Start with a sample chart, then arrange your dashboard.' : 'An editor can add the first visualization to this dashboard.'}</p>{canEdit && <Button onClick={onStartEdit}><Plus size={17} aria-hidden="true" /> Add first visualization</Button>}</div>}
       {widgets.length === 0 && editing && <p className="canvas-empty-hint">Your canvas is ready. Select Add visualization to start with a sample chart.</p>}
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
     </section>

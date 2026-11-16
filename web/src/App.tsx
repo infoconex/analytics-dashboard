@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Activity, ArrowDownRight, ArrowLeft, ArrowRight, BarChart3, Bell, BookOpen,
+  Activity, ArrowDownRight, ArrowLeft, ArrowRight, BarChart3, BookOpen,
   CalendarDays, Check, ChevronDown, ChevronRight, CircleHelp,
   Cloud, Database, Ellipsis, ExternalLink, FileBarChart, Filter, FolderKanban,
-  Gauge, LayoutDashboard, LockKeyhole, Menu, MoreHorizontal, Plus, Search,
+  Gauge, LayoutDashboard, LockKeyhole, Menu, Plus, Search,
   Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2,
-  TrendingUp, Users, X,
+  TrendingUp, Users,
 } from 'lucide-react';
 import { dashboardApi } from './api';
 import { hasDashboardChanges } from './composition';
@@ -16,6 +16,8 @@ import { WidgetTile } from './WidgetTile';
 import { DataSourcesPage } from './DataSourcesPage';
 import { ExplorePage } from './ExplorePage';
 import { VisualizationGallery } from './VisualizationGallery';
+import { Button } from './ui/Button';
+import { ModalDialog } from './ui/ModalDialog';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
@@ -57,6 +59,7 @@ export default function App() {
   const [widgetDraft, setWidgetDraft] = useState<DashboardWidget | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [createError, setCreateError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const skipNextHashPrompt = useRef(false);
@@ -68,6 +71,8 @@ export default function App() {
   const activeDashboard = dashboards.find(item => item.id === view.id);
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
 
+  useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
+
   function confirmDiscard(): boolean {
     return !hasChanges || window.confirm('Discard your unsaved dashboard changes?');
   }
@@ -78,6 +83,15 @@ export default function App() {
     setDraft(null);
     setWidgetDraft(null);
     setSaveError('');
+  }
+
+  function startEditing(openGallery = false) {
+    if (!canEdit || !activeDashboard) return;
+    setDraft({ name: activeDashboard.name, description: activeDashboard.description,
+      widgets: activeDashboard.widgets.map(item => ({ ...item })) });
+    setSaveError('');
+    setEditMode(true);
+    if (openGallery) setWidgetDraft(createWidget());
   }
 
   useEffect(() => {
@@ -109,40 +123,24 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [hasChanges]);
 
-  const modalOpen = createOpen || Boolean(widgetDraft);
-  useEffect(() => {
-    if (!modalOpen) return;
-    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
-    if (!dialog) return;
-    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)'));
-    (dialog.querySelector<HTMLElement>('.gallery-card') ?? dialog.querySelector<HTMLElement>('input'))?.focus();
-    const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        if (widgetDraft) setWidgetDraft(null);
-        else setCreateOpen(false);
-      }
-      if (event.key !== 'Tab') return;
-      const controls = focusable();
-      const first = controls[0];
-      const last = controls[controls.length - 1];
-      if (!first || !last) return;
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    document.addEventListener('keydown', handleKeydown);
-    return () => { document.removeEventListener('keydown', handleKeydown); previouslyFocused?.focus(); };
-  }, [modalOpen]);
-
-  useEffect(() => {
-    Promise.all([dashboardApi.organizations(), dashboardApi.identity()]).then(([items, user]) => {
+  const loadWorkspace = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [items, user] = await Promise.all([dashboardApi.organizations(), dashboardApi.identity()]);
       setOrganizations(items);
       setIdentity(user);
       setOrganizationId(previous => previous || items.find(item => item.id === currentView().organizationId)?.id || items[0]?.id || '');
+      setError('');
       if (items.length === 0) setLoading(false);
-    }).catch(exception => { setError(exception.message); setLoading(false); });
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : 'Unable to load your workspace.');
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadWorkspace();
+  }, [loadWorkspace]);
 
   const loadDashboards = useCallback(async () => {
     if (!organizationId) return;
@@ -215,7 +213,7 @@ export default function App() {
       setToast('Dashboard created');
       navigate('dashboards', created.id);
     } catch (exception) {
-      setError(exception instanceof Error ? exception.message : 'Unable to create dashboard.');
+      setCreateError(exception instanceof Error ? exception.message : 'Unable to create dashboard.');
     }
   }
 
@@ -311,15 +309,14 @@ export default function App() {
           <div className="topbar-actions">
             <span className="demo-label"><span /> DEMO DATA</span>
             <button className="icon-button topbar-icon" aria-label="Help" title="Documentation is in the repository" onClick={() => navigate('settings')}><CircleHelp size={19} /></button>
-            <button className="icon-button topbar-icon" aria-label="Notifications" title="No notifications"><Bell size={19} /></button>
             <div className="topbar-user">{identity?.displayName.slice(0, 2).toUpperCase() ?? 'US'}</div>
           </div>
         </header>
 
         <main className="main-content">
-          {error && <div role="alert" className="error-banner"><span>{error}</span><button onClick={() => { setError(''); void loadDashboards(); }}><X size={17} /></button></div>}
-          {loading ? <div className="loading-state"><div className="loading-spinner" /> Loading workspace…</div>
-            : organizations.length === 0 ? <EmptyState title="No organizations available" message="Your identity has no assigned organization. Ask your platform administrator for access." />
+          {error && <div role="alert" className="error-banner"><span>{error}</span><button className="error-retry" onClick={() => { void (organizations.length === 0 ? loadWorkspace() : loadDashboards()); }}>Retry</button></div>}
+          {loading ? <div className="loading-state" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /> Loading workspace…</div>
+            : organizations.length === 0 ? <EmptyState title={error ? 'Workspace unavailable' : 'No organizations available'} message={error ? 'We could not load your organization and identity. Retry when the service is available.' : 'Your identity has no assigned organization. Ask your platform administrator for access.'} />
             : view.page === 'explore' ? <ExplorePage key={organizationId} canEdit={canEdit} onCreate={createFromExplore} />
             : view.page === 'sources' ? <DataSourcesPage key={organizationId} organizationId={organizationId} canEdit={canEdit} onNotice={setToast} />
             : view.page === 'settings' ? <SettingsPage organization={organization} />
@@ -333,12 +330,12 @@ export default function App() {
                   </div>
                   <div className="heading-actions">
                     {editMode ? <><button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
-                      : <><button className="button button-light" onClick={() => void share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => { setDraft({ name: preview.name, description: preview.description, widgets: preview.widgets.map(item => ({ ...item })) }); setSaveError(''); setEditMode(true); }}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
+                      : <><button className="button button-light" onClick={() => void share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => startEditing()}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
                   </div>
                 </div>
                 {editMode && <div className="composition-status" role="status" aria-live="polite"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Arrange and configure your dashboard before publishing changes to your team.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available.</div>}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)} />
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)} />
               </>
             ) : <EmptyState title="Dashboard not found" message="This dashboard may have been deleted or is not in your organization." />
             : view.page === 'dashboards' ? (
@@ -362,15 +359,21 @@ export default function App() {
         </main>
       </div>
 
-      {toast && <div className="toast"><Check size={16} />{toast}</div>}
-      {createOpen && draft && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setCreateOpen(false); }}><section className="modal" role="dialog" aria-modal="true" aria-label="Create dashboard"><div className="modal-heading"><div><span className="eyebrow">NEW WORKSPACE VIEW</span><h2>Create dashboard</h2><p>Give your dashboard a name. Add visualizations after creating it.</p></div><button className="icon-button" aria-label="Close" onClick={() => setCreateOpen(false)}><X size={20} /></button></div><label className="form-label">Dashboard name<input autoFocus maxLength={100} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder="e.g. Customer health overview" /></label><label className="form-label">Description<textarea maxLength={500} rows={3} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} placeholder="What would you like your team to learn from this view?" /></label><div className="modal-actions"><button className="button button-light" onClick={() => setCreateOpen(false)}>Cancel</button><button className="button button-primary" disabled={!draft.name.trim()} onClick={() => void createDashboard()}>Create dashboard <ArrowRight size={16} /></button></div></section></div>}
+      {toast && <div className="toast" role="status" aria-live="polite"><Check size={16} aria-hidden="true" />{toast}</div>}
+      {createOpen && draft && <ModalDialog title="Create dashboard" eyebrow="NEW WORKSPACE VIEW" description="Give your dashboard a name. Add visualizations after creating it." initialFocus="input" onDismiss={() => setCreateOpen(false)}>
+        {createError && <p role="alert" className="error-banner">{createError}</p>}
+        <label className="form-label">Dashboard name<input maxLength={100} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder="e.g. Customer health overview" /></label>
+        <label className="form-label">Description<textarea maxLength={500} rows={3} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} placeholder="What would you like your team to learn from this view?" /></label>
+        <div className="modal-actions"><Button variant="light" onClick={() => setCreateOpen(false)}>Cancel</Button><Button disabled={!draft.name.trim()} onClick={() => void createDashboard()}>Create dashboard <ArrowRight size={16} /></Button></div>
+      </ModalDialog>}
 
-      {widgetDraft && editMode && draft && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setWidgetDraft(null); }}><section className="modal visualization-modal" role="dialog" aria-modal="true" aria-label="Configure visualization"><div className="modal-heading"><div><span className="eyebrow">VISUALIZATION BUILDER · SAMPLE DATA</span><h2>Configure visualization</h2><p>Pick a visual, then choose what it should show.</p></div><button className="icon-button" aria-label="Close" onClick={() => setWidgetDraft(null)}><X size={20} /></button></div>
+      {widgetDraft && editMode && draft && <ModalDialog title="Configure visualization" eyebrow="VISUALIZATION BUILDER · SAMPLE DATA" description="Pick a visual, then choose what it should show." className="visualization-modal" initialFocus=".gallery-card" onDismiss={() => setWidgetDraft(null)}>
         <VisualizationGallery kind={widgetDraft.kind} onSelect={kind => setWidgetDraft({ ...widgetDraft, kind })} />
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
         <label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey: metrics[datasetKey][0]?.key ?? 'orders', dimensionKey: dimensions[datasetKey] }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
         <label className="form-label">Metric<select value={widgetDraft.metricKey} onChange={event => setWidgetDraft({ ...widgetDraft, metricKey: event.target.value })}>{(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
-        <div className="modal-actions"><button className="button button-light" onClick={() => setWidgetDraft(null)}>Cancel</button><button className="button button-primary" disabled={!widgetDraft.title.trim()} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> {draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</button></div></section></div>}
+        <div className="modal-actions"><Button variant="light" onClick={() => setWidgetDraft(null)}>Cancel</Button><Button disabled={!widgetDraft.title.trim()} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> {draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
+      </ModalDialog>}
     </div>
   );
 }
@@ -384,7 +387,7 @@ function PeriodPicker({ period, setPeriod }: { period: string; setPeriod: (perio
 }
 
 function SummaryCard({ icon, title, value, trend, color }: { icon: React.ReactNode; title: string; value: string; trend: string; color: string }) {
-  return <div className="summary-card"><div className="summary-top"><div className={`summary-icon icon-${color}`}>{icon}</div><MoreHorizontal size={19} className="muted-icon" /></div><div className="summary-title">{title}</div><div className="summary-value">{value}</div><div className="summary-bottom"><span className="positive-trend"><TrendingUp size={13} /> {trend}</span><span>vs. previous year</span></div></div>;
+  return <div className="summary-card"><div className="summary-top"><div className={`summary-icon icon-${color}`}>{icon}</div></div><div className="summary-title">{title}</div><div className="summary-value">{value}</div><div className="summary-bottom"><span className="positive-trend"><TrendingUp size={13} /> {trend}</span><span>vs. previous year</span></div></div>;
 }
 
 function EmptyState({ title, message }: { title: string; message: string }) {
