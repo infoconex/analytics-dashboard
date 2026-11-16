@@ -9,6 +9,16 @@ Downloaded and visually inspected UX-4c [Verify run #43785866435](https://github
 1. Once focus jumps to the last chart or table, the person must reverse-traverse many controls to choose another visualization. On dashboards with **at least 8 widgets**, a small **Back to visualization list** action at the end of each consumer card now returns focus to that card's numbered entry in the expanded index. The next or previous entry is then one Tab or Shift+Tab away. This does not alter URLs, card order, edit controls or persisted data. Short dashboards do not get the extra action.
 2. Visual trend direction and category leaders are not immediately available to someone who cannot see the chart. A visible **At a glance** line now describes the first and last data points and direction, or the largest channel with its **full, unrounded** value. Filtering updates this line because it consumes the exact rows used by the native data table. The table remains the authoritative complete-value alternative; a summary cannot represent all data points, distribution details, or uncertainty.
 
+### After-state visual inspection
+
+Downloaded the UX-4d first-candidate screenshot artifact from [Verify run #43803864410](https://github.com/infoconex/analytics-dashboard/actions/runs/43803864410) and inspected `28-return-to-index-desktop`, `29-filtered-chart-insight-and-table`, `32-chart-insights-reflow-320`, and `33-chart-insights-forced-colors` at native width:
+
+- On desktop, the active index entry has a visible outline, the new chart insight agrees with the visible bar/table values, and the long page still keeps pairs of charts aligned. The short metric-card return footer initially occupied only the left grid column; this was corrected to span both columns.
+- With `Direct` selected, channel charts and tables agree on **1,530 orders**; the chart says one channel remains. The table disclosure initially labeled the single row “1 records”; the final wording is corrected to “1 record.”
+- At 320 CSS pixels, the native chart data table stays within the card; insights, return actions and channel controls wrap without document-wide horizontal overflow. Forced colors expose the cards, index, disclosure and return action as distinct bounded controls. These images do not substitute for actual 400% browser zoom or Windows high-contrast assessment.
+
+CI re-captures these states after the two visual fixes. Screenshot review is a human visual inspection of a deterministic browser rendering, not a human task usability study.
+
 ## Task-focused evaluation
 
 The deterministic sample dashboard contains 12 widgets. Browser tests exercise the following tasks without activating a customer connection:
@@ -44,6 +54,7 @@ These are **scripted task completions**, not observed human participant successe
 - Local Playwright Chromium cannot open a page due to `process_singleton_posix.cc: socket() failed: Operation not permitted`. A separate cloud-browser attempt could not connect to the local Vite port (`ERR_CONNECTION_REFUSED`). Neither result is evidence that the application fails in a functioning browser.
 - Playwright browser accessibility-tree inspection (`ariaSnapshot`) is a structural inspection, **not** an NVDA, JAWS, VoiceOver or Orca session. No real screen-reader speech, reading-navigation, touch gesture or live-announcement usability observation was performed in this increment.
 - Browser zoom is separately attempted in the CI Chromium runner using native keyboard shortcuts. Its JSON evidence records baseline CSS viewport and device scale, attempted targets and whether both measurements changed; screenshots carry `34-actual-browser-zoom-*` only if the test actually reached those targets. Reflow at 320 CSS pixels alone does **not** establish actual 400% browser zoom.
+- The first CI zoom attempt logged baseline `innerWidth=1280` and `devicePixelRatio=1`; attempted Ctrl+Equal produced **no change**. As 200% could not be verified, the 400% attempt was not made. **Neither 200% nor 400% actual browser zoom has been validated.**
 - CI screenshot, WebM and Playwright trace evidence is from fixed fictional sample API routes. Do not include customer identifiers, real connection credentials or external data.
 
 ## Next manual verification gate

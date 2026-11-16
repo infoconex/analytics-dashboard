@@ -151,7 +151,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
       </div>}
       {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter, or use the keyboard-accessible channel selector or data table.</p>}
       {widget.kind !== 'table' && <details className="chart-data">
-        <summary>View data table <span className="chart-data-count">({data.length} records)</span></summary>
+        <summary>View data table <span className="chart-data-count">({data.length} {data.length === 1 ? 'record' : 'records'})</span></summary>
         <div className="chart-data-scroll" role="region" aria-label={`Scrollable ${widget.title} data`} tabIndex={0}>
           <table className="widget-table">
             <caption>{widget.title} — sample values by {axis}</caption>

@@ -274,11 +274,15 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await capture(page, testInfo, '28-return-to-index-desktop');
 
   const bar = page.getByRole('article', { name: 'Orders by channel', exact: true });
+  const metricWidth = await page.locator('.canvas-item-metric .widget-tile').first().evaluate(element => element.getBoundingClientRect().width);
+  const metricReturnWidth = await page.locator('.canvas-item-metric .widget-return').first().evaluate(element => element.getBoundingClientRect().width);
+  expect(metricReturnWidth).toBeGreaterThan(metricWidth * 0.8);
   await expect(bar.getByText('At a glance:')).toBeVisible();
   await expect(bar.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders across 5 channels.');
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
   await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Direct');
   await expect(bar.locator('.chart-insight')).toContainText('Showing Direct: 1,530 orders (1 channel).');
+  await expect(bar.locator('details.chart-data summary')).toContainText('(1 record)');
   await bar.getByText('View data table').focus();
   await page.keyboard.press('Enter');
   await expect(bar.getByRole('table', { name: /Orders by channel/ }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
