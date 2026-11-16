@@ -273,6 +273,12 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await expect(index.getByRole('button', { name: '11. Monthly orders — regional' })).toBeFocused();
   await capture(page, testInfo, '28-return-to-index-desktop');
 
+  const lastTable = lastCard.getByRole('table', { name: /Channel details — regional/ });
+  await expect(lastTable.getByRole('columnheader', { name: 'orders' })).toBeVisible();
+  await expect(lastTable.getByRole('row', { name: /Organic search.*1,820/ })).toBeVisible();
+  await expect(lastTable.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
+  await capture(page, testInfo, '35-exact-native-table-desktop');
+
   const bar = page.getByRole('article', { name: 'Orders by channel', exact: true });
   const metricWidth = await page.locator('.canvas-item-metric .widget-tile').first().evaluate(element => element.getBoundingClientRect().width);
   const metricReturnWidth = await page.locator('.canvas-item-metric .widget-return').first().evaluate(element => element.getBoundingClientRect().width);
@@ -287,7 +293,12 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await page.keyboard.press('Enter');
   await expect(bar.getByRole('table', { name: /Orders by channel/ }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
   await capture(page, testInfo, '29-filtered-chart-insight-and-table');
-  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await expect(lastTable.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove Direct filter' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
+  await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toHaveText('Showing all sample records.');
+  await capture(page, testInfo, '36-filter-removal-focus-desktop');
   await expect(bar.locator('.chart-insight')).toContainText('Highest: Organic search');
   await expect(bar.getByRole('rowheader', { name: 'Organic search' })).toBeVisible();
 
@@ -308,6 +319,19 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await capture(page, testInfo, '31-chart-insights-mobile');
   await page.setViewportSize({ width: 320, height: 900 });
   await assertNoDocumentOverflow(page, 320);
+  // Scope the WCAG 2.2 AA target inspection to the dense consumer workflow.
+  // A full site-wide target inventory (including spacing exceptions) remains open.
+  for (const locator of [
+    index.getByRole('button').first(),
+    lastCard.getByRole('button', { name: /Back to visualization list/ }),
+    lastCard.getByRole('button', { name: 'Show only Direct' }),
+    page.getByRole('combobox', { name: 'Marketing channel' }),
+  ]) {
+    const bounds = await locator.boundingBox();
+    expect(bounds, 'Dense consumer target must have a measurable box').not.toBeNull();
+    expect(bounds!.width).toBeGreaterThanOrEqual(24);
+    expect(bounds!.height).toBeGreaterThanOrEqual(24);
+  }
   await capture(page, testInfo, '32-chart-insights-reflow-320');
   await lastCard.getByRole('button', { name: /Back to visualization list/ }).focus();
   await expect(lastCard.getByRole('button', { name: /Back to visualization list/ })).toBeFocused();

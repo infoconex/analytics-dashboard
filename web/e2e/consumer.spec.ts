@@ -24,6 +24,7 @@ test('dashboard consumers coordinate date and channel filters and reset independ
   await expect(channels.locator('.donut-legend')).toContainText('Direct');
   await expect(channels.locator('.donut-legend')).not.toContainText('Organic search');
   await expect(channelTable.locator('tbody tr')).toHaveCount(1);
+  await expect(channelTable.getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
 
   await page.getByRole('button', { name: 'Remove Last 3 months filter' }).click();
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
@@ -81,4 +82,41 @@ test('consumer filters reset on dashboard navigation and never mutate saved dash
   await expect(page.getByText('All sample records', { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
+});
+
+test('filter removal and reset restore focus to surviving controls with truthful status', async ({ page }) => {
+  const channel = page.getByRole('combobox', { name: 'Marketing channel' });
+  const date = page.getByRole('combobox', { name: 'Date range (commerce only)' });
+  const status = page.getByRole('status', { name: 'Dashboard filter changes' });
+  const table = page.getByRole('article', { name: 'Channel details' }).getByRole('table');
+
+  await channel.selectOption('Direct');
+  const chip = page.getByRole('button', { name: 'Remove Direct filter' });
+  await chip.focus();
+  await page.keyboard.press('Enter');
+  await expect(chip).toHaveCount(0);
+  await expect(channel).toBeFocused();
+  await expect(status).toHaveText('Showing all sample records.');
+  await expect(table.getByRole('row')).toHaveCount(6);
+
+  await date.selectOption('3m');
+  await channel.selectOption('Direct');
+  await page.getByRole('button', { name: 'Remove Last 3 months filter' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(date).toBeFocused();
+  await expect(date).toHaveValue('12m');
+  await expect(channel).toHaveValue('Direct');
+  await expect(status).toContainText('Direct');
+
+  await page.getByRole('button', { name: 'Reset filters' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(channel).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Reset filters' })).toHaveCount(0);
+  await expect(status).toHaveText('Showing all sample records.');
+
+  await date.selectOption('6m');
+  await page.getByRole('button', { name: 'Reset filters' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(date).toBeFocused();
+  await expect(status).toHaveText('Showing all sample records.');
 });
