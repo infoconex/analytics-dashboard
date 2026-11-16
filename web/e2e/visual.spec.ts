@@ -441,12 +441,13 @@ test('UX-4g inventories rendered controls, their targets, contrast, focus and mo
     await inspect(state);
     await capture(page, testInfo, `42-ux4g-${state}`);
   }
-  await page.getByRole('button', { name: 'Open navigation' }).click();
+  await page.getByRole('button', { name: 'Open navigation' }).focus();
+  await page.keyboard.press('Enter');
   const mobileNav = page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Dashboards' });
   await mobileNav.focus();
   const mobileFocus = await focusedControl(page);
   readings.push({ state: 'mobile-navigation-focus', focus: mobileFocus });
-  expect(mobileFocus.visibleFocus && mobileFocus.fullyUnobscured).toBe(true);
+  expect(mobileFocus.visibleFocus && mobileFocus.fullyUnobscured, JSON.stringify(mobileFocus)).toBe(true);
   await capture(page, testInfo, '43-ux4g-mobile-navigation-focus');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('navigation', { name: 'Workspace navigation' })).toBeHidden();
