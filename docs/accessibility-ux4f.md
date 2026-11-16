@@ -8,9 +8,13 @@ The UX-4e post-merge [Verify #43808781750](https://github.com/infoconex/analytic
 
 Code inspection identified a specific screen-reader orientation risk: the donut legend button for a selected `Direct` channel had the generic accessible name **Show all channels**. Its visible text was Direct, but its custom `aria-label` obscured that name. The native table's corresponding control already retained the channel identity. UX-4f aligns the donut control's name to **Show all channels instead of Direct**, preserving `aria-pressed=true` until removal. A failing-first render regression and a keyboard browser regression cover this behavior. This is a verified accessible-name change, **not** an observed screen-reader utterance.
 
+Inspection of the first native 200%/400% Chrome view captures exposed a separate high-zoom orientation defect: after widget-to-index navigation or transient-filter removal, a focused element could be placed beneath the sticky top bar. Earlier assertions checked DOM focus and intersection with the viewport, which is insufficient to establish **focus not obscured**. UX-4f now centers the widget heading, exact index return entry and surviving filter select in the viewport on focus transitions. The native-zoom regression also records focused-element bounds and sticky-header bounds, and fails if focus is clipped above the header or below the visible area. This is scripted visual verification, not a human or screen-reader observation.
+
 ## Independent native browser-zoom instrumentation
 
 `web/e2e/visual.spec.ts` now has a separate **browser-native zoom** test using isolated Playwright Chromium, a disposable profile and the inert `web/e2e/zoom-extension/` Manifest V3 service worker. The extension only has the `tabs` permission; it has no content scripts, network calls or effect on production code. Playwright invokes Chrome's own `chrome.tabs.setZoom` and independently reads `chrome.tabs.getZoom` and zoom settings. It cross-checks effective `window.innerWidth`, `devicePixelRatio` and document overflow at 100%, 200% and 400% and captures focused index/filter screenshots, trace and JSON.
+
+At native zoom, Playwright's ordinary viewport screenshot clips can be displaced and mostly blank even while Chromium renders the interface. For that reason the test also saves **raw Chrome view** images (`*-chrome-view.png`) directly from the DevTools `Page.captureScreenshot` API with `fromSurface=false`. Inspect those images at the exact test focus state; do not treat the mostly blank Playwright captures as proof of visual success. The tab zoom factor, CSS viewport and DPR must still be confirmed independently in the JSON.
 
 This is native browser tab zoom driven by a real browser API, **not** simulated CSS width, CSS `zoom`, CDP device metrics, `Page.setPageScaleFactor`, or a human clicking Chrome's zoom menu. A test only verifies a zoom level when Chrome reports the target factor, automatic zoom handling, and the viewport/DPR changes. The older headless `Control+Equal` attempt stays explicitly identified as an **unsuccessful attempt**, not a pass. The new test exercises the numbered index → widget 12 heading → table and back to exact index entry; channel chart-table values; Direct filter state, label, removal and focus recovery; document overflow and focus within the viewport. UI-only mode can run it without .NET, while full CI verifies it against the same sample dashboard.
 
@@ -22,7 +26,7 @@ npx playwright install chromium
 npm run visual:ui-only
 ```
 
-CI retains the `37-native-zoom-baseline-100`, `38-native-zoom-200/400-index-focus`, `39-native-zoom-200/400-filter-focus` and `native-browser-zoom-evidence.json` evidence alongside existing responsive PNGs and Playwright-managed WebM/traces for 14 days. Playwright automatically starts the test's tracing, including its separate persistent browser context. Always inspect the actual images and JSON; **do not infer success just from a green test**. A CI browser may differ from an interactive headed OS browser; the remaining interactive gate below is mandatory.
+CI retains the `37-native-zoom-baseline-100`, `38-native-zoom-200/400-index-focus`, `39-native-zoom-200/400-filter-focus`, their `*-chrome-view.png` counterparts and `native-browser-zoom-evidence.json` alongside existing responsive PNGs and Playwright-managed WebM/traces for 14 days. Playwright automatically starts the test's tracing, including its separate persistent browser context. Always inspect the actual images and JSON; **do not infer success just from a green test**. A CI browser may differ from an interactive headed OS browser; the remaining interactive gate below is mandatory.
 
 ## Actual environment / assistive technology matrix
 
@@ -30,7 +34,7 @@ CI retains the `37-native-zoom-baseline-100`, `38-native-zoom-200/400-index-focu
 | --- | --- | --- |
 | Cloud execution host: Debian Linux, Chromium 156 from `/usr/bin/chromium` | Local headless startup | Unavailable: `socket() failed: Operation not permitted` in process singleton; cannot run a local Playwright page |
 | Interactive cloud Linux desktop Chromium | Manual browser access | Browser opened; Vite `127.0.0.1:5173` returned `ERR_CONNECTION_REFUSED` because the desktop and code-runner networks are isolated |
-| GitHub Actions Ubuntu + Playwright Chromium | Automated native zoom API / keyboard / screenshots | Confirm test outcome from the exact branch Verify run and the JSON artifact before claiming 200% or 400% |
+| GitHub Actions Ubuntu 24.04 + Playwright Chromium 159.0.8154.6 | Automated native zoom API / keyboard / screenshots | Browser-native tab zoom measured at 200% (`innerWidth=640`, DPR=2) and 400% (`innerWidth=320`, DPR=4) from a 1280 CSS-pixel baseline; document overflow false. Check exact candidate CI and **raw Chrome view** images for latest unobscured-focus regression result |
 | Windows 11 + Chrome/Edge + NVDA or JAWS | Actual spoken UI / zoom | **Not tested** |
 | macOS + Safari + VoiceOver | Actual spoken UI / zoom | **Not tested** |
 | iOS + Safari + VoiceOver | Touch screen-reader gestures | **Not tested** |

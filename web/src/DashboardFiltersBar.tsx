@@ -31,7 +31,11 @@ export function DashboardFiltersBar({ filters, onChange, hasCommerce, hasChannel
     const target = pendingFocus.current;
     if (!target) return;
     pendingFocus.current = null;
-    (target === 'channel' ? channelSelect : dateSelect).current?.focus();
+    const control = (target === 'channel' ? channelSelect : dateSelect).current;
+    control?.focus({ preventScroll: true });
+    // Native focus can consider a control visible even when a sticky header
+    // covers it at 400% zoom. Restore a clearly visible focus position.
+    control?.scrollIntoView({ block: 'center', behavior: 'instant' });
   }, [filters]);
 
   function changeFromTransientAction(next: ConsumerFilters, focus: 'date' | 'channel') {

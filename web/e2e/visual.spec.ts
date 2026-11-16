@@ -402,6 +402,7 @@ async function zoomPageMetrics(page: Page) {
   return page.evaluate(() => {
     const focused = document.activeElement as HTMLElement | null;
     const rect = focused?.getBoundingClientRect();
+    const stickyHeaderBottom = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0;
     return {
       innerWidth: window.innerWidth, innerHeight: window.innerHeight,
       devicePixelRatio: window.devicePixelRatio,
@@ -411,8 +412,14 @@ async function zoomPageMetrics(page: Page) {
       focus: {
         tag: focused?.tagName.toLowerCase() ?? null,
         name: focused?.getAttribute('aria-label') ?? focused?.textContent?.trim().slice(0, 110) ?? null,
+        top: rect?.top ?? null,
+        bottom: rect?.bottom ?? null,
+        stickyHeaderBottom,
         visibleWithinViewport: Boolean(rect && rect.width > 0 && rect.height > 0
           && rect.bottom > 0 && rect.top < window.innerHeight && rect.right > 0 && rect.left < window.innerWidth),
+        unobscuredBelowStickyHeader: Boolean(rect && rect.width > 0 && rect.height > 0
+          && rect.top >= stickyHeaderBottom + 2 && rect.bottom <= window.innerHeight - 2
+          && rect.left >= 0 && rect.right <= window.innerWidth),
       },
     };
   });
@@ -483,11 +490,17 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       await page.keyboard.press('Enter');
       const lastCard = page.getByRole('article', { name: 'Channel details — regional' });
       await expect(lastCard.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
+      const headingFocus = await zoomPageMetrics(page);
+      expect(headingFocus.focus.unobscuredBelowStickyHeader, 'Widget 12 heading focus is visibly unobscured').toBe(true);
+      observations.push({ target: target * 100, widgetHeadingFocus: headingFocus });
       await expect(lastCard.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
       for (let step = 0; step < 7; step++) await page.keyboard.press('Tab');
       await expect(lastCard.getByRole('button', { name: 'Back to visualization list from Channel details — regional' })).toBeFocused();
       await page.keyboard.press('Enter');
       await expect(entry).toBeFocused();
+      const indexFocus = await zoomPageMetrics(page);
+      expect(indexFocus.focus.unobscuredBelowStickyHeader, 'Exact index entry focus is visibly unobscured').toBe(true);
+      observations.push({ target: target * 100, indexFocus });
       const indexScreenshot = testInfo.outputPath(`38-native-zoom-${target * 100}-index-focus.png`);
       await page.screenshot({ path: indexScreenshot, animations: 'disabled', scale: 'device' });
       await testInfo.attach(`38-native-zoom-${target * 100}-index-focus`, { path: indexScreenshot, contentType: 'image/png' });
@@ -511,6 +524,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toHaveText('Showing all sample records.');
       const recovered = await zoomPageMetrics(page);
       expect(recovered.focus.visibleWithinViewport).toBe(true);
+      expect(recovered.focus.unobscuredBelowStickyHeader, 'Recovered filter focus is visibly unobscured').toBe(true);
       observations.push({ target: target * 100, postFilterRecovery: recovered });
       const filterScreenshot = testInfo.outputPath(`39-native-zoom-${target * 100}-filter-focus.png`);
       await page.screenshot({ path: filterScreenshot, animations: 'disabled', scale: 'device' });
