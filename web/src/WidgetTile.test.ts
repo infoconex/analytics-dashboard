@@ -11,6 +11,11 @@ const channelTable: DashboardWidget = {
   kind: 'table', datasetKey: 'channels', metricKey: 'orders', dimensionKey: 'channel',
 };
 
+const channelDonut: DashboardWidget = {
+  ...channelTable, id: 'b2222222-2222-4222-8222-222222222222',
+  title: 'Traffic sources', kind: 'donut', metricKey: 'sessions',
+};
+
 describe('native dashboard data tables', () => {
   it('presents exact sample values under native row and column headers', () => {
     const html = renderToStaticMarkup(createElement(WidgetTile, {
@@ -36,5 +41,19 @@ describe('native dashboard data tables', () => {
     expect(html).not.toContain('Organic search');
     expect(html).toContain('Show all channels instead of Direct');
     expect(html).toContain('aria-pressed="true"');
+  });
+});
+
+describe('donut legend filter controls', () => {
+  it('retains the selected channel identity in its accessible name', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: channelDonut, period: '12m',
+      filters: { ...defaultConsumerFilters, channel: 'Direct' },
+      onChannelSelect: () => {},
+    }));
+
+    expect(html).toContain('aria-label="Show all channels instead of Direct"');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).not.toContain('aria-label="Show all channels"');
   });
 });
