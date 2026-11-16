@@ -485,7 +485,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       await channel.selectOption('Direct');
       await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Direct');
       await expect(bar.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-      await expect(page.getByRole('article', { name: 'Traffic sources' })
+      await expect(page.getByRole('article', { name: 'Traffic sources', exact: true })
         .getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
       await page.getByRole('button', { name: 'Remove Direct filter' }).focus();
       await page.keyboard.press('Enter');
