@@ -85,7 +85,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
           </div>
         </div>
       ) : widget.kind === 'table' ? (
-        <div className="widget-table-wrap">
+        <div className="widget-table-wrap" role="region" aria-label={`Scrollable ${widget.title} table`} tabIndex={0}>
           <table className="widget-table">
             <caption className="sr-only">{widget.title}: sample {metric} values by {axis}</caption>
             <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th><th scope="col">Share</th></tr></thead>
@@ -141,7 +141,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
       {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter channel charts, or use the channel selector above.</p>}
       {widget.kind !== 'table' && <details className="chart-data">
         <summary>View data table <span className="chart-data-count">({data.length} records)</span></summary>
-        <div className="chart-data-scroll">
+        <div className="chart-data-scroll" role="region" aria-label={`Scrollable ${widget.title} data`} tabIndex={0}>
           <table className="widget-table">
             <caption>{widget.title} — sample values by {axis}</caption>
             <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th></tr></thead>

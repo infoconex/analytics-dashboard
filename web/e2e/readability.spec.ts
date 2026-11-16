@@ -100,5 +100,6 @@ test('forced-colors mode retains visible focus and chart data alternatives', asy
   const outline = await disclosure.evaluate(element => getComputedStyle(element).outlineStyle);
   expect(outline).not.toBe('none');
   await disclosure.press('Enter');
-  await expect(page.getByRole('table', { name: /Total revenue/ })).toBeVisible();
+  await expect(page.locator('details.chart-data').first()).toHaveAttribute('open', '');
+  await expect(page.locator('details.chart-data').first().locator('table')).toBeVisible();
 });
