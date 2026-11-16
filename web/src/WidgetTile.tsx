@@ -4,6 +4,7 @@ import {
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { formatDetailedMetric, formatMetric, selectRows } from './demoData';
+import { chartInsight } from './chartInsights';
 import { selectConsumerRows } from './consumerFilters';
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
@@ -24,13 +25,17 @@ interface Props {
   onRemove?: (id: string) => void;
   filters?: ConsumerFilters;
   onChannelSelect?: (channel: string) => void;
+  onReturnToIndex?: () => void;
 }
 
-export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect }: Props) {
+export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex }: Props) {
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
   const selectedChannel = filters?.channel;
+  const insight = widget.kind !== 'table' && widget.kind !== 'metric'
+    ? chartInsight(widget.dimensionKey, widget.metricKey, data)
+    : null;
   function selectCategory(index: number) {
     const category = data[index]?.channel;
     if (channelInteraction && typeof category === 'string') onChannelSelect?.(category);
@@ -55,6 +60,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
           <button aria-label={`Remove ${widget.title}`} className="icon-button danger-hover" onClick={() => onRemove?.(widget.id)}><Trash2 size={15} /></button>
         </div>}
+        {onReturnToIndex && <div className="widget-return"><button type="button" onClick={onReturnToIndex} aria-label={`Back to visualization list from ${widget.title}`}>Back to visualization list</button></div>}
       </article>
     );
   }
@@ -99,7 +105,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </table>
         </div>
       ) : (
-        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart showing ${metric} by ${axis}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. Exact values${channelInteraction ? ' and keyboard-accessible channel filters' : ''} are available in the View data table disclosure below.`}>
+        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart showing ${metric} by ${axis}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text insight and exact data table follow.${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' ? (
               <PieChart>
@@ -137,6 +143,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </ResponsiveContainer>
         </div>
       )}
+      {insight && <p className="chart-insight"><strong>At a glance:</strong> {insight}</p>}
       {widget.kind === 'donut' && <div className="donut-legend">
         {data.map((row, index) => channelInteraction
           ? <button type="button" className="donut-legend-button" key={String(row[axis])} aria-label={selectedChannel === row.channel ? 'Show all channels' : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: palette[index % palette.length] }} />{row[axis]}</button>
@@ -158,6 +165,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </table>
         </div>
       </details>}
+      {onReturnToIndex && <div className="widget-return"><button type="button" onClick={onReturnToIndex} aria-label={`Back to visualization list from ${widget.title}`}>Back to visualization list</button></div>}
     </article>
   );
 }
