@@ -36,7 +36,6 @@ jobs:
             web/test-results/visual-*/**/*.webm
             web/test-results/visual-*/**/*.json
             web/test-results/visual-*/**/trace.zip
-            web/test-results/visual-*/**/native-zoom-trace.zip
           if-no-files-found: warn
           retention-days: 14
 

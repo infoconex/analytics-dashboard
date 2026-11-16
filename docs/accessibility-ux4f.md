@@ -22,7 +22,7 @@ npx playwright install chromium
 npm run visual:ui-only
 ```
 
-CI retains the `37-native-zoom-baseline-100`, `38-native-zoom-200/400-index-focus`, `39-native-zoom-200/400-filter-focus`, `native-browser-zoom-evidence.json` and `native-zoom-trace.zip` evidence alongside existing responsive PNGs, WebM and traces for 14 days. Always inspect the actual images and JSON; **do not infer success just from a green test**. A CI browser may differ from an interactive headed OS browser; the remaining interactive gate below is mandatory.
+CI retains the `37-native-zoom-baseline-100`, `38-native-zoom-200/400-index-focus`, `39-native-zoom-200/400-filter-focus` and `native-browser-zoom-evidence.json` evidence alongside existing responsive PNGs and Playwright-managed WebM/traces for 14 days. Playwright automatically starts the test's tracing, including its separate persistent browser context. Always inspect the actual images and JSON; **do not infer success just from a green test**. A CI browser may differ from an interactive headed OS browser; the remaining interactive gate below is mandatory.
 
 ## Actual environment / assistive technology matrix
 

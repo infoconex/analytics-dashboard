@@ -424,7 +424,6 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`, '--window-size=1280,900'],
   });
   const observations: Array<Record<string, unknown>> = [];
-  await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   try {
     const page = context.pages()[0] ?? await context.newPage();
     await fixedDemoApi(page, denseDashboard);
@@ -504,7 +503,6 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       body: JSON.stringify({ note: 'Programmatic real Chromium tab zoom; not manual keyboard zoom or actual screen-reader speech.', observations }, null, 2),
       contentType: 'application/json',
     });
-    await context.tracing.stop({ path: testInfo.outputPath('native-zoom-trace.zip') });
     await context.close();
   }
 });
