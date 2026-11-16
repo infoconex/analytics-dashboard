@@ -62,6 +62,9 @@ export default function App() {
   const [createError, setCreateError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  const mainContent = useRef<HTMLElement>(null);
   const skipNextHashPrompt = useRef(false);
   const acceptedHash = useRef(window.location.hash);
 
@@ -72,6 +75,15 @@ export default function App() {
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
 
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
+
+  useEffect(() => {
+    if (sidebarOpen) sidebar.current?.querySelector<HTMLButtonElement>('.nav-button')?.focus();
+  }, [sidebarOpen]);
+
+  function closeSidebar() {
+    setSidebarOpen(false);
+    window.requestAnimationFrame(() => menuButton.current?.focus());
+  }
 
   function confirmDiscard(): boolean {
     return !hasChanges || window.confirm('Discard your unsaved dashboard changes?');
@@ -182,6 +194,7 @@ export default function App() {
     setDraft(null);
     setWidgetDraft(null);
     setSaveError('');
+    if (sidebarOpen) window.requestAnimationFrame(() => mainContent.current?.focus());
     setSidebarOpen(false);
   }
 
@@ -266,8 +279,11 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {sidebarOpen && <button className="mobile-overlay" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+      {sidebarOpen && <button className="mobile-overlay" aria-label="Close navigation" onClick={closeSidebar} />}
+      <aside ref={sidebar} className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} onKeyDown={event => {
+        if (sidebarOpen && event.key === 'Escape') { event.stopPropagation(); closeSidebar(); }
+      }}>
         <button className="brand" onClick={() => navigate('overview')} aria-label="Analytics Dashboard home">
           <div className="brand-mark"><Activity size={23} strokeWidth={2.4} /></div>
           <div><span className="brand-name">nexa<span>.</span></span><span className="brand-subtitle">ANALYTICS STUDIO</span></div>
@@ -299,10 +315,10 @@ export default function App() {
         </div>
       </aside>
 
-      <div className="main-layout">
+      <div className="main-layout" inert={sidebarOpen}>
         <header className="topbar">
           <div className="topbar-left">
-            <button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Menu size={21} /></button>
+            <button ref={menuButton} className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(true)}><Menu size={21} /></button>
             <span className="crumb-root">Workspace</span><ChevronRight size={15} />
             <span className="crumb-current">{view.id ? activeDashboard?.name ?? 'Dashboard' : view.page === 'overview' ? 'Overview' : view.page === 'explore' ? 'Explore' : view.page === 'sources' ? 'Data sources' : view.page === 'settings' ? 'Organization' : 'Dashboards'}</span>
           </div>
@@ -313,7 +329,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className="main-content">
+        <main ref={mainContent} id="main-content" className="main-content" tabIndex={-1}>
           {error && <div role="alert" className="error-banner"><span>{error}</span><button className="error-retry" onClick={() => { void (organizations.length === 0 ? loadWorkspace() : loadDashboards()); }}>Retry</button></div>}
           {loading ? <div className="loading-state" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /> Loading workspace…</div>
             : organizations.length === 0 ? <EmptyState title={error ? 'Workspace unavailable' : 'No organizations available'} message={error ? 'We could not load your organization and identity. Retry when the service is available.' : 'Your identity has no assigned organization. Ask your platform administrator for access.'} />
