@@ -197,6 +197,23 @@ test('actual API denies cross-tenant dashboard access despite a known resource i
   expect(wrongResource.status()).toBe(404);
 });
 
+test('documented host example loads the real development-seeded API without write requests', async ({ page }) => {
+  test.skip(process.env.ANALYTICS_UI_ONLY === '1', 'Local UI-only runner cannot start .NET; default CI exercises the real development API.');
+  const mutations: string[] = [];
+  page.on('request', request => {
+    if (request.url().includes('/api/') && request.method() !== 'GET') mutations.push(request.method());
+  });
+  await page.goto(hostUrl);
+  const frame = page.frameLocator('iframe.host-frame');
+  await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();
+  await expect(frame.getByText('Northstar Commerce', { exact: false }).first()).toBeVisible();
+  await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
+  await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
+  await frame.getByRole('button', { name: 'Reset filters' }).click();
+  await expect(frame.getByRole('article', { name: 'Channel details' }).locator('tbody tr')).toHaveCount(5);
+  expect(mutations).toEqual([]);
+});
+
 interface ZoomTabs {
   query(details: Record<string, never>): Promise<Array<{ id?: number; url?: string }>>;
   setZoom(id: number, factor: number): Promise<void>;
