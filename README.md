@@ -2,7 +2,7 @@
 
 An enterprise-oriented, multi-tenant analytics and visualization application inspired by Kibana, designed to connect to relational databases and Elasticsearch without requiring customers to adopt one storage engine.
 
-> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source registration, non-executing query validation, protected connection-configuration management, disconnected relational compiler conformance and a hard-disabled runtime session admission boundary. Live connectors, customer-managed sign-in, production provisioning, production KMS/egress controls and embedding are not yet implemented. Do not deploy this increment as a public or customer-facing service.
+> **Pre-alpha: not production-ready.** The application supports **development/demo dashboards using sample data**, tenant-scoped data-source registration, non-executing query validation, protected connection-configuration management, disconnected relational compiler conformance and a hard-disabled runtime session admission boundary. UX-6 includes a same-origin, sample-only embedding demonstration, **not production embedding**. Live connectors, customer-managed sign-in, production provisioning, production KMS/egress controls and production embedding are not implemented. Do not deploy this increment as a public or customer-facing service.
 
 ## Current capabilities
 
