@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "visual:evidence": "playwright test e2e/visual.spec.ts",
+    "visual:ui-only": "playwright test --config playwright.visual-only.config.ts",
     "check": "npm run test && npm run build"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
     "recharts": "^3.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.65.1",
     "@types/node": "^24.19.2",
     "@types/react": "^19.2.0",

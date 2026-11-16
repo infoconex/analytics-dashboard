@@ -123,3 +123,21 @@ test('mobile journey captures responsive navigation, filters and creator modal',
   await capture(page, testInfo, '16-visualization-dialog-mobile');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
+
+test('tablet, narrow reflow and forced-colors views preserve readable sample data', async ({ page }, testInfo) => {
+  await fixedDemoApi(page);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  await capture(page, testInfo, '17-consumption-tablet');
+
+  await page.setViewportSize({ width: 320, height: 900 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await capture(page, testInfo, '18-consumption-reflow-320');
+
+  await page.getByText('View data table').first().click();
+  await capture(page, testInfo, '19-chart-data-reflow-320');
+
+  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+  await capture(page, testInfo, '20-forced-colors-320');
+});

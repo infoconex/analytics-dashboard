@@ -36,3 +36,11 @@ describe('semantic color-token contrast guardrails', () => {
     expect(contrast('focus', 'canvas')).toBeGreaterThanOrEqual(3);
   });
 });
+
+describe('accessible typography contract', () => {
+  it.each([['body', 16], ['label', 14], ['caption', 12]])('%s is no smaller than %spx', (name, minimum) => {
+    const rem = css.match(new RegExp(`--type-${name}:\\s*([0-9.]+)rem`))?.[1];
+    expect(rem).toBeDefined();
+    expect(Number(rem) * 16).toBeGreaterThanOrEqual(minimum);
+  });
+});
