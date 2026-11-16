@@ -455,7 +455,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       await assertNoDocumentOverflow(page, metrics.innerWidth);
 
       const index = page.locator('details.dashboard-index');
-      if (!(await index.getAttribute('open'))) {
+      if (!(await index.evaluate(element => (element as HTMLDetailsElement).open))) {
         await index.locator('summary').focus();
         await page.keyboard.press('Enter');
       }
