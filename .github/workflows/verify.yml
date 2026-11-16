@@ -26,6 +26,17 @@ jobs:
       - name: Run locally reproducible verification
         shell: pwsh
         run: ./scripts/verify.ps1 -IncludeBrowserTests
+      - name: Publish sample-only UX screenshots and browser recordings
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux4-visual-evidence
+          path: |
+            web/test-results/visual-*/**/*.png
+            web/test-results/visual-*/**/*.webm
+            web/test-results/visual-*/**/trace.zip
+          if-no-files-found: warn
+          retention-days: 14
 
   provider-conformance:
     name: Real SQL Server and PostgreSQL adapter tests
