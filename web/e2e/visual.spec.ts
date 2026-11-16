@@ -1,5 +1,6 @@
 import { chromium, expect, test, type Page, type TestInfo } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Dashboard, DashboardDraft } from '../src/model';
@@ -437,7 +438,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
     expect(baselineBrowserZoom.factor).toBeCloseTo(1, 1);
     observations.push({ target: 100, browserZoom: baselineBrowserZoom, metrics: baseline });
     const baselineScreenshot = testInfo.outputPath('37-native-zoom-baseline-100.png');
-    await page.screenshot({ path: baselineScreenshot, animations: 'disabled' });
+    await page.screenshot({ path: baselineScreenshot, animations: 'disabled', scale: 'device' });
     await testInfo.attach('37-native-zoom-baseline-100', { path: baselineScreenshot, contentType: 'image/png' });
 
     for (const target of [2, 4]) {
@@ -471,7 +472,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       await page.keyboard.press('Enter');
       await expect(entry).toBeFocused();
       const indexScreenshot = testInfo.outputPath(`38-native-zoom-${target * 100}-index-focus.png`);
-      await page.screenshot({ path: indexScreenshot, animations: 'disabled' });
+      await page.screenshot({ path: indexScreenshot, animations: 'disabled', scale: 'device' });
       await testInfo.attach(`38-native-zoom-${target * 100}-index-focus`, { path: indexScreenshot, contentType: 'image/png' });
 
       const bar = page.getByRole('article', { name: 'Orders by channel', exact: true });
@@ -494,15 +495,17 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       expect(recovered.focus.visibleWithinViewport).toBe(true);
       observations.push({ target: target * 100, postFilterRecovery: recovered });
       const filterScreenshot = testInfo.outputPath(`39-native-zoom-${target * 100}-filter-focus.png`);
-      await page.screenshot({ path: filterScreenshot, animations: 'disabled' });
+      await page.screenshot({ path: filterScreenshot, animations: 'disabled', scale: 'device' });
       await testInfo.attach(`39-native-zoom-${target * 100}-filter-focus`, { path: filterScreenshot, contentType: 'image/png' });
     }
     await readBrowserZoom(worker, 1);
   } finally {
-    await testInfo.attach('native-browser-zoom-evidence.json', {
-      body: JSON.stringify({ note: 'Programmatic real Chromium tab zoom; not manual keyboard zoom or actual screen-reader speech.', observations }, null, 2),
-      contentType: 'application/json',
-    });
+    const evidencePath = testInfo.outputPath('native-browser-zoom-evidence.json');
+    await writeFile(evidencePath, JSON.stringify({
+      note: 'Programmatic real Chromium tab zoom; not manual keyboard zoom or actual screen-reader speech.',
+      observations,
+    }, null, 2));
+    await testInfo.attach('native-browser-zoom-evidence.json', { path: evidencePath, contentType: 'application/json' });
     await context.close();
   }
 });
