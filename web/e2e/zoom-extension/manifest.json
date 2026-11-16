@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "Analytics Dashboard test-only native zoom driver",
+  "version": "1.0.0",
+  "description": "Sets and reads Chromium's real tab zoom in isolated Playwright tests.",
+  "permissions": ["tabs"],
+  "background": { "service_worker": "background.js" }
+}
