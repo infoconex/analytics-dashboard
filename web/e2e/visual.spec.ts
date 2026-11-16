@@ -394,6 +394,7 @@ test('UX-4g inventories rendered controls, their targets, contrast, focus and mo
     return inventory;
   };
   const desktop = await inspect('desktop-1440');
+  expect(desktop.textCount, 'Audit actual rendered text nodes beyond design tokens').toBeGreaterThan(20);
   const marketing = desktop.controls.find(item => item.name === 'Marketing channel');
   expect(marketing?.borderContrast, 'Marketing selector edge against its rendered surface').toBeGreaterThanOrEqual(3);
   expect(marketing?.height).toBeGreaterThanOrEqual(24);
@@ -460,10 +461,10 @@ test('UX-4g inventories rendered controls, their targets, contrast, focus and mo
   readings.push({ state: 'modal-keyboard-focus', focus: modalFocus });
   expect(modalFocus.visibleFocus && modalFocus.fullyUnobscured).toBe(true);
   await inspect('mobile-edit-dialog-320');
-  await capture(page, testInfo, '44-ux4g-modal-320');
+  await capture(page, testInfo, '44-ux4g-dialog-320');
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
   await inspect('forced-colors-modal-320');
-  await capture(page, testInfo, '45-ux4g-forced-colors-modal-320');
+  await capture(page, testInfo, '45-ux4g-forced-colors-dialog-320');
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
 

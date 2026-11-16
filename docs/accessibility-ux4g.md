@@ -53,7 +53,12 @@ Use the exact UX-4f [manual procedure](accessibility-ux4f.md#reproducible-hands-
 | Android | TalkBack + Chrome gestures | **Untested** |
 | Linux | Orca + Firefox/Chromium | **Untested**: local shell cannot launch Chromium; Orca speech not available |
 
-Real OS screen reader + browser interaction is the authoritative method. Accessibility-tree snapshots, the Chrome DevTools Accessibility pane, axe/Playwright and synthetic speech are useful diagnostics **but not substitutes**. Paid remote device labs could be evaluated for real device/AT access; reject a platform as untested when no genuine audio/navigation evidence is produced.
+Real OS screen reader + browser interaction is the authoritative method. Accessibility-tree snapshots, the Chrome DevTools Accessibility pane, axe/Playwright and synthetic speech are useful diagnostics **but not substitutes**. Feasible execution choices:
+
+- **No new service:** run free [NVDA](https://www.nvaccess.org/download/) on a real Windows 11 computer, platform VoiceOver on macOS/iOS, TalkBack on Android, or [GNOME Orca](https://help.gnome.org/orca/) on a graphical Linux desktop. Record direct spoken output and user commands. A local headless Chromium worker cannot supply this evidence.
+- **Optional external testing service (not purchased or configured):** [BrowserStack Live documents real NVDA on Windows and VoiceOver on macOS](https://www.browserstack.com/docs/live/accessibility-testing/screenreader-desktop); [its accessibility service documents TalkBack on Android](https://www.browserstack.com/docs/accessibility/overview/introduction), and [screen-reader automation for NVDA/VoiceOver](https://www.browserstack.com/docs/accessibility/screen-reader-launcher/screen-reader-automation) can capture output. Verify specific device/browser combinations and audio quality before accepting evidence. Such a service does not eliminate the need for representative people.
+
+No connected real desktop or paid remote service provided reliable screen-reader speech in this increment. Reject a platform as tested when no genuine interaction or spoken-output evidence is produced.
 
 ## Practical, comparable UX study: Analytics Dashboard versus Kibana
 

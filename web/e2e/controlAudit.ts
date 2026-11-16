@@ -34,13 +34,14 @@ export async function auditControls(page: Page) {
       return Math.round(((light! + .05) / (dark! + .05)) * 100) / 100;
     };
     const selector = 'button,input,select,textarea,a[href],summary';
+    const openDialog = document.querySelector('dialog[open]');
     const controls = [...document.querySelectorAll<HTMLElement>(selector)]
       .filter(element => {
         const rect = element.getBoundingClientRect();
         const style = getComputedStyle(element);
+        if (openDialog && !openDialog.contains(element)) return false;
         return rect.width > 0 && rect.height > 0 && style.visibility === 'visible'
-          && style.display !== 'none' && rect.right > 0 && rect.left < innerWidth
-          && rect.bottom > 0 && rect.top < innerHeight;
+          && style.display !== 'none';
       });
     const measurements = controls.map((element, index) => {
       const style = getComputedStyle(element);
@@ -56,6 +57,7 @@ export async function auditControls(page: Page) {
         className: typeof element.className === 'string' ? element.className : '',
         disabled: element.matches(':disabled'), selected: element.getAttribute('aria-pressed') || element.getAttribute('aria-selected'),
         width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100,
+        bounds: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
         center: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
         tooSmall: rect.width < 24 || rect.height < 24,
         textContrast: fg ? ratio(blend(fg, bg), bg) : null,
@@ -65,19 +67,55 @@ export async function auditControls(page: Page) {
       };
     });
     const smallTargets = measurements.filter(item => item.tooSmall).map(item => {
-      // WCAG 2.5.8 spacing exception: non-overlapping 24px diameter circles
-      // centered on undersized targets; this is an approximation pending visual review.
-      const overlapping = measurements.filter(other => other.index !== item.index
-        && Math.hypot(other.center.x - item.center.x, other.center.y - item.center.y) < 24)
+      // The 24px circle cannot intersect a large target's rectangle, or the
+      // corresponding 24px circle for another undersized target.
+      const overlapping = measurements.filter(other => other.index !== item.index && (other.tooSmall
+        ? Math.hypot(other.center.x - item.center.x, other.center.y - item.center.y) < 24
+        : Math.hypot(
+          Math.max(other.bounds.left - item.center.x, 0, item.center.x - other.bounds.right),
+          Math.max(other.bounds.top - item.center.y, 0, item.center.y - other.bounds.bottom),
+        ) < 12))
         .map(other => ({ name: other.name, role: other.role }));
       return { ...item, spacingExceptionCandidate: overlapping.length === 0, overlapping };
     });
+    const textSamples = [...document.querySelectorAll<HTMLElement>('h1,h2,h3,p,label,small,strong,th,td,span')]
+      .filter(element => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        if (openDialog && !openDialog.contains(element)) return false;
+        return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility === 'visible'
+          && [...element.childNodes].some(child => child.nodeType === Node.TEXT_NODE && child.textContent?.trim());
+      }).map(element => {
+        const style = getComputedStyle(element);
+        const fg = rgb(style.color);
+        const bg = background(element);
+        const size = parseFloat(style.fontSize);
+        const weight = Number(style.fontWeight) || (style.fontWeight === 'bold' ? 700 : 400);
+        const large = size >= 24 || (size >= 18.66 && weight >= 700);
+        let complexBackground = false;
+        for (let node: Element | null = element; node; node = node.parentElement) {
+          const layer = getComputedStyle(node);
+          if (layer.backgroundImage !== 'none' || Number(layer.opacity) < 1) complexBackground = true;
+        }
+        return {
+          tag: element.tagName.toLowerCase(),
+          text: element.textContent?.trim().replace(/\s+/g, ' ').slice(0, 85),
+          fontSize: size, fontWeight: weight,
+          requiredRatio: large ? 3 : 4.5,
+          computedRatio: fg ? ratio(blend(fg, bg), bg) : null,
+          complexBackground,
+        };
+      });
     return {
       viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
       forcedColors: matchMedia('(forced-colors: active)').matches,
       count: measurements.length, smallTargets, controls: measurements,
+      textCount: textSamples.length,
+      textContrastCandidates: textSamples.filter(sample => !sample.complexBackground && sample.computedRatio !== null
+        && sample.computedRatio < sample.requiredRatio),
+      textSamples,
       horizontalDocumentOverflow: document.documentElement.scrollWidth > innerWidth + 1,
-      note: 'Computed text ratios omit backgrounds with images, gradients, translucency, and text from descendants. Border ratios are diagnostic only; not every border is essential to identifying a control. Evaluate WCAG exceptions separately.',
+      note: 'Computed text ratios are diagnostics for solid CSS backgrounds and direct text nodes, not antialiased pixels, gradients, SVG chart labels or every WCAG exception. Border ratios are diagnostic only; not every border is essential to identifying a control.',
     };
   });
 }
