@@ -66,7 +66,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           <h2 className="widget-title" id={headingId} tabIndex={-1}>{widget.title}</h2>
           <div className="widget-subtitle">{widget.datasetKey === 'commerce' ? 'Commerce performance' : 'Marketing channels'}{filters && widget.datasetKey === 'channels' && selectedChannel ? ` · ${selectedChannel}` : ''}</div>
         </div>
-        {position && total && !editing && <span className="widget-position" aria-label={`Visualization ${position} of ${total}`}>{position} / {total}</span>}
+        {position && total && !editing && <span className="widget-position"><span aria-hidden="true">{position} / {total}</span><span className="sr-only">Visualization {position} of {total}</span></span>}
         {editing ? (
           <div className="widget-actions">
             <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
@@ -99,7 +99,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </table>
         </div>
       ) : (
-        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart showing ${metric} by ${axis}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. Exact values and keyboard-accessible controls are available in the View data table disclosure below.`}>
+        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart showing ${metric} by ${axis}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. Exact values${channelInteraction ? ' and keyboard-accessible channel filters' : ''} are available in the View data table disclosure below.`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' ? (
               <PieChart>
