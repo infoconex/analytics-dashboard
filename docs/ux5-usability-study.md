@@ -53,6 +53,8 @@ The header-only [participant/task template](ux5-task-observation-template.csv) i
 - Environment: product/version/build, browser/OS, device/viewport, actual browser zoom, AT name/version, participant cohort, ordering sequence, task-order index, start-state reset and interruptions. Do not treat browser accessibility-tree assertions as spoken output.
 - Data quality: observer initials/pseudonym, consent for notes and (optional) recording, task equivalence flag and reason; retained/omitted trials with a documented reason.
 
+After completing both products, ask which product the participant prefers and why, allowing "no preference" or "unable to compare." Record the response once per participant in `post_session_product_preference` and `preference_reason` on the final task row; leave those fields blank on other rows. Use `equivalence_notes` to explain any tasks that differ or cannot be compared. Treat a preference as a participant report, not proof of a product-wide advantage.
+
 Summarize per product/task and cohort: n, completion/partial/failure, median and interquartile times with censored/abandoned trials disclosed, incorrect actions, backtracking, assistance, keyboard/AT effort, clarity/ease distribution, orientation loss and severity. Report uncertainty and paired differences transparently. Avoid a product-wide “better than Kibana” claim without equivalent tasks, representative observed participants and direct evidence.
 
 ## Automated regression evidence versus human outcomes

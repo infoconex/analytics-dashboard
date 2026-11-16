@@ -423,7 +423,11 @@ test('UX-5 deterministic task journey measures direct navigation and safe recove
       filterResetRecovered: true, cancelledEditWithoutChanges: true },
     responsiveViewportWidths: [1440, 390, 320],
   };
-  await testInfo.attach('ux5-scripted-task-evidence.json', { body: JSON.stringify(metrics, null, 2), contentType: 'application/json' });
+  // Write the evidence into the test output directory. Body-only attachments
+  // do not appear in the workflow's published **/*.json artifact glob.
+  const evidencePath = testInfo.outputPath('ux5-scripted-task-evidence.json');
+  await writeFile(evidencePath, JSON.stringify(metrics, null, 2));
+  await testInfo.attach('ux5-scripted-task-evidence.json', { path: evidencePath, contentType: 'application/json' });
 });
 
 test('browser zoom attempts report genuine viewport changes rather than treating CSS reflow as zoom', async ({ page }, testInfo) => {
@@ -668,6 +672,10 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
 
       const finder = page.getByRole('combobox', { name: 'Find a visualization' });
       await expect(finder).toBeVisible();
+      // Capture the real browser-painted finder, not merely the page header
+      // above a finder that is present in the DOM but below the fold.
+      await finder.scrollIntoViewIfNeeded();
+      await expect(finder).toBeInViewport();
       await captureChromeZoomView(page, testInfo, `49-ux5-native-zoom-${target * 100}-finder`);
       await finder.selectOption(denseDashboard.widgets[11]!.id);
       await page.getByRole('button', { name: 'Go to visualization' }).click();
