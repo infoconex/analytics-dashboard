@@ -34,6 +34,7 @@ jobs:
           path: |
             web/test-results/visual-*/**/*.png
             web/test-results/visual-*/**/*.webm
+            web/test-results/visual-*/**/*.json
             web/test-results/visual-*/**/trace.zip
           if-no-files-found: warn
           retention-days: 14

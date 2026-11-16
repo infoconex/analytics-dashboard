@@ -256,13 +256,17 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await index.locator('summary').focus();
   await page.keyboard.press('Enter');
   const lastEntry = index.getByRole('button', { name: '12. Channel details — regional' });
-  await lastEntry.focus();
+  for (let step = 0; step < 12; step++) await page.keyboard.press('Tab');
+  await expect(lastEntry).toBeFocused();
   await page.keyboard.press('Enter');
   const lastCard = page.getByRole('article', { name: 'Channel details — regional' });
   await expect(lastCard.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
 
   const returnAction = lastCard.getByRole('button', { name: 'Back to visualization list from Channel details — regional' });
-  await returnAction.focus();
+  // From a focused heading, traverse the scrollable table, its five row
+  // selection buttons and then the local return action with actual Tab keys.
+  for (let step = 0; step < 7; step++) await page.keyboard.press('Tab');
+  await expect(returnAction).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(lastEntry).toBeFocused();
   await page.keyboard.press('Shift+Tab');
