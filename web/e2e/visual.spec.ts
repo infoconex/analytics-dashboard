@@ -235,7 +235,7 @@ test('chart data alternative exposes an announced keyboard channel selection', a
   await page.goto('/#/dashboards');
   await page.getByRole('button', { name: /Open Business performance/ }).click();
   const bar = page.getByRole('article', { name: 'Orders by channel' });
-  await expect(bar.getByRole('img', { name: /keyboard-accessible channel filters/ })).toBeVisible();
+  await expect(bar.getByRole('img', { name: /Channel selection is also available from the data table/ })).toBeVisible();
   await bar.getByText('View data table').focus();
   await page.keyboard.press('Enter');
   const category = bar.getByRole('button', { name: 'Show only Direct' });
