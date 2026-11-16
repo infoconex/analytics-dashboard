@@ -55,6 +55,23 @@ public sealed class DashboardApiTests
     }
 
     [Test]
+    public async Task KnownDashboardIdentifierCannotBypassOrganizationBoundary()
+    {
+        const string dashboardId = "a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3441";
+        var authorized = await client.GetAsync($"/api/organizations/northstar/dashboards/{dashboardId}");
+        var crossTenant = await client.GetAsync($"/api/organizations/isolated/dashboards/{dashboardId}");
+        var missing = await client.GetAsync(
+            "/api/organizations/northstar/dashboards/11111111-1111-4111-8111-111111111111");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(authorized.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(crossTenant.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        });
+    }
+
+    [Test]
     public async Task DashboardCreationIsAvailableToAuthorizedEditor()
     {
         var draft = new DashboardDraft("API dashboard", "Created in the integration test", []);
