@@ -343,6 +343,93 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await capture(page, testInfo, '33-chart-insights-forced-colors');
 });
 
+test('UX-5 deterministic task journey measures direct navigation and safe recovery without people', async ({ page }, testInfo) => {
+  await fixedDemoApi(page, denseDashboard);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  await expect(page.locator('.canvas-item')).toHaveCount(12);
+  const finder = page.getByRole('combobox', { name: 'Find a visualization' });
+  const go = page.getByRole('button', { name: 'Go to visualization' });
+  await expect(page.getByRole('heading', { name: 'Find a visualization' })).toBeVisible();
+  await expect(finder.locator('option')).toHaveCount(13); // One prompt plus twelve named choices.
+  await expect(go).toBeDisabled();
+  await expect(page.locator('details.dashboard-index')).not.toHaveAttribute('open', '');
+  await capture(page, testInfo, '46-ux5-finder-first-arrival-desktop');
+
+  // Count real key presses starting with focus on the relevant navigation control.
+  // UX-4g's equivalent path from focused index summary needed Enter + 12 Tabs + Enter.
+  const actions: string[] = [];
+  const press = async (key: string) => { await page.keyboard.press(key); actions.push(key); };
+  await finder.focus();
+  await press('End');
+  await expect(finder).toHaveValue(denseDashboard.widgets[11]!.id);
+  await press('Tab');
+  await expect(go).toBeFocused();
+  await press('Enter');
+  const last = page.getByRole('article', { name: 'Channel details — regional' });
+  await expect(last.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
+  const index = page.locator('details.dashboard-index');
+  await last.getByRole('button', { name: /Back to visualization list/ }).click();
+  await expect(index).toHaveAttribute('open', '');
+  await expect(index.getByRole('button', { name: '12. Channel details — regional' })).toBeFocused();
+  await expect(last.getByRole('row', { name: /Organic search.*1,820/ })).toBeVisible();
+
+  const orders = page.getByRole('article', { name: 'Orders by channel', exact: true });
+  await expect(orders.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders');
+  await orders.getByText('View data table').click();
+  await expect(orders.getByRole('row', { name: /Organic search.*1,820/ })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
+  await expect(orders.locator('.chart-insight')).toContainText('Showing Direct: 1,530 orders');
+  await expect(orders.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Remove Direct filter' })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
+  await expect(orders.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders');
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  const add = page.getByRole('button', { name: /Add visualization/ });
+  await add.click();
+  const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+  await expect(dialog.locator('.gallery-card')).toHaveCount(6);
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(add).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
+  await expect(page.locator('.canvas-item')).toHaveCount(12);
+
+  const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+  expect(scan.violations).toEqual([]);
+  for (const [width, height, name] of [[390, 844, 'mobile'], [320, 900, 'reflow']] as const) {
+    await page.setViewportSize({ width, height });
+    await assertNoDocumentOverflow(page, width);
+    await expect(finder).toBeVisible();
+    await expect(go).toBeVisible();
+    const selectBounds = await finder.boundingBox();
+    expect(selectBounds?.height).toBeGreaterThanOrEqual(24);
+    await capture(page, testInfo, `47-ux5-finder-${name}-${width}`);
+  }
+  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+  await capture(page, testInfo, '48-ux5-finder-forced-colors-320');
+  const metrics = {
+    subject: 'Scripted Chromium actions on fictional sample data; no participants or screen-reader speech',
+    task: 'From a focused navigation control, reach visualization 12 heading',
+    baseline: { path: 'Focused expanded-index summary, Enter, 12 Tabs, Enter', keyPresses: 14 },
+    ux5: { path: 'Focused native visualization selection, End, Tab, Enter', actions, keyPresses: actions.length },
+    result: { selectedWidget: denseDashboard.widgets[11]!.title, returnedToExactIndexEntry: true,
+      highestOrders: { channel: 'Organic search', value: 1820 }, directOrders: 1530,
+      filterResetRecovered: true, cancelledEditWithoutChanges: true },
+    responsiveViewportWidths: [1440, 390, 320],
+  };
+  // Write the evidence into the test output directory. Body-only attachments
+  // do not appear in the workflow's published **/*.json artifact glob.
+  const evidencePath = testInfo.outputPath('ux5-scripted-task-evidence.json');
+  await writeFile(evidencePath, JSON.stringify(metrics, null, 2));
+  await testInfo.attach('ux5-scripted-task-evidence.json', { path: evidencePath, contentType: 'application/json' });
+});
+
 test('browser zoom attempts report genuine viewport changes rather than treating CSS reflow as zoom', async ({ page }, testInfo) => {
   await fixedDemoApi(page, denseDashboard);
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -583,25 +670,28 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
         channelSelector: zoomInventory.controls.find(item => item.name === 'Marketing channel'),
       } });
 
-      const index = page.locator('details.dashboard-index');
-      if (!(await index.evaluate(element => (element as HTMLDetailsElement).open))) {
-        await index.locator('summary').focus();
-        await page.keyboard.press('Enter');
-      }
-      await index.locator('summary').focus();
-      for (let step = 0; step < 12; step++) await page.keyboard.press('Tab');
-      const entry = index.getByRole('button', { name: '12. Channel details — regional' });
-      await expect(entry).toBeFocused();
-      await page.keyboard.press('Enter');
+      const finder = page.getByRole('combobox', { name: 'Find a visualization' });
+      await expect(finder).toBeVisible();
+      // Capture the real browser-painted finder, not merely the page header
+      // above a finder that is present in the DOM but below the fold.
+      await finder.scrollIntoViewIfNeeded();
+      await expect(finder).toBeInViewport();
+      await captureChromeZoomView(page, testInfo, `49-ux5-native-zoom-${target * 100}-finder`);
+      await finder.selectOption(denseDashboard.widgets[11]!.id);
+      await page.getByRole('button', { name: 'Go to visualization' }).click();
       const lastCard = page.getByRole('article', { name: 'Channel details — regional' });
       await expect(lastCard.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
-      const headingFocus = await zoomPageMetrics(page);
-      expect(headingFocus.focus.unobscuredBelowStickyHeader, 'Widget 12 heading focus is visibly unobscured').toBe(true);
-      observations.push({ target: target * 100, widgetHeadingFocus: headingFocus });
+      const directHeading = await zoomPageMetrics(page);
+      expect(directHeading.focus.unobscuredBelowStickyHeader, 'UX-5 direct navigation focus must be unobscured at native zoom').toBe(true);
+      observations.push({ target: target * 100, ux5DirectHeading: directHeading });
+
+      const index = page.locator('details.dashboard-index');
       await expect(lastCard.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
       for (let step = 0; step < 7; step++) await page.keyboard.press('Tab');
       await expect(lastCard.getByRole('button', { name: 'Back to visualization list from Channel details — regional' })).toBeFocused();
       await page.keyboard.press('Enter');
+      const entry = index.getByRole('button', { name: '12. Channel details — regional' });
+      await expect(index).toHaveAttribute('open', '');
       await expect(entry).toBeFocused();
       const indexFocus = await zoomPageMetrics(page);
       expect(indexFocus.focus.unobscuredBelowStickyHeader, 'Exact index entry focus is visibly unobscured').toBe(true);

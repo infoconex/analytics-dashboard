@@ -5,6 +5,7 @@ import type { DashboardWidget } from './model';
 import { WidgetTile } from './WidgetTile';
 import type { ConsumerFilters } from './consumerFilters';
 import { Button } from './ui/Button';
+import { resolveNavigationSelection } from './dashboardNavigation';
 
 interface Props {
   widgets: DashboardWidget[];
@@ -22,6 +23,8 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [navigationSelection, setNavigationSelection] = useState('');
+  const selectedTarget = resolveNavigationSelection(widgets, navigationSelection);
   const activePointer = useRef<string | null>(null);
   const indexRef = useRef<HTMLDetailsElement>(null);
   const indexButtons = useRef(new Map<string, HTMLButtonElement>());
@@ -63,6 +66,19 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
   return (
     <section aria-label={editing ? 'Dashboard composition canvas' : 'Dashboard visualizations'}>
       {editing && <p className="canvas-instructions" id="canvas-instructions">Drag a handle to rearrange visualizations, or use the Move earlier and Move later buttons. The handle also supports the up and down arrow keys. Changes are saved only when you select Save changes.</p>}
+      {widgets.length >= 8 && <nav className="dashboard-navigator" aria-label="Find a visualization">
+        <div className="dashboard-navigator-copy"><h2>Find a visualization</h2><p>{widgets.length} visualizations. Choose one to jump directly to its heading, or browse the full list below.</p></div>
+        <form className="dashboard-navigator-controls" onSubmit={event => { event.preventDefault(); if (selectedTarget) focusWidget(selectedTarget); }}>
+          <label htmlFor="dashboard-navigator-selection">Visualization</label>
+          <div className="dashboard-navigator-actions">
+            <select id="dashboard-navigator-selection" aria-label="Find a visualization" value={selectedTarget ?? ''} onChange={event => setNavigationSelection(event.target.value)}>
+              <option value="">Choose a visualization…</option>
+              {widgets.map((widget, index) => <option key={widget.id} value={widget.id}>{index + 1}. {widget.title}</option>)}
+            </select>
+            <Button type="submit" disabled={!selectedTarget}>Go to visualization</Button>
+          </div>
+        </form>
+      </nav>}
       {widgets.length >= 8 && <details className="dashboard-index" ref={indexRef}>
         <summary>Jump to visualization <span className="dashboard-index-count">({widgets.length})</span></summary>
         <nav aria-label="Jump to visualization">
