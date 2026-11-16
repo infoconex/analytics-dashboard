@@ -23,6 +23,8 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const activePointer = useRef<string | null>(null);
+  const indexRef = useRef<HTMLDetailsElement>(null);
+  const indexButtons = useRef(new Map<string, HTMLButtonElement>());
 
   function widgetAtPoint(x: number, y: number): string | null {
     return document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-widget-id]')?.dataset.widgetId ?? null;
@@ -48,14 +50,25 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
     heading?.focus({ preventScroll: true });
   }
 
+  function returnToIndex(id: string) {
+    if (!indexRef.current) return;
+    indexRef.current.open = true;
+    const target = indexButtons.current.get(id);
+    target?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    target?.focus({ preventScroll: true });
+  }
+
   return (
     <section aria-label={editing ? 'Dashboard composition canvas' : 'Dashboard visualizations'}>
       {editing && <p className="canvas-instructions" id="canvas-instructions">Drag a handle to rearrange visualizations, or use the Move earlier and Move later buttons. The handle also supports the up and down arrow keys. Changes are saved only when you select Save changes.</p>}
-      {widgets.length >= 8 && <details className="dashboard-index">
+      {widgets.length >= 8 && <details className="dashboard-index" ref={indexRef}>
         <summary>Jump to visualization <span className="dashboard-index-count">({widgets.length})</span></summary>
         <nav aria-label="Jump to visualization">
           <ol>{widgets.map((widget, index) => <li key={widget.id}>
-            <button type="button" onClick={() => focusWidget(widget.id)} aria-label={`${index + 1}. ${widget.title}`}>
+            <button type="button" ref={node => {
+              if (node) indexButtons.current.set(widget.id, node);
+              else indexButtons.current.delete(widget.id);
+            }} onClick={() => focusWidget(widget.id)} aria-label={`${index + 1}. ${widget.title}`}>
               <span aria-hidden="true">{index + 1}.</span> {widget.title}
             </button>
           </li>)}</ol>
@@ -100,7 +113,8 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
             <button className="icon-button" aria-label={`Move ${widget.title} earlier`} title="Move earlier" disabled={index === 0} onClick={() => announceMove(moveWidget(widgets, widget.id, -1), widget.id)}><ArrowUp size={17} /></button>
             <button className="icon-button" aria-label={`Move ${widget.title} later`} title="Move later" disabled={index === widgets.length - 1} onClick={() => announceMove(moveWidget(widgets, widget.id, 1), widget.id)}><ArrowDown size={17} /></button>
           </div>}
-          <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined} />
+          <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined}
+            onReturnToIndex={!editing && widgets.length >= 8 ? () => returnToIndex(widget.id) : undefined} />
         </div>)}
         {editing && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Choose a chart and see it on your dashboard</small></button>}
       </div>

@@ -484,3 +484,17 @@ button:disabled { opacity:.6; }
   .dashboard-index > summary { color:LinkText; }
   .dashboard-index button:focus-visible,.widget-title:focus { outline:3px solid Highlight; }
 }
+
+/* UX-4d: concise chart interpretation and a predictable return route from deep cards. */
+.chart-insight { margin:var(--space-2) 0; color:var(--color-text); font-size:var(--type-label); line-height:1.5; overflow-wrap:anywhere; }
+.chart-insight strong { color:var(--color-heading); }
+.widget-return { display:flex; justify-content:flex-end; margin-top:var(--space-2); padding-top:var(--space-2); border-top:1px solid var(--color-border); }
+.widget-return button { min-height:44px; padding:var(--space-2) var(--space-3); background:transparent; border:1px solid transparent; border-radius:var(--radius-control); color:var(--color-primary); font-size:var(--type-label); font-weight:700; text-align:right; cursor:pointer; }
+.widget-return button:hover { background:var(--color-surface-muted); border-color:var(--color-border); }
+.widget-return button:focus-visible { outline:3px solid var(--color-focus); outline-offset:2px; }
+.canvas-item-metric .widget-return { grid-column:1/-1; }
+@media (forced-colors:active) {
+  .widget-return { border-color:CanvasText; }
+  .widget-return button { color:LinkText; }
+  .widget-return button:focus-visible { outline:3px solid Highlight; }
+}
