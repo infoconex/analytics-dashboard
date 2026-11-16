@@ -385,9 +385,11 @@ test('UX-4g inventories rendered controls, their targets, contrast, focus and mo
   await page.getByRole('button', { name: /Open Business performance/ }).click();
   const readings: Array<Record<string, unknown>> = [];
   const inspect = async (state: string) => {
+    const width = await page.evaluate(() => innerWidth);
+    await assertNoDocumentOverflow(page, width);
     const inventory = await auditControls(page);
     readings.push({ state, inventory });
-    expect(inventory.horizontalDocumentOverflow, `${state}: document reflow`).toBe(false);
+    expect(inventory.horizontalDocumentOverflow, `${state}: document width ${inventory.documentWidth} vs viewport ${width}`).toBe(false);
     for (const small of inventory.smallTargets.filter(target => !target.spacingExceptionCandidate)) {
       expect.soft(small.overlapping, `${state}: overlapping undersized ${small.role} ${small.name}`).toEqual([]);
     }

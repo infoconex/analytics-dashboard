@@ -114,6 +114,7 @@ export async function auditControls(page: Page) {
       textContrastCandidates: textSamples.filter(sample => !sample.complexBackground && sample.computedRatio !== null
         && sample.computedRatio < sample.requiredRatio),
       textSamples,
+      documentWidth: document.documentElement.scrollWidth,
       horizontalDocumentOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       note: 'Computed text ratios are diagnostics for solid CSS backgrounds and direct text nodes, not antialiased pixels, gradients, SVG chart labels or every WCAG exception. Border ratios are diagnostic only; not every border is essential to identifying a control.',
     };
