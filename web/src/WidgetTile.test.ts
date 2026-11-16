@@ -34,5 +34,7 @@ describe('native dashboard data tables', () => {
     expect(html).toContain('1,530');
     expect(html).not.toContain('1.5K');
     expect(html).not.toContain('Organic search');
+    expect(html).toContain('Show all channels instead of Direct');
+    expect(html).toContain('aria-pressed="true"');
   });
 });

@@ -24,6 +24,7 @@ test('dashboard consumers coordinate date and channel filters and reset independ
   await expect(channels.locator('.donut-legend')).toContainText('Direct');
   await expect(channels.locator('.donut-legend')).not.toContainText('Organic search');
   await expect(channelTable.locator('tbody tr')).toHaveCount(1);
+  await expect(channelTable.getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
 
   await page.getByRole('button', { name: 'Remove Last 3 months filter' }).click();
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');

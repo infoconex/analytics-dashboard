@@ -10,7 +10,7 @@ The existing filter controls also removed the currently focused **Remove filter*
 
 UX-4e makes these targeted changes:
 
-1. Native dashboard table cells reuse the already established detailed formatter, matching chart data alternatives and keeping full sample counts. Only visual chart axes and headline metrics use compact notation. The native table explicitly labels the whole-number share column **Share (rounded)**; exact counts are authoritative.
+1. Native dashboard table cells reuse the already established detailed formatter, matching chart data alternatives and keeping full sample counts. Only visual chart axes and headline metrics use compact notation. The native table explicitly labels the whole-number share column **Share (rounded)**; exact counts are authoritative. The selected row's filtering action includes the channel name and `aria-pressed`, so its identity and selected state remain available in the accessibility tree after filtering.
 2. When a filter chip disappears, focus moves to its surviving named native select, which now reflects the updated value. Reset returns to the channel select if a channel filter was active, otherwise to the date select. A layout effect restores focus after React commits and before the paint. The existing persistent polite status region continues to report the filter scope.
 3. Preserve the 12-widget index-to-heading and return-to-exact-entry route, sample-only API fixture, existing chart insights, saved widget order and responsive layout. No new dependency, server endpoint, tenant rule, credential transport or persistence change.
 
