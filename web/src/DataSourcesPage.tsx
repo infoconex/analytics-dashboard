@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Clock3, Database, Pencil, Plus, ShieldCheck, Trash2, X } from 'lucide-react';
 import { dataSourceApi } from './api';
 import { ApiError, type DataSourceDefinition, type DataSourceProvider } from './model';
+import { Button } from './ui/Button';
+import { ModalDialog } from './ui/ModalDialog';
 
 const providers: { id: DataSourceProvider; name: string; initials: string; category: string; tone: string }[] = [
   { id: 'sqlServer', name: 'Microsoft SQL Server', initials: 'SQL', category: 'Relational database', tone: 'source-red' },
@@ -83,17 +85,17 @@ export function DataSourcesPage({ organizationId, canEdit, onNotice }: {
     <div className="page-heading">
       <div><div className="eyebrow">DATA INTEGRATIONS</div><h1>Data sources</h1>
         <p>Register provider and display-name metadata for your organization.</p></div>
-      {canEdit && <button className="button button-primary" onClick={() => setEdit({ name: '', provider: 'sqlServer' })}>
+      {canEdit && <Button onClick={() => setEdit({ name: '', provider: 'sqlServer' })}>
         <Plus size={17} /> Register data source
-      </button>}
+      </Button>}
     </div>
     <div className="info-banner" role="note"><ShieldCheck size={20} /><div>
       <strong>Registration only — no live connections</strong>
       <p>Definitions contain only a provider and a name. Credentials, connection strings, network endpoints, connection tests, and query execution are unavailable. All dashboard charts still use demonstration data.</p>
     </div></div>
-    {error && <div className="error-banner" role="alert"><span>{error}</span><button aria-label="Dismiss error" onClick={() => setError('')}><X size={16} /></button></div>}
+    {error && !edit && <div className="error-banner" role="alert"><span>{error}</span><button aria-label="Dismiss error" onClick={() => setError('')}><X size={16} /></button></div>}
     <div className="source-heading"><h2>Registered definitions</h2><span>{definitions.length} registered</span></div>
-    {loading ? <div className="loading-state">Loading data-source definitions…</div>
+    {loading ? <div className="loading-state" role="status" aria-live="polite">Loading data-source definitions…</div>
       : definitions.length === 0 ? <div className="source-empty"><Database size={27} />
           <strong>No data sources registered</strong>
           <p>{canEdit ? 'Start by registering a provider and display name.' : 'An organization editor can register a data-source definition.'}</p>
@@ -123,14 +125,12 @@ export function DataSourcesPage({ organizationId, canEdit, onNotice }: {
       <span><Clock3 size={14} /> Metadata only</span>
     </article>)}</div>
 
-    {edit && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (!busy && event.target === event.currentTarget) setEdit(null); }}>
-      <section className="modal" role="dialog" aria-modal="true" aria-label={edit.definition ? 'Rename data source' : 'Register data source'}>
-        <div className="modal-heading"><div><span className="eyebrow">ORGANIZATION METADATA</span>
-          <h2>{edit.definition ? 'Rename data source' : 'Register data source'}</h2>
-          <p>Only provider and display name are recorded. This does not establish a connection.</p></div>
-          <button className="icon-button" aria-label="Close" disabled={busy} onClick={() => setEdit(null)}><X size={20} /></button></div>
+    {edit && <ModalDialog title={edit.definition ? 'Rename data source' : 'Register data source'}
+      eyebrow="ORGANIZATION METADATA" description="Only provider and display name are recorded. This does not establish a connection."
+      initialFocus="input" busy={busy} onDismiss={() => setEdit(null)}>
+        {error && <p className="error-banner" role="alert">{error}</p>}
         <label className="form-label">Display name
-          <input autoFocus maxLength={100} value={edit.name} onChange={event => setEdit({ ...edit, name: event.target.value })}
+          <input maxLength={100} value={edit.name} onChange={event => setEdit({ ...edit, name: event.target.value })}
             placeholder="e.g. Customer reporting" /></label>
         <label className="form-label">Provider
           <select value={edit.provider} disabled={Boolean(edit.definition)} onChange={event =>
@@ -138,10 +138,10 @@ export function DataSourcesPage({ organizationId, canEdit, onNotice }: {
             {providers.map(provider => <option key={provider.id} value={provider.id}>{provider.name}</option>)}
           </select></label>
         <p className="source-form-note">Do not enter credentials, connection details, or network addresses in the display name.</p>
-        <div className="modal-actions"><button className="button button-light" disabled={busy} onClick={() => setEdit(null)}>Cancel</button>
-          <button className="button button-primary" disabled={busy || !edit.name.trim()} onClick={() => void save()}>
+        <div className="modal-actions"><Button variant="light" disabled={busy} onClick={() => setEdit(null)}>Cancel</Button>
+          <Button disabled={busy || !edit.name.trim()} onClick={() => void save()}>
             {busy ? 'Saving…' : edit.definition ? 'Save name' : 'Register definition'}
-          </button></div>
-      </section></div>}
+          </Button></div>
+      </ModalDialog>}
   </>;
 }

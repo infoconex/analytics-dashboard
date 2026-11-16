@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap');
+@import './design-tokens.css';
 
 :root { font-family: 'DM Sans', 'Segoe UI', sans-serif; color: #25324a; background: #f7f9fd; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 * { box-sizing: border-box; }
@@ -246,3 +247,67 @@ h1 { font-size: clamp(27px,2.55vw,35px); font-weight: 800; color: #19253b; lette
 .filter-scope-note { font-size:10px; line-height:1.5; color:#8a97ab; }
 @media(max-width:720px) { .consumer-filters { padding:16px; } .consumer-filters-header { align-items:flex-start; } .consumer-filters-title { gap:8px; } .consumer-filter-field { max-width:none; } .consumer-filter-bottom { align-items:flex-start; flex-direction:column; } }
 @media(max-width:400px) { .consumer-filters-header { flex-direction:column; } .reset-filters { align-self:flex-start; } }
+
+/* UX-4a: a coherent light-theme foundation for the shared shell and interaction states. */
+:root { color:var(--color-text); background:var(--color-canvas); font-family:var(--font-body); }
+body { font-size:var(--type-body); }
+h1,h2,h3 { font-family:var(--font-heading); }
+h1 { color:var(--color-heading); }
+.sidebar { background:var(--color-nav); color:var(--color-nav-text); }
+.topbar,.summary-card,.dashboard-card,.widget-tile,.registered-sources,.source-card,.settings-card,.settings-section,.dashboard-toolbar,.consumer-filters,.explore-panel,.explore-results {
+  background-color:var(--color-surface); border-color:var(--color-border);
+}
+.summary-card,.dashboard-card,.widget-tile,.source-card,.consumer-filters { box-shadow:var(--shadow-card); border-radius:var(--radius-card); }
+.page-heading p,.section-title-row p,.summary-title,.widget-subtitle,.consumer-filters-title span,.consumer-filter-field small,.filter-scope-note,.dashboard-card p,
+.recent-text small,.source-card p,.registered-source-details p,.registered-source-details small,.explore-preview-heading p,.explore-save p,.modal-heading p {
+  color:var(--color-muted);
+}
+.page-heading p,.section-title-row p,.widget-subtitle,.dashboard-card p,.explore-preview-heading p,.explore-save p { font-size:var(--type-label); line-height:1.55; }
+.summary-title,.consumer-filters-title span,.consumer-filter-field small,.filter-scope-note,.registered-source-details p,.registered-source-details small,.recent-text small { font-size:var(--type-caption); line-height:1.5; }
+.nav-button { font-size:var(--type-body); min-height:44px; }
+.nav-button.nav-active { color:#ffffff; box-shadow:inset 3px 0 #9bb0ff; }
+.button { min-height:44px; font-size:var(--type-label); border-radius:var(--radius-control); padding:var(--space-3) var(--space-4); }
+.button-primary { background:var(--color-primary); color:var(--color-on-primary); }
+.button-primary:hover:not(:disabled) { background:var(--color-primary-hover); }
+.button-light { background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text); }
+.button-light:hover:not(:disabled) { background:var(--color-surface-muted); }
+.button-quiet { color:var(--color-primary); }
+.icon-button { min-width:40px; min-height:40px; }
+.consumer-filter-field > span,.form-label { color:var(--color-text); font-size:var(--type-label); }
+.form-label input,.form-label select,.form-label textarea,.consumer-filter-field select,.period-picker select {
+  color:var(--color-text); font-size:var(--type-body); border-color:var(--color-border);
+}
+.form-label input,.form-label select,.form-label textarea,.consumer-filter-field select { min-height:44px; }
+.period-picker { min-height:44px; border-color:var(--color-border); }
+.reset-filters,.filter-chip { color:var(--color-primary); font-size:var(--type-label); border-color:#c4d1f3; min-height:36px; }
+.dashboard-card .card-footer button,.text-link { color:var(--color-primary); font-size:var(--type-label); }
+.error-banner { background:var(--color-danger-surface); border-color:var(--color-danger-border); color:var(--color-danger); font-size:var(--type-label); }
+.error-banner button { color:var(--color-danger); min-width:36px; min-height:36px; }
+.error-banner .error-retry { flex-shrink:0; padding:var(--space-2) var(--space-4); border:1px solid var(--color-danger-border); background:var(--color-surface); border-radius:var(--radius-control); font-weight:700; }
+.loading-state { color:var(--color-muted); font-size:var(--type-body); }
+.empty-state p,.source-empty p,.canvas-empty p { color:var(--color-muted); font-size:var(--type-label); }
+.canvas-empty .button { margin-top:var(--space-2); }
+.modal { border:1px solid var(--color-border); border-radius:var(--radius-card); box-shadow:var(--shadow-dialog); color:var(--color-text); background:var(--color-surface); }
+dialog.modal:not([open]) { display:none; }
+dialog.modal::backdrop { background:rgba(16,26,44,.7); }
+.modal-heading h2 { color:var(--color-heading); }
+.modal-heading p { font-size:var(--type-label); }
+.modal-actions { border-color:var(--color-border); }
+.toast { font-size:var(--type-label); }
+
+/* Uniform keyboard focus, including custom search and unstyled icon controls. */
+:where(button,input,select,textarea,a):focus-visible,
+.list-search:focus-within,
+.workspace-switch:focus-within { outline:3px solid var(--color-focus); outline-offset:3px; }
+.period-picker select:focus-visible,.list-search input:focus-visible { outline:3px solid var(--color-focus); outline-offset:2px; }
+.gallery-card:focus-visible,.explore-dataset:focus-visible,.drag-handle:focus-visible { outline:3px solid var(--color-focus); outline-offset:3px; }
+button:disabled { opacity:.6; }
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
+@media(max-width:480px) {
+  .icon-button { min-width:36px; min-height:40px; }
+  .consumer-filters { padding:var(--space-4); }
+  .filter-scope-note { font-size:var(--type-caption); }
+  .visualization-modal .modal-actions { position:sticky; bottom:-27px; z-index:1; background:var(--color-surface); padding-bottom:var(--space-3); box-shadow:0 -10px 18px #121d3b10; }
+}

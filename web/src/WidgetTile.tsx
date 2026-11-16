@@ -1,4 +1,4 @@
-import { MoreHorizontal, Pencil, Trash2, TrendingUp } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp } from 'lucide-react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -9,6 +9,10 @@ import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 
 const palette = ['#6179f4', '#36b8b0', '#f0b35d', '#a38af4', '#f17f97'];
+const axisTick = { fontSize: 12, fill: '#566780' };
+const formatAxisValue = (value: number) => new Intl.NumberFormat('en-US', {
+  notation: 'compact', maximumFractionDigits: 1,
+}).format(value);
 
 interface Props {
   widget: DashboardWidget;
@@ -64,7 +68,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
             <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
             <button aria-label={`Remove ${widget.title}`} className="icon-button danger-hover" onClick={() => onRemove?.(widget.id)}><Trash2 size={15} /></button>
           </div>
-        ) : <MoreHorizontal size={18} className="muted-icon" aria-hidden="true" />}
+        ) : null}
       </div>
 
       {widget.kind === 'metric' ? (
@@ -100,27 +104,27 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
                 <Tooltip />
               </PieChart>
             ) : widget.kind === 'bar' ? (
-              <BarChart data={data} margin={{ top: 6, right: 6, left: -17, bottom: 0 }}>
+              <BarChart data={data} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
-                <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a95a9' }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a95a9' }} width={48} />
+                <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
+                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={formatAxisValue} width={52} />
                 <Tooltip cursor={{ fill: '#f2f5fd' }} />
                 <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} />
               </BarChart>
             ) : widget.kind === 'line' ? (
-              <LineChart data={data} margin={{ top: 8, right: 10, left: -17, bottom: 0 }}>
+              <LineChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
-                <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a95a9' }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a95a9' }} width={48} />
+                <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
+                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={formatAxisValue} width={52} />
                 <Tooltip />
                 <Line type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={3} dot={false} activeDot={{ r: 5 }} />
               </LineChart>
             ) : (
-              <AreaChart data={data} margin={{ top: 8, right: 10, left: -17, bottom: 0 }}>
+              <AreaChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                 <defs><linearGradient id={`area-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.27} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0.01} /></linearGradient></defs>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
-                <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a95a9' }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a95a9' }} width={48} />
+                <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
+                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={formatAxisValue} width={52} />
                 <Tooltip />
                 <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.7} fill={`url(#area-${widget.id})`} />
               </AreaChart>
