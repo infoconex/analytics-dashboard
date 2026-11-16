@@ -79,8 +79,10 @@ async function assertNoDocumentOverflow(page: Page, width: number) {
         width: Math.round(element.getBoundingClientRect().width),
       })),
   }));
-  expect(layout.pageWidth, `Horizontal overflow at ${width}px: ${JSON.stringify(layout.overflowing)}`)
-    .toBeLessThanOrEqual(width);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth), {
+    message: `Persistent horizontal overflow at ${width}px (initial width ${layout.pageWidth}): ${JSON.stringify(layout.overflowing)}`,
+    timeout: 5_000,
+  }).toBeLessThanOrEqual(width);
 }
 
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
@@ -224,6 +226,8 @@ test('compact metrics do not stretch to match chart cards and short dashboards a
   await expect(page.locator('.dashboard-index')).toHaveCount(0);
   const sizes = await page.locator('.canvas-item').evaluateAll(items => items.slice(0, 2).map(item => item.getBoundingClientRect().height));
   expect(sizes[0]).toBeLessThan(sizes[1] - 45);
+  const widths = await page.locator('.canvas-item').evaluateAll(items => items.slice(0, 2).map(item => item.getBoundingClientRect().width));
+  expect(widths[0]).toBeGreaterThan(widths[1] * 1.8);
 });
 
 test('chart data alternative exposes an announced keyboard channel selection', async ({ page }) => {
@@ -231,7 +235,7 @@ test('chart data alternative exposes an announced keyboard channel selection', a
   await page.goto('/#/dashboards');
   await page.getByRole('button', { name: /Open Business performance/ }).click();
   const bar = page.getByRole('article', { name: 'Orders by channel' });
-  await expect(bar.getByRole('img', { name: /keyboard-accessible controls/ })).toBeVisible();
+  await expect(bar.getByRole('img', { name: /keyboard-accessible channel filters/ })).toBeVisible();
   await bar.getByText('View data table').focus();
   await page.keyboard.press('Enter');
   const category = bar.getByRole('button', { name: 'Show only Direct' });

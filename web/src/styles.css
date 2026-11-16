@@ -445,8 +445,11 @@ button:disabled { opacity:.6; }
 
 /* UX-4c: compact cards keep DOM order, including at narrow reflow widths. */
 .widgets-grid { align-items:start; gap:var(--space-4); }
+.canvas-item-metric,.canvas-item-table { grid-column:1/-1; }
 .canvas-item > .widget-tile { flex:none; width:100%; }
 .widget-tile { padding:var(--space-4); }
+.canvas-item-metric .widget-tile { display:grid; grid-template-columns:minmax(0,0.8fr) minmax(0,1.2fr); gap:0 var(--space-5); align-items:start; }
+.canvas-item-metric .chart-data { grid-column:1/-1; }
 .widget-heading { margin-bottom:var(--space-3); }
 .widget-heading > div { min-width:0; }
 .widget-title { margin:0; overflow-wrap:anywhere; scroll-margin-top:var(--space-6); }
@@ -470,6 +473,7 @@ button:disabled { opacity:.6; }
 .dashboard-index button:hover { color:var(--color-primary); border-color:var(--color-border); }
 .dashboard-index button span { color:var(--color-muted); font-variant-numeric:tabular-nums; }
 @media (max-width:1100px) { .dashboard-index ol { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:950px) { .canvas-item-metric .widget-tile { display:block; } }
 @media (max-width:720px) {
   .widgets-grid { gap:var(--space-3); }
   .widget-chart,.widget-donut .widget-chart { height:220px; }

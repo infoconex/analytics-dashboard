@@ -65,7 +65,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
         {widgets.map((widget, index) => <div
           key={widget.id}
           data-widget-id={widget.id}
-          className={`canvas-item ${over === widget.id && dragged !== widget.id ? 'canvas-drop-target' : ''}`}
+          className={`canvas-item canvas-item-${widget.kind} ${over === widget.id && dragged !== widget.id ? 'canvas-drop-target' : ''}`}
           >
           {editing && <div className="canvas-move-controls">
             <button
