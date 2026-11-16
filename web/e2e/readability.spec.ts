@@ -31,6 +31,7 @@ test('chart data table provides a keyboard-operable equivalent of visual values'
   await expect(table.getByRole('columnheader', { name: 'Month' })).toBeVisible();
   await expect(table.getByRole('columnheader', { name: 'revenue' })).toBeVisible();
   await expect(table.getByRole('rowheader', { name: 'Jan' })).toBeVisible();
+  await expect(table.getByRole('row', { name: /Jan.*\$18,400/ })).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(table).toBeHidden();
 });

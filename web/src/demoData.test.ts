@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createWidget, datasetOptions, dimensions, formatMetric, metrics, selectRows } from './demoData';
+import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics, selectRows } from './demoData';
 
 describe('sample analytics', () => {
   it('filters commerce observations to the selected period', () => {
@@ -16,6 +16,12 @@ describe('sample analytics', () => {
   it('formats amounts and conversion percentages', () => {
     expect(formatMetric(12500, 'revenue')).toBe('$12.5K');
     expect(formatMetric(4.75, 'conversion')).toBe('4.8%');
+  });
+
+  it('preserves full sample values in accessible chart data tables', () => {
+    expect(formatDetailedMetric(18400, 'revenue')).toBe('$18,400');
+    expect(formatDetailedMetric(1820, 'orders')).toBe('1,820');
+    expect(formatDetailedMetric(4.8, 'conversion')).toBe('4.8%');
   });
 
   it('creates unique visualizations with valid default fields', () => {

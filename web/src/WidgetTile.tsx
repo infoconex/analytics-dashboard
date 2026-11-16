@@ -3,7 +3,7 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { formatMetric, selectRows } from './demoData';
+import { formatDetailedMetric, formatMetric, selectRows } from './demoData';
 import { selectConsumerRows } from './consumerFilters';
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
@@ -149,7 +149,7 @@ export function WidgetTile({ widget, period, editing, onEdit, onRemove, filters,
               <th scope="row">{channelInteraction
                 ? <button type="button" className="table-filter-button" aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button>
                 : row[axis]}</th>
-              <td>{formatMetric(Number(row[metric] ?? 0), metric)}</td>
+              <td>{formatDetailedMetric(Number(row[metric] ?? 0), metric)}</td>
             </tr>)}</tbody>
           </table>
         </div>
