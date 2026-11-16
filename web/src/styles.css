@@ -345,7 +345,9 @@ button:disabled { opacity:.6; }
 .sidebar .workspace-details strong,.sidebar .sidebar-profile strong { font-size:var(--type-label); }
 .sidebar-tip { padding:var(--space-4); }
 .sidebar-tip p { margin-top:var(--space-2); }
-.topbar .demo-label { font-size:var(--type-caption); }
+.topbar .demo-label { font-size:var(--type-caption); white-space:nowrap; }
+.demo-label { color:var(--color-text); }
+.eyebrow { color:var(--color-muted); }
 .section-title-row h2,.source-heading h2,.manage-section h2,.widget-title { font-size:var(--type-heading-sm); }
 .summary-card .summary-value { overflow-wrap:anywhere; }
 .summary-bottom { color:var(--color-muted); }
@@ -382,7 +384,9 @@ button:disabled { opacity:.6; }
 .toolbar-left,.toolbar-muted,.list-count,.recent-empty,.new-dashboard-card p,
 .info-banner p,.source-card p,.source-card > span,.source-empty p,.source-form-note,
 .settings-card p,.settings-section > p,.settings-detail span,.modal-heading p,
-.registered-source-details p,.registered-source-details small { color:var(--color-muted); }
+.registered-source-details p,.registered-source-details small,.source-heading > span,
+.canvas-empty-hint { color:var(--color-muted); }
+.thumbnail-float { color:#126b55; }
 .live-indicator,.role-pill { color:#126b55; }
 .source-unconnected,.status-pill { color:#765019; }
 .source-red { color:#9c2e43; }.source-orange { color:#91540c; }
@@ -433,6 +437,7 @@ button:disabled { opacity:.6; }
   .sidebar .workspace-details strong,.sidebar .workspace-details small { color:CanvasText; }
   .nav-button.nav-active,.gallery-card.gallery-selected,.explore-dataset-active,.donut-legend-button[aria-pressed="true"] { border:2px solid Highlight; color:Highlight; box-shadow:none; }
   :where(button,input,select,textarea,a,summary):focus-visible { outline:3px solid Highlight; outline-offset:3px; }
+  .chart-data summary:focus { outline:3px solid Highlight; outline-offset:3px; }
   .chart-data summary,.table-filter-button { color:LinkText; }
   .donut-legend i,.donut-legend-button i { border:2px solid CanvasText; }
 }

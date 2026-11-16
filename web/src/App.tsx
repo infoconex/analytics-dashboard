@@ -279,12 +279,19 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main-content">Skip to main content</a>
+      <button className="skip-link" onClick={() => mainContent.current?.focus()}>Skip to main content</button>
       {sidebarOpen && <button className="mobile-overlay" aria-label="Close navigation" onClick={closeSidebar} />}
       <aside ref={sidebar} className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} onKeyDown={event => {
-        if (sidebarOpen && event.key === 'Escape') { event.stopPropagation(); closeSidebar(); }
+        if (!sidebarOpen) return;
+        if (event.key === 'Escape') { event.stopPropagation(); closeSidebar(); }
+        if (event.key !== 'Tab') return;
+        const controls = [...(sidebar.current?.querySelectorAll<HTMLElement>('button:not([disabled]),select:not([disabled])') ?? [])];
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
       }}>
-        <button className="brand" onClick={() => navigate('overview')} aria-label="Analytics Dashboard home">
+        <button className="brand" onClick={() => navigate('overview')} aria-label="nexa. ANALYTICS STUDIO home">
           <div className="brand-mark"><Activity size={23} strokeWidth={2.4} /></div>
           <div><span className="brand-name">nexa<span>.</span></span><span className="brand-subtitle">ANALYTICS STUDIO</span></div>
         </button>

@@ -67,10 +67,27 @@ test('mobile navigation closes via Escape and returns keyboard focus to its trig
   await page.goto('/');
   const menu = page.getByRole('button', { name: 'Open navigation' });
   await menu.click();
-  await expect(page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Overview' })).toBeFocused();
+  const overview = page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Overview' });
+  await expect(overview).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByRole('button', { name: 'nexa. ANALYTICS STUDIO home' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByRole('button', { name: 'Organization' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'nexa. ANALYTICS STUDIO home' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(menu).toBeFocused();
   await expect(menu).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('skip navigation focuses main content without changing hash route', async ({ page }) => {
+  await page.goto('/#/explore');
+  const shortcut = page.getByRole('button', { name: 'Skip to main content' });
+  await shortcut.focus();
+  await shortcut.press('Enter');
+  await expect(page.locator('main')).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Turn data into a story.' })).toBeVisible();
+  expect(new URL(page.url()).hash).toBe('#/explore');
 });
 
 test('forced-colors mode retains visible focus and chart data alternatives', async ({ page }) => {

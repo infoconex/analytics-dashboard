@@ -47,6 +47,9 @@ async function fixedDemoApi(page: Page) {
 }
 
 async function capture(page: Page, testInfo: TestInfo, label: string) {
+  // Full-page screenshots otherwise paint fixed/sticky controls at the current
+  // scroll offset after the preceding interaction instead of their natural top.
+  if (!label.includes('dialog')) await page.evaluate(() => window.scrollTo(0, 0));
   const path = testInfo.outputPath(`${label}.png`);
   await page.screenshot({ path, fullPage: !label.includes('dialog'), animations: 'disabled' });
   await testInfo.attach(label, { path, contentType: 'image/png' });
