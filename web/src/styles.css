@@ -498,3 +498,23 @@ button:disabled { opacity:.6; }
   .widget-return button { color:LinkText; }
   .widget-return button:focus-visible { outline:3px solid Highlight; }
 }
+
+/* UX-4g: distinguish actionable controls from decorative card boundaries. */
+.form-label :is(input,select,textarea),.consumer-filter-field select,
+.period-picker,.list-search,.button-light,.back-button,.reset-filters,
+.donut-legend-button { border-color:var(--color-control-border); }
+.dashboard-toolbar .period-picker { border:1px solid var(--color-control-border); }
+.donut-legend-button[aria-pressed="true"],.filter-chip { border-color:var(--color-selected-border); }
+/* The same blue ring is strong on white, but too close in luminance to the dark sidebar. */
+.sidebar :is(button,select):focus-visible,.sidebar .workspace-switch:focus-within {
+  outline:3px solid var(--color-focus-on-dark);
+  outline-offset:3px;
+}
+@media(forced-colors:active) {
+  .form-label :is(input,select,textarea),.consumer-filter-field select,
+  .period-picker,.list-search,.button-light,.back-button,.reset-filters,
+  .donut-legend-button,.donut-legend-button[aria-pressed="true"],.filter-chip {
+    border-color:ButtonText;
+  }
+  .sidebar :is(button,select):focus-visible,.sidebar .workspace-switch:focus-within { outline-color:Highlight; }
+}

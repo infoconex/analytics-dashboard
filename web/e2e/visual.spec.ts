@@ -4,6 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Dashboard, DashboardDraft } from '../src/model';
+import { auditControls, focusedControl } from './controlAudit';
 
 // The real React application renders these fixed demonstration API contracts.
 // Captures never depend on an external tenant, a secret, or the mutable test database.
@@ -377,6 +378,100 @@ test('browser zoom attempts report genuine viewport changes rather than treating
   expect(observed).toHaveLength(observed[0]?.achieved ? 2 : 1);
 });
 
+test('UX-4g inventories rendered controls, their targets, contrast, focus and modal states', async ({ page }, testInfo) => {
+  await fixedDemoApi(page, denseDashboard);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#/dashboards');
+  await page.getByRole('button', { name: /Open Business performance/ }).click();
+  const readings: Array<Record<string, unknown>> = [];
+  const inspect = async (state: string) => {
+    const inventory = await auditControls(page);
+    readings.push({ state, inventory });
+    expect(inventory.horizontalDocumentOverflow, `${state}: document reflow`).toBe(false);
+    for (const small of inventory.smallTargets.filter(target => !target.spacingExceptionCandidate)) {
+      expect.soft(small.overlapping, `${state}: overlapping undersized ${small.role} ${small.name}`).toEqual([]);
+    }
+    return inventory;
+  };
+  const desktop = await inspect('desktop-1440');
+  const marketing = desktop.controls.find(item => item.name === 'Marketing channel');
+  expect(marketing?.borderContrast, 'Marketing selector edge against its rendered surface').toBeGreaterThanOrEqual(3);
+  expect(marketing?.height).toBeGreaterThanOrEqual(24);
+
+  const sidebar = page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Dashboards' });
+  await page.keyboard.press('Tab');
+  await sidebar.focus();
+  const darkFocus = await focusedControl(page);
+  readings.push({ state: 'dark-sidebar-keyboard-focus', focus: darkFocus });
+  expect(darkFocus.visibleFocus).toBe(true);
+  expect(darkFocus.fullyUnobscured).toBe(true);
+  await capture(page, testInfo, '40-ux4g-dark-sidebar-focus-before-dialog');
+
+  const index = page.locator('details.dashboard-index');
+  await index.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  const lastEntry = index.getByRole('button', { name: '12. Channel details — regional' });
+  await lastEntry.focus();
+  await page.keyboard.press('Enter');
+  const lastCard = page.getByRole('article', { name: 'Channel details — regional' });
+  await expect(lastCard.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
+  expect((await focusedControl(page)).fullyUnobscured).toBe(true);
+  await lastCard.getByRole('button', { name: /Back to visualization list/ }).click();
+  await expect(lastEntry).toBeFocused();
+  expect((await focusedControl(page)).fullyUnobscured).toBe(true);
+
+  const highest = page.getByRole('article', { name: 'Orders by channel', exact: true });
+  await expect(highest.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders');
+  await highest.getByText('View data table').click();
+  await expect(highest.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
+  await expect(page.getByRole('article', { name: 'Traffic sources', exact: true })
+    .getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
+  const selected = await inspect('desktop-selected-Direct');
+  expect(selected.controls.find(item => item.name === 'Show all channels instead of Direct' && item.className.includes('donut-legend'))?.borderContrast)
+    .toBeGreaterThanOrEqual(3);
+  await capture(page, testInfo, '41-ux4g-selected-Direct-desktop');
+  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
+  expect((await focusedControl(page)).fullyUnobscured).toBe(true);
+
+  for (const [width, height, state] of [[768, 1024, 'tablet-768'], [390, 844, 'mobile-390'], [320, 900, 'reflow-320']] as const) {
+    await page.setViewportSize({ width, height });
+    await inspect(state);
+    await capture(page, testInfo, `42-ux4g-${state}`);
+  }
+  await page.getByRole('button', { name: 'Open navigation' }).click();
+  const mobileNav = page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Dashboards' });
+  await mobileNav.focus();
+  const mobileFocus = await focusedControl(page);
+  readings.push({ state: 'mobile-navigation-focus', focus: mobileFocus });
+  expect(mobileFocus.visibleFocus && mobileFocus.fullyUnobscured).toBe(true);
+  await capture(page, testInfo, '43-ux4g-mobile-navigation-focus');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('navigation', { name: 'Workspace navigation' })).toBeHidden();
+
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  expect(await page.getByRole('button', { name: 'Save changes' }).isDisabled()).toBe(true);
+  await page.getByRole('button', { name: /Add visualization/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Tab');
+  const modalFocus = await focusedControl(page);
+  readings.push({ state: 'modal-keyboard-focus', focus: modalFocus });
+  expect(modalFocus.visibleFocus && modalFocus.fullyUnobscured).toBe(true);
+  await inspect('mobile-edit-dialog-320');
+  await capture(page, testInfo, '44-ux4g-modal-320');
+  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+  await inspect('forced-colors-modal-320');
+  await capture(page, testInfo, '45-ux4g-forced-colors-modal-320');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+
+  const path = testInfo.outputPath('ux4g-rendered-control-inventory.json');
+  await writeFile(path, JSON.stringify({ note: 'Automated Chromium computed geometry/color inspection; no manual user or screen-reader speech results.', readings }, null, 2));
+  await testInfo.attach('ux4g-rendered-control-inventory', { path, contentType: 'application/json' });
+});
+
 // Uses Chromium's own chrome.tabs.setZoom/getZoom API, not a simulated narrow
 // viewport, device metrics override, CSS zoom, or CDP page scale. The bundled
 // Playwright Chromium loads a local, inert Manifest V3 extension only for this
@@ -477,6 +572,12 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
         environment: { os: process.platform, chromium: context.browser()?.version(), runner: 'CI Chromium, headless with browser tab extension API' } });
       expect(genuineZoom, 'Only confirmed browser-native tab zoom plus viewport and DPR changes count').toBe(true);
       await assertNoDocumentOverflow(page, metrics.innerWidth);
+      const zoomInventory = await auditControls(page);
+      expect(zoomInventory.horizontalDocumentOverflow).toBe(false);
+      observations.push({ target: target * 100, controlInventory: {
+        count: zoomInventory.count, smallTargets: zoomInventory.smallTargets,
+        channelSelector: zoomInventory.controls.find(item => item.name === 'Marketing channel'),
+      } });
 
       const index = page.locator('details.dashboard-index');
       if (!(await index.evaluate(element => (element as HTMLDetailsElement).open))) {
