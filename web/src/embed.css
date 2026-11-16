@@ -31,6 +31,10 @@ body:has(.embedded-shell) { min-width:0; background:var(--color-canvas); }
   .embedded-sample-badge { margin-left:auto; }
   .embedded-main { padding:var(--space-3); }
 }
+@media(max-width:540px) {
+  .embedded-heading-copy { flex-basis:calc(100% - 64px); }
+  .embedded-sample-badge { margin-left:56px; }
+}
 @media(max-width:380px) {
   .embedded-heading-mark { display:none; }
   .embedded-heading-copy { flex-basis:100%; }

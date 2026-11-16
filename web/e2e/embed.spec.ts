@@ -68,6 +68,9 @@ test('host integration preserves context, filtering, keyboard exit and standalon
 
   await page.goto(hostUrl);
   await expect(page.getByRole('heading', { name: 'Customer insights' })).toBeVisible();
+  const embedResponse = await page.request.get('/embed.html');
+  expect(embedResponse.headers()['content-security-policy']).toContain("frame-ancestors 'self'");
+  expect(embedResponse.headers()['x-frame-options']).toBe('SAMEORIGIN');
   const frameElement = page.locator('iframe.host-frame');
   await expect(frameElement).toHaveAttribute('title', 'Business performance analytics — Northstar Commerce sample');
   const frame = page.frameLocator('.host-frame');
@@ -87,11 +90,24 @@ test('host integration preserves context, filtering, keyboard exit and standalon
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(frame.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('all sample records');
 
-  await frameElement.focus();
-  await page.keyboard.press('Tab');
-  await expect(frame.getByRole('button', { name: 'Skip to dashboard content' })).toBeFocused();
-  await page.keyboard.press('Shift+Tab');
-  await expect(frameElement).toBeFocused();
+  // Follow the real host-to-frame tab sequence. Calling iframe.focus() first
+  // starts at the frame boundary and the next Tab may *leave* the iframe.
+  const portalLink = page.getByRole('navigation', { name: 'Customer portal navigation' }).getByRole('link', { name: 'Insights' });
+  const embeddedSkip = frame.getByRole('button', { name: 'Skip to dashboard content' });
+  await portalLink.focus();
+  for (let step = 0; step < 2; step++) {
+    await page.keyboard.press('Tab');
+    if (await embeddedSkip.evaluate(node => node.ownerDocument.activeElement === node)) break;
+  }
+  await expect(embeddedSkip).toBeFocused();
+  await embeddedSkip.press('Enter');
+  await expect(frame.locator('#embedded-main')).toBeFocused();
+  await embeddedSkip.focus();
+  for (let step = 0; step < 2; step++) {
+    await page.keyboard.press('Shift+Tab');
+    if (await portalLink.evaluate(node => node.ownerDocument.activeElement === node)) break;
+  }
+  await expect(portalLink).toBeFocused();
   const after = page.getByRole('navigation', { name: 'After the embedded dashboard' });
   await after.getByRole('link', { name: 'Return to account overview' }).focus();
   await expect(after.getByRole('link', { name: 'Return to account overview' })).toBeFocused();
@@ -143,6 +159,7 @@ test('empty, server error, retry, and invalid location provide useful outcomes w
 
   await page.goto('/embed.html#/settings');
   await expect(page.getByRole('alert')).toContainText('link is invalid');
+  await expect(page.getByRole('button', { name: 'Try again' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
   await page.goto(`/embed.html#/organization/isolated/dashboard/${id}`);
   await expect(page.getByRole('alert')).toBeVisible();

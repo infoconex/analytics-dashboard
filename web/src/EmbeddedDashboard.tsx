@@ -5,7 +5,7 @@ import { DashboardConsumer } from './DashboardConsumer';
 import { ApiError, type Dashboard } from './model';
 import { parseEmbedTarget } from './embedRoute';
 
-type Result = { state: 'loading' } | { state: 'error'; message: string } |
+type Result = { state: 'loading' } | { state: 'error'; message: string; retryable: boolean } |
   { state: 'ready'; dashboard: Dashboard; organizationName: string };
 
 export function EmbeddedDashboard() {
@@ -24,7 +24,7 @@ export function EmbeddedDashboard() {
     let active = true;
     const target = parseEmbedTarget(hash);
     if (!target) {
-      setResult({ state: 'error', message: 'This dashboard link is invalid. Ask your application administrator for a valid link.' });
+      setResult({ state: 'error', message: 'This dashboard link is invalid. Ask your application administrator for a valid link.', retryable: false });
       return;
     }
     setResult({ state: 'loading' });
@@ -33,7 +33,7 @@ export function EmbeddedDashboard() {
         if (!active) return;
         const organization = organizations.find(item => item.id === target.organizationId);
         if (!organization || dashboard.organizationId !== target.organizationId || dashboard.id.toLowerCase() !== target.dashboardId.toLowerCase()) {
-          setResult({ state: 'error', message: 'This dashboard is not available to your organization.' });
+          setResult({ state: 'error', message: 'This dashboard is not available to your organization.', retryable: false });
           return;
         }
         setResult({ state: 'ready', dashboard, organizationName: organization.name });
@@ -41,7 +41,7 @@ export function EmbeddedDashboard() {
       .catch((error: unknown) => {
         if (!active) return;
         const status = error instanceof ApiError ? error.status : 0;
-        setResult({ state: 'error', message: status === 401 || status === 403 || status === 404
+        setResult({ state: 'error', retryable: status === 0 || status >= 500, message: status === 401 || status === 403 || status === 404
           ? 'This dashboard is unavailable to your account. Contact your application administrator if you need access.'
           : 'We could not load this dashboard. Check your connection and try again.' });
       });
@@ -58,7 +58,7 @@ export function EmbeddedDashboard() {
           <div className="embedded-state-icon"><BarChart3 aria-hidden="true" size={26} /></div>
           <h1 id="embedded-error-title">Dashboard unavailable</h1>
           <p role="alert">{result.message}</p>
-          <button type="button" className="button embedded-retry" onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Try again</button>
+          {result.retryable && <button type="button" className="button embedded-retry" onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Try again</button>}
         </section>
         : <>
           <header className="embedded-heading">
