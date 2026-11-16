@@ -30,12 +30,16 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: ux4-visual-evidence
+          name: ux-visual-evidence
           path: |
             web/test-results/visual-*/**/*.png
             web/test-results/visual-*/**/*.webm
             web/test-results/visual-*/**/*.json
             web/test-results/visual-*/**/trace.zip
+            web/test-results/embed-*/**/*.png
+            web/test-results/embed-*/**/*.webm
+            web/test-results/embed-*/**/*.json
+            web/test-results/embed-*/**/trace.zip
           if-no-files-found: warn
           retention-days: 14
 

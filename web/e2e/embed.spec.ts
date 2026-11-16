@@ -68,7 +68,8 @@ test('host integration preserves context, filtering, keyboard exit and standalon
 
   await page.goto(hostUrl);
   await expect(page.getByRole('heading', { name: 'Customer insights' })).toBeVisible();
-  const frameElement = page.getByRole('iframe', { name: 'Business performance analytics — Northstar Commerce sample' });
+  const frameElement = page.locator('iframe.host-frame');
+  await expect(frameElement).toHaveAttribute('title', 'Business performance analytics — Northstar Commerce sample');
   const frame = page.frameLocator('.host-frame');
   await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();
   await expect(frame.getByText('Northstar Commerce', { exact: false }).first()).toBeVisible();

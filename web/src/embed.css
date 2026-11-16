@@ -1,4 +1,12 @@
 /* Isolated sample embed presentation; no consumer behavior or auth overrides. */
+:root {
+  --color-canvas:#f4f8fa;
+  --color-surface-muted:#e9f4f3;
+  --color-primary:#155c69;
+  --color-primary-hover:#104c57;
+  --color-focus:#155c69;
+  --color-selected-border:#1b7180;
+}
 body:has(.embedded-shell) { min-width:0; background:var(--color-canvas); }
 .embedded-shell { min-width:0; min-height:100vh; color:var(--color-text); font-family:var(--font-body); }
 .embedded-main { max-width:1500px; padding:clamp(var(--space-3),3vw,var(--space-6)); margin:auto; min-width:0; }
