@@ -24,7 +24,7 @@ export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStar
   const hasChannels = widgets.some(widget => widget.datasetKey === 'channels');
 
   return <>
-    <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Sample dataset</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> Updated {new Date(updatedAt).toLocaleDateString()}</span></div></div>
+    <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Static fictional sample</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> Dashboard saved {new Date(updatedAt).toLocaleDateString()} · Sample freshness unavailable</span></div></div>
     {!editing && <details className="consumer-guidance"><summary>How to explore this dashboard</summary>
       <ul><li>Start with a visualization's title and “At a glance” insight when available.</li>
         <li>Choose “View data table” below a chart to see exact fictional values and use keyboard-accessible controls.</li>

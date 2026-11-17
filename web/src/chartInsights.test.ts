@@ -17,7 +17,7 @@ describe('chart insight from the same rows as the table alternative', () => {
 
   it('reports first and last points and their direction without abbreviating currency', () => {
     expect(chartInsight('month', 'revenue', commerce)).toBe(
-      'From Jan ($18,400) to Dec ($48,300): increased across 12 months.',
+      'First month: Jan ($18,400); last month: Dec ($48,300). Last is higher than first; intermediate values may vary.',
     );
   });
 
@@ -26,7 +26,7 @@ describe('chart insight from the same rows as the table alternative', () => {
       'Jan: 0 orders (1 month).',
     );
     expect(chartInsight('month', 'orders', [{ month: 'Jan', orders: 0 }, { month: 'Feb', orders: 0 }])).toBe(
-      'From Jan (0) to Feb (0): unchanged across 2 months.',
+      'First month: Jan (0); last month: Feb (0). Last is equal to first; intermediate values may vary.',
     );
   });
 

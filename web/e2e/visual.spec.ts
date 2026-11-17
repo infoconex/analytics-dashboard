@@ -267,9 +267,11 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await expect(lastCard.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
 
   const returnAction = lastCard.getByRole('button', { name: 'Back to visualization list from Channel details — regional' });
-  // From a focused heading, traverse the scrollable table, its five row
-  // selection buttons and then the local return action with actual Tab keys.
+  // From a focused heading, traverse the scrollable table, five row
+  // selectors, and the new metric-definition disclosure with real Tab keys.
   for (let step = 0; step < 7; step++) await page.keyboard.press('Tab');
+  await expect(lastCard.locator('.insight-context > summary')).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(returnAction).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(lastEntry).toBeFocused();
@@ -307,7 +309,7 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await expect(bar.getByRole('rowheader', { name: 'Organic search' })).toBeVisible();
 
   const timeSeries = page.getByRole('article', { name: 'Revenue over time', exact: true });
-  await expect(timeSeries.locator('.chart-insight')).toContainText('From Jan ($18,400) to Dec ($48,300): increased across 12 months.');
+  await expect(timeSeries.locator('.chart-insight')).toContainText('First month: Jan ($18,400); last month: Dec ($48,300). Last is higher than first; intermediate values may vary.');
   const tree = await index.ariaSnapshot();
   expect(tree).toContain('navigation "Jump to visualization"');
   expect(tree).toContain('12. Channel details — regional');
@@ -688,6 +690,8 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       const index = page.locator('details.dashboard-index');
       await expect(lastCard.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
       for (let step = 0; step < 7; step++) await page.keyboard.press('Tab');
+      await expect(lastCard.locator('.insight-context > summary')).toBeFocused();
+      await page.keyboard.press('Tab');
       await expect(lastCard.getByRole('button', { name: 'Back to visualization list from Channel details — regional' })).toBeFocused();
       await page.keyboard.press('Enter');
       const entry = index.getByRole('button', { name: '12. Channel details — regional' });

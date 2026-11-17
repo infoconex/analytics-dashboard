@@ -5,11 +5,12 @@ import {
   Cloud, Database, Ellipsis, ExternalLink, FileBarChart, Filter, FolderKanban,
   Gauge, LayoutDashboard, LockKeyhole, Menu, Plus, Search,
   Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2,
-  TrendingUp, Users,
+  Users,
 } from 'lucide-react';
 import { dashboardApi } from './api';
 import { hasDashboardChanges } from './composition';
-import { createWidget, datasetOptions, dimensions, metrics } from './demoData';
+import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics } from './demoData';
+import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
 import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership } from './model';
 import { DashboardConsumer } from './DashboardConsumer';
 import { WidgetTile } from './WidgetTile';
@@ -318,6 +319,9 @@ export default function App() {
   const filtered = dashboards.filter(item =>
     (!questionFilter || questionMatches.some(match => match.dashboard.id === item.id))
     && `${item.name} ${item.description}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const overviewMetrics = sampleOverview(period);
+  const overviewIcons = [<BarChart3 size={20} />, <FolderKanban size={20} />, <Users size={20} />, <Activity size={20} />];
+  const overviewColors = ['blue', 'violet', 'mint', 'peach'];
 
   return (
     <div className="app-shell">
@@ -418,7 +422,7 @@ export default function App() {
                 </fieldset>
                 <div className="list-toolbar"><div className="list-search"><Search size={18} /><input aria-label="Search dashboards" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search dashboards..." /></div><div className="list-count"><LayoutDashboard size={16} /> {filtered.length} dashboards</div></div>
                 {(search || questionFilter) && <div className="discovery-summary" role="status"><span>Showing {filtered.length} matching {filtered.length === 1 ? 'dashboard' : 'dashboards'}{questionFilter ? ` for “${businessQuestions.find(item => item.id === questionFilter)?.question}”` : ''}.</span><button type="button" className="text-link" onClick={() => { setSearch(''); setQuestionFilter(''); }}>Clear search and questions</button></div>}
-                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => openCatalogDashboard(item)} aria-label={`Open ${item.name} sample preview, +24.8% illustration`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><TrendingUp size={14} /> +24.8%</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Copy share link" onClick={() => void share(item)}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => openCatalogDashboard(item)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
+                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => openCatalogDashboard(item)} aria-label={`Open ${item.name} — Fictional sample preview`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><ShieldCheck size={14} /> Fictional sample</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Copy share link" onClick={() => void share(item)}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => openCatalogDashboard(item)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
                   {canEdit && <button className="new-dashboard-card" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><div><Plus size={26} /></div><strong>Create new dashboard</strong><p>Bring your data together in a new view.</p></button>}</div>
                 {filtered.length === 0 && <div className="discovery-empty"><EmptyState title={dashboards.length === 0 ? 'No dashboards in this organization' : 'No matching dashboards'} message={dashboards.length === 0 ? canEdit ? 'Create a dashboard with sample visualizations to make a starting point available.' : 'Ask an organization editor to add a dashboard. There are no sample dashboards to explore yet.' : 'Try another business question, clear your search, or browse all dashboards.'} />{(search || questionFilter) && <button type="button" className="button button-light recovery-action" onClick={() => { setSearch(''); setQuestionFilter(''); }}>Show all dashboards</button>}</div>}
                 {canEdit && filtered.length > 0 && <section className="manage-section"><h2>Manage dashboards</h2><p>Editors can remove dashboards. All organization members can view and share dashboard links.</p><div>{filtered.map(item => <div className="manage-row" key={item.id}><span>{item.name}</span><button className="icon-button danger-hover" onClick={() => void removeDashboard(item)} title={`Delete ${item.name}`} aria-label={`Delete ${item.name}`}><Trash2 size={16} /></button></div>)}</div></section>}
@@ -426,11 +430,12 @@ export default function App() {
             ) : <>
               <div className="page-heading overview-heading"><div><div className="eyebrow">{organization?.name ?? 'YOUR WORKSPACE'} · SAMPLE ANALYTICS <span className="eyebrow-dot" /></div><h1>Welcome back, {identity?.displayName.split(' ')[0] ?? 'there'} <span className="wave">✳</span></h1><p>Explore fictional sample metrics for {organization?.name ?? 'your workspace'}. {canEdit ? 'You can create and manage dashboards.' : 'Your access is view-only.'}</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
               <DashboardStartingPoints dashboards={dashboards} organizationId={organizationId} onOpen={openQuestion} onBrowse={() => navigate('dashboards')} />
-              <div className="summary-row"><SummaryCard icon={<BarChart3 size={20} />} title="Total revenue" value="$375.3K" trend="+24.8%" color="blue" /><SummaryCard icon={<FolderKanban size={20} />} title="Total orders" value="7,891" trend="+18.2%" color="violet" /><SummaryCard icon={<Users size={20} />} title="New customers" value="5,014" trend="+12.6%" color="mint" /><SummaryCard icon={<Activity size={20} />} title="Conversion rate" value="4.82%" trend="+2.1%" color="peach" /></div>
-              <div className="section-title-row"><div><h2>Performance overview</h2><p>Your key metrics, all in one place.</p></div><PeriodPicker period={period} setPeriod={setPeriod} /></div>
+              <div className="summary-row">{overviewMetrics.map((metric, index) => <SummaryCard key={metric.id} icon={overviewIcons[index]} metric={metric} color={overviewColors[index] ?? 'blue'} />)}</div>
+              <div className="section-title-row"><div><h2>Performance overview</h2><p>Fictional sample observations, not live customer activity.</p></div><PeriodPicker period={period} setPeriod={setPeriod} /></div>
+              <p className="overview-context-note">Month selection uses the final months of an undated Jan–Dec sample, not a rolling or current-year period. It does not change channel observations.</p>
               <div className="overview-charts"><WidgetTile widget={{ id: 'overview-revenue', title: 'Revenue trends', kind: 'area', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month' }} period={period} /><WidgetTile widget={{ id: 'overview-sources', title: 'Traffic by channel', kind: 'donut', datasetKey: 'channels', metricKey: 'sessions', dimensionKey: 'channel' }} period={period} /></div>
               <div className="section-title-row recent-header"><div><h2>Recent dashboards</h2><p>Jump back into what you've been working on.</p></div><button className="text-link" onClick={() => navigate('dashboards')}>View all <ArrowRight size={16} /></button></div>
-              <div className="recent-list">{dashboards.slice(0, 4).map(item => <button key={item.id} className="recent-item" onClick={() => navigate('dashboards', item.id)}><span className="recent-icon"><LayoutDashboard size={20} /></span><span className="recent-text"><strong>{item.name}</strong><small>{item.widgets.length} visualizations · Updated {new Date(item.updatedAt).toLocaleDateString()}</small></span><ChevronRight size={18} /></button>)}{!featured && <div className="recent-empty">No dashboards yet. Create your first dashboard to get started.</div>}</div>
+              <div className="recent-list">{dashboards.slice(0, 4).map(item => <button key={item.id} className="recent-item" onClick={() => navigate('dashboards', item.id)}><span className="recent-icon"><LayoutDashboard size={20} /></span><span className="recent-text"><strong>{item.name}</strong><small>{item.widgets.length} visualizations · Dashboard saved {new Date(item.updatedAt).toLocaleDateString()}</small></span><ChevronRight size={18} /></button>)}{!featured && <div className="recent-empty">No dashboards yet. Create your first dashboard to get started.</div>}</div>
               <div className="sample-footnote"><ShieldCheck size={16} /> This workspace uses clearly labeled sample data. Configure real data sources in a future increment.</div>
             </>}
         </main>
@@ -460,11 +465,18 @@ function NavButton({ active, label, icon, onClick, count }: { active: boolean; l
 }
 
 function PeriodPicker({ period, setPeriod }: { period: string; setPeriod: (period: string) => void }) {
-  return <div className="period-picker"><CalendarDays size={16} /><select aria-label="Period" value={period} onChange={event => setPeriod(event.target.value)}><option value="3m">Last 3 months</option><option value="6m">Last 6 months</option><option value="12m">Last 12 months</option></select><ChevronDown size={14} /></div>;
+  return <div className="period-picker"><CalendarDays size={16} /><select aria-label="Period" value={period} onChange={event => setPeriod(event.target.value)}><option value="3m">Final 3 sample months</option><option value="6m">Final 6 sample months</option><option value="12m">All 12 sample months</option></select><ChevronDown size={14} /></div>;
 }
 
-function SummaryCard({ icon, title, value, trend, color }: { icon: React.ReactNode; title: string; value: string; trend: string; color: string }) {
-  return <div className="summary-card"><div className="summary-top"><div className={`summary-icon icon-${color}`}>{icon}</div></div><div className="summary-title">{title}</div><div className="summary-value">{value}</div><div className="summary-bottom"><span className="positive-trend"><TrendingUp size={13} /> {trend}</span><span>vs. previous year</span></div></div>;
+function SummaryCard({ icon, metric, color }: { icon?: React.ReactNode; metric: OverviewMetric; color: string }) {
+  const format = metric.id === 'commerce-revenue' ? 'revenue' : metric.id.split('-')[1]!;
+  return <article className="summary-card" aria-label={metric.label}>
+    <div className="summary-top"><div className={`summary-icon icon-${color}`}>{icon}</div></div>
+    <div className="summary-title">{metric.label}</div>
+    <div className="summary-value">{formatMetric(metric.value, format)}</div>
+    <div className="summary-bottom">{metric.context.coverage}</div>
+    <details className="summary-definition"><summary>About this figure</summary><p>{metric.context.meaning}</p><p>Exact value: {formatDetailedMetric(metric.value, format)} {metric.context.unit}.</p><p>{metric.context.provenance}</p><p>{metric.context.limitation}</p></details>
+  </article>;
 }
 
 function EmptyState({ title, message }: { title: string; message: string }) {
