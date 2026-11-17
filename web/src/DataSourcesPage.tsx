@@ -15,8 +15,9 @@ const providers: { id: DataSourceProvider; name: string; initials: string; categ
 
 type EditState = { definition?: DataSourceDefinition; name: string; provider: DataSourceProvider };
 
-export function DataSourcesPage({ organizationId, canEdit, onNotice }: {
+export function DataSourcesPage({ organizationId, organizationName, canEdit, onNotice }: {
   organizationId: string;
+  organizationName: string;
   canEdit: boolean;
   onNotice: (message: string) => void;
 }) {
@@ -83,8 +84,8 @@ export function DataSourcesPage({ organizationId, canEdit, onNotice }: {
 
   return <>
     <div className="page-heading">
-      <div><div className="eyebrow">DATA INTEGRATIONS</div><h1>Data sources</h1>
-        <p>Register provider and display-name metadata for your organization.</p></div>
+      <div><div className="eyebrow">{organizationName} · DATA INTEGRATIONS</div><h1>Data sources</h1>
+        <p>{canEdit ? 'Register provider and display-name metadata for this organization.' : 'View this organization’s registered provider metadata. An editor can make changes.'}</p></div>
       {canEdit && <Button onClick={() => setEdit({ name: '', provider: 'sqlServer' })}>
         <Plus size={17} /> Register data source
       </Button>}

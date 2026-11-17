@@ -18,18 +18,15 @@ import { ExplorePage } from './ExplorePage';
 import { VisualizationGallery } from './VisualizationGallery';
 import { Button } from './ui/Button';
 import { ModalDialog } from './ui/ModalDialog';
+import { organizationHash, parseOrganizationHash } from './organizationRoute';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
 
 function currentView(): View {
   const hash = window.location.hash.slice(1);
-  if (hash.startsWith('/organization/')) {
-    const parts = hash.split('/');
-    if (parts.length === 5 && parts[3] === 'dashboard') {
-      return { page: 'dashboards', organizationId: decodeURIComponent(parts[2] ?? ''), id: parts[4] };
-    }
-  }
+  const scoped = parseOrganizationHash(window.location.hash);
+  if (scoped) return scoped;
   if (hash.startsWith('/dashboard/')) return { page: 'dashboards', id: hash.slice('/dashboard/'.length) };
   if (hash === '/explore') return { page: 'explore' };
   if (hash === '/sources') return { page: 'sources' };
@@ -62,6 +59,7 @@ export default function App() {
   const [createError, setCreateError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [organizationNotice, setOrganizationNotice] = useState('');
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
   const mainContent = useRef<HTMLElement>(null);
@@ -116,8 +114,17 @@ export default function App() {
       acceptedHash.current = window.location.hash;
       const next = currentView();
       setView(next);
-      if (next.organizationId && organizations.some(item => item.id === next.organizationId)) {
-        setOrganizationId(next.organizationId);
+      if (next.organizationId) {
+        if (organizations.some(item => item.id === next.organizationId)) {
+          setOrganizationId(next.organizationId);
+          setOrganizationNotice('');
+        } else if (organizations.length > 0) {
+          setOrganizationNotice('The requested organization is unavailable to your account. Showing an authorized workspace.');
+          window.history.replaceState(null, '', organizationHash(organizations[0]!.id, 'overview'));
+          acceptedHash.current = window.location.hash;
+          setOrganizationId(organizations[0]!.id);
+          setView({ page: 'overview' });
+        }
       }
       setEditMode(false);
       setDraft(null);
@@ -141,7 +148,15 @@ export default function App() {
       const [items, user] = await Promise.all([dashboardApi.organizations(), dashboardApi.identity()]);
       setOrganizations(items);
       setIdentity(user);
-      setOrganizationId(previous => previous || items.find(item => item.id === currentView().organizationId)?.id || items[0]?.id || '');
+      const requestedId = currentView().organizationId;
+      const selectedId = items.find(item => item.id === requestedId)?.id || items[0]?.id || '';
+      setOrganizationId(selectedId);
+      if (requestedId && requestedId !== selectedId && selectedId) {
+        setOrganizationNotice('The requested organization is unavailable to your account. Showing an authorized workspace.');
+        window.history.replaceState(null, '', organizationHash(selectedId, 'overview'));
+        acceptedHash.current = window.location.hash;
+        setView({ page: 'overview' });
+      }
       setError('');
       if (items.length === 0) setLoading(false);
     } catch (exception) {
@@ -184,11 +199,13 @@ export default function App() {
 
   function navigate(next: Page, id?: string, nextOrganizationId = organizationId) {
     if (!confirmDiscard()) return;
-    const nextHash = id ? `#/organization/${encodeURIComponent(nextOrganizationId)}/dashboard/${id}` : next === 'overview' ? '#/' : `#/${next}`;
+    if (!organizations.some(item => item.id === nextOrganizationId)) return;
+    const nextHash = organizationHash(nextOrganizationId, next, id);
     skipNextHashPrompt.current = window.location.hash !== nextHash;
     window.location.hash = nextHash;
     acceptedHash.current = window.location.hash;
     if (nextOrganizationId !== organizationId) setOrganizationId(nextOrganizationId);
+    setOrganizationNotice('');
     setView({ page: next, id });
     setEditMode(false);
     setDraft(null);
@@ -326,7 +343,7 @@ export default function App() {
         <header className="topbar">
           <div className="topbar-left">
             <button ref={menuButton} className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(true)}><Menu size={21} /></button>
-            <span className="crumb-root">Workspace</span><ChevronRight size={15} />
+            <span className="crumb-root">{organization?.name ?? 'Workspace'}</span><ChevronRight size={15} />
             <span className="crumb-current">{view.id ? activeDashboard?.name ?? 'Dashboard' : view.page === 'overview' ? 'Overview' : view.page === 'explore' ? 'Explore' : view.page === 'sources' ? 'Data sources' : view.page === 'settings' ? 'Organization' : 'Dashboards'}</span>
           </div>
           <div className="topbar-actions">
@@ -337,11 +354,12 @@ export default function App() {
         </header>
 
         <main ref={mainContent} id="main-content" className="main-content" tabIndex={-1}>
+          {organizationNotice && <div role="status" className="info-banner"><ShieldCheck size={20} aria-hidden="true" /><p>{organizationNotice}</p></div>}
           {error && <div role="alert" className="error-banner"><span>{error}</span><button className="error-retry" onClick={() => { void (organizations.length === 0 ? loadWorkspace() : loadDashboards()); }}>Retry</button></div>}
           {loading ? <div className="loading-state" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /> Loading workspace…</div>
             : organizations.length === 0 ? <EmptyState title={error ? 'Workspace unavailable' : 'No organizations available'} message={error ? 'We could not load your organization and identity. Retry when the service is available.' : 'Your identity has no assigned organization. Ask your platform administrator for access.'} />
             : view.page === 'explore' ? <ExplorePage key={organizationId} canEdit={canEdit} onCreate={createFromExplore} />
-            : view.page === 'sources' ? <DataSourcesPage key={organizationId} organizationId={organizationId} canEdit={canEdit} onNotice={setToast} />
+            : view.page === 'sources' ? <DataSourcesPage key={organizationId} organizationId={organizationId} organizationName={organization?.name ?? 'Workspace'} canEdit={canEdit} onNotice={setToast} />
             : view.page === 'settings' ? <SettingsPage organization={organization} />
             : view.id ? preview ? (
               <>
@@ -363,7 +381,7 @@ export default function App() {
             ) : <EmptyState title="Dashboard not found" message="This dashboard may have been deleted or is not in your organization." />
             : view.page === 'dashboards' ? (
               <>
-                <div className="page-heading"><div><div className="eyebrow">YOUR WORKSPACE</div><h1>Dashboards</h1><p>Explore insights and keep your entire team on the same page.</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
+                <div className="page-heading"><div><div className="eyebrow">{organization?.name ?? 'YOUR WORKSPACE'} · SAMPLE DATA</div><h1>Dashboards</h1><p>Explore dashboards in this organization. {canEdit ? 'You can create and manage dashboards.' : 'You can view and share dashboards.'}</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
                 <div className="list-toolbar"><div className="list-search"><Search size={18} /><input aria-label="Search dashboards" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search dashboards..." /></div><div className="list-count"><LayoutDashboard size={16} /> {filtered.length} dashboards</div></div>
                 <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => navigate('dashboards', item.id)} aria-label={`Open ${item.name} sample preview, +24.8% illustration`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><TrendingUp size={14} /> +24.8%</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Copy share link" onClick={() => void share(item)}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => navigate('dashboards', item.id)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
                   {canEdit && <button className="new-dashboard-card" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><div><Plus size={26} /></div><strong>Create new dashboard</strong><p>Bring your data together in a new view.</p></button>}</div>
@@ -371,7 +389,7 @@ export default function App() {
                 {canEdit && filtered.length > 0 && <section className="manage-section"><h2>Manage dashboards</h2><p>Editors can remove dashboards. All organization members can view and share dashboard links.</p><div>{filtered.map(item => <div className="manage-row" key={item.id}><span>{item.name}</span><button className="icon-button danger-hover" onClick={() => void removeDashboard(item)} title={`Delete ${item.name}`} aria-label={`Delete ${item.name}`}><Trash2 size={16} /></button></div>)}</div></section>}
               </>
             ) : <>
-              <div className="page-heading overview-heading"><div><div className="eyebrow">YOUR ANALYTICS AT A GLANCE <span className="eyebrow-dot" /></div><h1>Welcome back, {identity?.displayName.split(' ')[0] ?? 'there'} <span className="wave">✳</span></h1><p>Here's what's happening across your workspace today.</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
+              <div className="page-heading overview-heading"><div><div className="eyebrow">{organization?.name ?? 'YOUR WORKSPACE'} · SAMPLE ANALYTICS <span className="eyebrow-dot" /></div><h1>Welcome back, {identity?.displayName.split(' ')[0] ?? 'there'} <span className="wave">✳</span></h1><p>Here's what's happening in {organization?.name ?? 'your workspace'} today. {canEdit ? 'You can create and manage dashboards.' : 'Your access is view-only.'}</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
               <div className="summary-row"><SummaryCard icon={<BarChart3 size={20} />} title="Total revenue" value="$375.3K" trend="+24.8%" color="blue" /><SummaryCard icon={<FolderKanban size={20} />} title="Total orders" value="7,891" trend="+18.2%" color="violet" /><SummaryCard icon={<Users size={20} />} title="New customers" value="5,014" trend="+12.6%" color="mint" /><SummaryCard icon={<Activity size={20} />} title="Conversion rate" value="4.82%" trend="+2.1%" color="peach" /></div>
               <div className="section-title-row"><div><h2>Performance overview</h2><p>Your key metrics, all in one place.</p></div><PeriodPicker period={period} setPeriod={setPeriod} /></div>
               <div className="overview-charts"><WidgetTile widget={{ id: 'overview-revenue', title: 'Revenue trends', kind: 'area', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month' }} period={period} /><WidgetTile widget={{ id: 'overview-sources', title: 'Traffic by channel', kind: 'donut', datasetKey: 'channels', metricKey: 'sessions', dimensionKey: 'channel' }} period={period} /></div>
@@ -418,5 +436,6 @@ function EmptyState({ title, message }: { title: string; message: string }) {
 }
 
 function SettingsPage({ organization }: { organization?: Membership }) {
-  return <><div className="page-heading"><div><div className="eyebrow">ADMINISTRATION</div><h1>Organization</h1><p>Manage your workspace and understand the current access model.</p></div></div><div className="settings-card"><div className="settings-card-icon"><Users size={22} /></div><div><h2>{organization?.name ?? 'Organization'}</h2><p>Organization ID: <code>{organization?.id}</code></p><span className="role-pill"><ShieldCheck size={14} /> {organization?.role ?? 'member'}</span></div></div><div className="settings-grid"><article className="settings-section"><div className="settings-title"><LockKeyhole size={21} /><h3>Identity & access</h3></div><p>Every dashboard and data-source registration operation is validated against organization membership and role permissions on the server.</p><div className="settings-detail"><span>Authorization</span><strong>Organization-scoped RBAC</strong></div><div className="settings-detail"><span>Production authentication</span><strong>OIDC / JWT required</strong></div></article><article className="settings-section"><div className="settings-title"><Database size={21} /><h3>Workspace data</h3></div><p>Dashboard and data-source registration metadata is persisted to SQLite. Data-source registration has revision-safe rename and removal.</p><div className="settings-detail"><span>Data-source definitions</span><strong>Metadata only</strong></div><div className="settings-detail"><span>Live connections</span><strong>Not available</strong></div></article></div><div className="sample-footnote"><BookOpen size={16} /> Detailed architecture, limitations, and setup instructions live in the repository README.</div></>;
+  const mayManage = organization?.role === 'owner' || organization?.role === 'editor';
+  return <><div className="page-heading"><div><div className="eyebrow">ORGANIZATION CONTEXT · SAMPLE ENVIRONMENT</div><h1>Organization</h1><p>See which organization you're using and what you can do here.</p></div></div><div className="settings-card"><div className="settings-card-icon"><Users size={22} /></div><div><h2>{organization?.name ?? 'Organization'}</h2><p>Organization reference: <code>{organization?.id}</code></p><span className="role-pill"><ShieldCheck size={14} /> Your role: {organization?.role ?? 'member'}</span></div></div><div className="settings-grid"><article className="settings-section"><div className="settings-title"><LockKeyhole size={21} /><h3>Your access</h3></div><p>{mayManage ? 'You can view dashboards, create and edit dashboard content, and manage data-source registration metadata in this organization.' : 'You can view and share dashboards in this organization. Creating or changing dashboards and data-source definitions requires editor or owner access.'}</p><div className="settings-detail"><span>Current role</span><strong>{organization?.role ?? 'member'}</strong></div><div className="settings-detail"><span>Permissions</span><strong>{mayManage ? 'View and manage dashboards' : 'View dashboards'}</strong></div><p>Permissions and organization membership are checked by the server on every protected request. The organization shown in a URL does not grant access.</p></article><article className="settings-section"><div className="settings-title"><Database size={21} /><h3>Data-source status</h3></div><p>Data-source records contain provider and display-name metadata only. They do not provide live data to these sample visualizations.</p><div className="settings-detail"><span>Registered sources</span><strong>Metadata only</strong></div><div className="settings-detail"><span>Live connections</span><strong>Unavailable</strong></div><div className="settings-detail"><span>Dashboard data</span><strong>Fictional demonstration data</strong></div></article></div><div className="sample-footnote"><BookOpen size={16} /> Production identity integration, live connections and provisioning are not enabled. See the repository documentation for security boundaries.</div></>;
 }
