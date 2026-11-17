@@ -16,7 +16,12 @@ test('editor explores sample data and saves a dashboard', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Acquisition overview' })).toBeVisible();
   await expect(page.getByText('Traffic sources', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Share', exact: true }).click();
-  await expect(page.getByText(/Dashboard link copied|Link: http/)).toBeVisible();
+  const dialog = page.getByRole('dialog', { name: 'Share dashboard' });
+  await expect(dialog.getByText(/saved dashboard.*default filters/)).toBeVisible();
+  await expect(dialog.locator('.share-link-field')).toHaveValue(/#\/organization\/northstar\/dashboard\//);
+  await dialog.getByRole('button', { name: 'Copy dashboard link' }).click();
+  await expect(dialog.getByRole('status')).toContainText(/copied|copy it manually/);
+  await dialog.getByRole('button', { name: 'Done' }).click();
   await page.reload();
   await expect(page.getByText('Traffic sources', { exact: true })).toBeVisible();
 });

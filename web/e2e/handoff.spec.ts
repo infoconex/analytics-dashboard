@@ -68,7 +68,7 @@ test('SC-UX10-01/02/03: discover, share, interpret, keyboard, copy failure, and 
   page.on('pageerror', error => errors.push(error.message));
   await fictionalApi(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Dashboards', exact: true }).click();
+  await page.getByRole('button', { name: /^Dashboards/ }).click();
   const catalogShare = page.getByRole('button', { name: 'Share Business performance' });
   await catalogShare.focus();
   await page.keyboard.press('Enter'); steps.push('Open catalog share with keyboard');
@@ -138,7 +138,7 @@ test('SC-UX10-04/05: dense keyboard index, organization reset, invalid location 
   await screenshot(page, info, 'dense-index-focus');
   await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
   await page.getByRole('combobox', { name: 'Switch organization' }).selectOption('isolated');
-  await page.getByRole('button', { name: 'Dashboards', exact: true }).click();
+  await page.getByRole('button', { name: /^Dashboards/ }).click();
   await page.getByRole('button', { name: 'Share Isolated insights' }).click();
   const dialog = page.getByRole('dialog', { name: 'Share dashboard' });
   await expect(dialog).toContainText('Isolated Tenant');
