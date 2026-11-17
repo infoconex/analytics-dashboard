@@ -31,6 +31,8 @@ Recruitment and participant assignment occur outside GitHub in approved access-c
 
 ## 3. Locked fictional environments and Kibana parity gate
 
+**UX-13 implementation reference:** [`ux13-independent-lab.md`](ux13-independent-lab.md) defines digest-pinned Elastic 9.5.6 containers, executable fictional fixture generation, role/Space denial checks, scripted browser-evidence capture and a task-by-task parity ledger. The UX-12 task matrix has an explicit `ux13_verified_paired_now` field. **All tasks remain unapproved for paired human scoring** until actual equivalent UI paths, resets, scopes and permissions are evidenced; a pinned image or correct fixture alone is insufficient. The separate R0 research-consent gate is still unapproved.
+
 Both products must be isolated, disposable, read-only-to-the-participant wherever the task is consumption, and populated with **synthetic data only**. Pin Analytics SHA, test browser/OS, viewport and device; capture Kibana/Elasticsearch full build versions and container image digests or package SHA checks. Elastic's [9.5.6 release announcement](https://www.elastic.co/blog/elastic-stack-9-5-6-released) is dated November 2, 2026; [Elastic installation guidance](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana) specifies matching Elasticsearch/Kibana versions. Neither pinned Kibana instance nor its feature parity has been verified in this increment.
 
 **Source-of-truth manifest:** `web/src/demoData.ts` at the evaluated commit; `web/e2e/customerTasks.spec.ts` defines a 12-widget fictional Northstar Commerce dashboard. For the equivalent Kibana fixture, import the same two **separate** sets, not a blended join:

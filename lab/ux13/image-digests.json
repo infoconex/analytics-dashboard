@@ -1,0 +1,13 @@
+{
+  "version": "9.5.6",
+  "registry": "docker.elastic.co",
+  "retrievedOn": "2026-11-17",
+  "retrieval": "Unauthenticated read-only Docker Registry v2 manifest HEAD with public bearer token and manifest-list Accept header; docker-content-digest returned by registry",
+  "manifestMediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+  "images": {
+    "docker.elastic.co/elasticsearch/elasticsearch:9.5.6": "sha256:79b4f1de4c15e6eca824723086a51e5934406d614d410cc11be77748cafac537",
+    "docker.elastic.co/kibana/kibana:9.5.6": "sha256:c7ed45da5c3cfea020fc6c99ce027f4d21d19dab330379c5115d5eb95f6ecebc"
+  },
+  "architecture": "Multi-architecture manifest index; running host must record selected OS/architecture and image ID",
+  "signatureVerification": "Not performed; separate supply-chain check needed before anything beyond this disposable lab"
+}

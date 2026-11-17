@@ -11,8 +11,8 @@
 | Cohort recruitment dates and inclusion criteria | **Pending** |
 | Participants consented / excluded / completed | **Not measured** |
 | A product commit + deployment hash | **Pending exact evaluated SHA** |
-| Kibana + Elasticsearch versions, image digests, fixture import hashes | **Not provisioned or verified** |
-| Per-task parity preflight / approved paired IDs | **Unpassed** |
+| Kibana + Elasticsearch versions, image digests, fixture import hashes | **UX-13 manifest and lab scripts prepared; actual study run/version/import evidence must be attached and reviewed** |
+| Per-task parity preflight / approved paired IDs | **Unpassed; see UX-13 explicit exclusion matrix (no pairs yet)** |
 | Browser/OS/input/AT version matrix | **Pending** |
 | Timing cap and counterbalance assignment | **6 min proposed; lock in pilot** |
 | Missing data, deviations, interruptions, censor policy | **Pending** |
