@@ -39,6 +39,8 @@ async function fixture(page: Page, options: { failedLists?: number; role?: 'owne
       return requests <= (options.failedLists ?? 0) ? route.fulfill({ status: 503, body: 'Unavailable' }) : route.fulfill({ json: [sample] });
     }
     if (path === '/api/organizations/isolated/dashboards') return route.fulfill({ json: [isolated] });
+    if (path === `/api/organizations/northstar/dashboards/${dashboardId}`) return route.fulfill({ json: sample });
+    if (path === `/api/organizations/isolated/dashboards/${isolated.id}`) return route.fulfill({ json: isolated });
     return route.fulfill({ status: 403, body: 'No other data available' });
   });
 }
@@ -78,7 +80,7 @@ test('SC-UX11-01/02/03/04/05: first value through exact data, independent filter
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct'); steps.push('Apply independent channel filter');
   await expect(chart.getByRole('table').getByText('$41,400')).toBeVisible();
   await expect(chart.getByRole('table').getByText('$18,400')).toHaveCount(0);
-  await expect(page.getByRole('article', { name: 'Orders by channel' }).getByText('1,530')).toBeVisible();
+  await expect(page.getByRole('article', { name: 'Orders by channel' }).locator('.chart-insight')).toContainText('1,530');
   await page.getByRole('button', { name: 'Reset filters' }).click(); steps.push('Reset both filters');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
@@ -147,7 +149,8 @@ test('SC-UX11-06/07: malformed destination recovers without echoing the URL or c
   await expect(page.getByText(/requested destination is invalid/)).toBeVisible();
   await expect(page).toHaveURL(/#\/organization\/northstar\/overview$/);
   await page.getByRole('combobox', { name: 'Switch organization' }).selectOption('isolated');
-  await expect(page.getByText('Northstar Commerce').first()).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Switch organization' })).toHaveValue('isolated');
+  await expect(page.locator('.crumb-root')).toHaveText('Isolated Tenant');
   await expect(page.getByText('Isolated report')).toBeVisible();
   await page.getByRole('button', { name: /^Dashboards/ }).click();
   await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeFocused();
