@@ -154,6 +154,18 @@ test('SC-UX11-06/07: malformed destination recovers without echoing the URL or c
   await expect(page.getByRole('heading', { name: 'Business performance' })).toHaveCount(0);
 });
 
+test('SC-UX11-05/07: external location changes drop the previous ephemeral question guide', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: /Explore answer: How is revenue changing/ }).click();
+  await expect(page.getByRole('heading', { name: 'How is revenue changing?' })).toBeFocused();
+  await page.evaluate(() => { window.location.hash = '#/organization/northstar/dashboards'; });
+  await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeFocused();
+  await page.evaluate(id => { window.location.hash = `#/organization/northstar/dashboard/${id}`; }, dashboardId);
+  await expect(page.getByRole('heading', { name: 'Business performance' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'How is revenue changing?' })).toHaveCount(0);
+});
+
 test('SC-UX11-08: same-origin host supports read-only exact values, filter recovery and insight handoff', async ({ page }, info) => {
   const writes: string[] = [];
   await fixture(page, { writes });
@@ -182,7 +194,9 @@ for (const [width, height, name] of [[1440, 900, 'desktop'], [390, 844, 'mobile'
     await page.goto(`/#/organization/northstar/dashboard/not-found`);
     await expect(page.getByRole('heading', { name: 'Dashboard not found' })).toBeVisible();
     await page.getByRole('button', { name: 'Back to dashboards' }).click();
-    await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeFocused();
+    const heading = page.getByRole('heading', { name: 'Dashboards', exact: true });
+    await expect(heading).toBeFocused();
+    expect(await heading.evaluate(element => getComputedStyle(element).outlineStyle)).not.toBe('none');
     await noPageOverflow(page);
     await capture(page, info, `recovery-${name}`);
     const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();

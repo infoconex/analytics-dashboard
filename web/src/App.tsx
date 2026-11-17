@@ -122,7 +122,8 @@ export default function App() {
 
   useEffect(() => {
     const handleHash = () => {
-      if (!skipNextHashPrompt && !confirmDiscard()) {
+      const internalNavigation = skipNextHashPrompt.current;
+      if (!internalNavigation && !confirmDiscard()) {
         window.history.replaceState(null, '', acceptedHash.current || '#/');
         return;
       }
@@ -132,6 +133,7 @@ export default function App() {
       const next = currentView();
       viewingSnapshot.current = null;
       setShareRequest(null);
+      if (!internalNavigation) setSelectedTask(null);
       setView(next);
       if (!isSupportedAppHash(window.location.hash) && organizations.length > 0) {
         const fallbackId = organizations.some(item => item.id === activeOrganization.current)
@@ -239,6 +241,9 @@ export default function App() {
       // displaying previously fetched content after possible access revocation.
       setDashboardList(null);
       setDashboardLoadFailed(true);
+      viewingSnapshot.current = null;
+      setSelectedTask(null);
+      setShareRequest(null);
       setError(exception instanceof Error ? exception.message : 'Unable to load dashboards.');
     } finally {
       if (requestVersion === loadVersion.current) setLoading(false);
@@ -441,7 +446,7 @@ export default function App() {
 
         <main ref={mainContent} id="main-content" className="main-content" tabIndex={-1}>
           {organizationNotice && <div role="status" className="info-banner"><ShieldCheck size={20} aria-hidden="true" /><p>{organizationNotice}</p></div>}
-          {error && <div role="alert" className="error-banner"><span>{error}</span><button className="error-retry" onClick={() => { void (organizations.length === 0 ? loadWorkspace() : loadDashboards()); }}>Retry</button></div>}
+          {error && <div role="alert" className="error-banner"><span>{error}</span><button className="error-retry" onClick={() => { focusOnNavigation.current = true; void (organizations.length === 0 ? loadWorkspace() : loadDashboards()); }}>Retry</button></div>}
           {loading ? <div className="loading-state" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /> Loading workspace…</div>
             : organizations.length === 0 ? <EmptyState title={error ? 'Workspace unavailable' : 'No organizations available'} message={error ? 'We could not load your organization and identity. Retry when the service is available.' : 'Your identity has no assigned organization. Ask your platform administrator for access.'} />
             : dashboardLoadFailed && (view.page === 'overview' || view.page === 'dashboards')

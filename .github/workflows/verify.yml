@@ -56,6 +56,10 @@ jobs:
             web/test-results/handoff-*/**/*.webm
             web/test-results/handoff-*/**/*.json
             web/test-results/handoff-*/**/trace.zip
+            web/test-results/customerTasks-*/**/*.png
+            web/test-results/customerTasks-*/**/*.webm
+            web/test-results/customerTasks-*/**/*.json
+            web/test-results/customerTasks-*/**/trace.zip
           if-no-files-found: warn
           retention-days: 14
 
