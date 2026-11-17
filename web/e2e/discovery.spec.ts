@@ -154,7 +154,7 @@ test('dense dashboard question jump and return to index preserve focus', async (
   await page.getByRole('button', { name: 'Go to Insight 1' }).click();
   await expect(page.getByRole('heading', { name: 'Insight 1', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'Back to visualization list from Insight 1', exact: true }).click();
-  await expect(page.getByRole('button', { name: '1. Insight 1' })).toBeFocused();
+  await expect(page.getByRole('button', { name: '1. Insight 1', exact: true })).toBeFocused();
 });
 
 test('same-origin customer embed keeps contextual help and cannot discover authoring', async ({ page }) => {
