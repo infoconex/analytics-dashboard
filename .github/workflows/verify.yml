@@ -52,6 +52,10 @@ jobs:
             web/test-results/interpretation-*/**/*.webm
             web/test-results/interpretation-*/**/*.json
             web/test-results/interpretation-*/**/trace.zip
+            web/test-results/handoff-*/**/*.png
+            web/test-results/handoff-*/**/*.webm
+            web/test-results/handoff-*/**/*.json
+            web/test-results/handoff-*/**/trace.zip
           if-no-files-found: warn
           retention-days: 14
 

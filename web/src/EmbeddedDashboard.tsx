@@ -4,6 +4,9 @@ import { dashboardApi } from './api';
 import { DashboardConsumer } from './DashboardConsumer';
 import { ApiError, type Dashboard } from './model';
 import { parseEmbedTarget } from './embedRoute';
+import { ShareContextDialog } from './ShareContextDialog';
+import type { ConsumerFilters } from './consumerFilters';
+import type { DashboardWidget } from './model';
 
 type Result = { state: 'loading' } | { state: 'error'; message: string; retryable: boolean } |
   { state: 'ready'; dashboard: Dashboard; organizationName: string };
@@ -12,10 +15,11 @@ export function EmbeddedDashboard() {
   const [result, setResult] = useState<Result>({ state: 'loading' });
   const [hash, setHash] = useState(window.location.hash);
   const [attempt, setAttempt] = useState(0);
+  const [shareRequest, setShareRequest] = useState<{ widget: DashboardWidget; filters: ConsumerFilters } | null>(null);
   const refresh = useCallback(() => setAttempt(value => value + 1), []);
 
   useEffect(() => {
-    const update = () => setHash(window.location.hash);
+    const update = () => { setShareRequest(null); setHash(window.location.hash); };
     window.addEventListener('hashchange', update);
     return () => window.removeEventListener('hashchange', update);
   }, []);
@@ -72,8 +76,11 @@ export function EmbeddedDashboard() {
           </header>
           <DashboardConsumer key={`${result.dashboard.organizationId}:${result.dashboard.id}`} widgets={result.dashboard.widgets}
             updatedAt={result.dashboard.updatedAt} editing={false} canEdit={false} onStartEdit={() => {}}
-            onChange={() => {}} onEdit={() => {}} onAdd={() => {}} />
+            onChange={() => {}} onEdit={() => {}} onAdd={() => {}}
+            onShareInsight={(widget, filters) => setShareRequest({ widget, filters })} />
           <p className="embedded-footnote">Showing fictional sample data for UI evaluation. Live customer data and production embedding are not enabled.</p>
+          {shareRequest && <ShareContextDialog dashboard={result.dashboard} organizationName={result.organizationName}
+            widget={shareRequest.widget} filters={shareRequest.filters} onDismiss={() => setShareRequest(null)} />}
         </>}
     </main>
   </div>;

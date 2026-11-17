@@ -23,6 +23,9 @@ import { organizationHash, parseOrganizationHash } from './organizationRoute';
 import { businessQuestions, findQuestionMatches, type QuestionMatch } from './dashboardDiscovery';
 import { DashboardStartingPoints } from './DashboardStartingPoints';
 import { DashboardTaskGuide } from './DashboardTaskGuide';
+import { ShareContextDialog } from './ShareContextDialog';
+import { defaultConsumerFilters } from './consumerFilters';
+import type { ConsumerFilters } from './consumerFilters';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
@@ -66,6 +69,8 @@ export default function App() {
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [organizationNotice, setOrganizationNotice] = useState('');
+  const [shareRequest, setShareRequest] = useState<{ dashboard: Dashboard; organizationName: string; filters: ConsumerFilters; widget?: DashboardWidget } | null>(null);
+  const viewingSnapshot = useRef<{ key: string; filters: ConsumerFilters } | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
   const mainContent = useRef<HTMLElement>(null);
@@ -122,6 +127,8 @@ export default function App() {
       skipNextHashPrompt.current = false;
       acceptedHash.current = window.location.hash;
       const next = currentView();
+      viewingSnapshot.current = null;
+      setShareRequest(null);
       setView(next);
       if (next.organizationId) {
         if (organizations.some(item => item.id === next.organizationId)) {
@@ -221,6 +228,8 @@ export default function App() {
     setWidgetDraft(null);
     setSaveError('');
     setSelectedTask(null);
+    viewingSnapshot.current = null;
+    setShareRequest(null);
     if (sidebarOpen) window.requestAnimationFrame(() => mainContent.current?.focus());
     setSidebarOpen(false);
   }
@@ -306,10 +315,14 @@ export default function App() {
     }
   }
 
-  async function share(dashboard: Dashboard) {
-    const url = `${window.location.origin}${window.location.pathname}#/organization/${encodeURIComponent(dashboard.organizationId)}/dashboard/${dashboard.id}`;
-    try { await navigator.clipboard.writeText(url); setToast('Dashboard link copied'); }
-    catch { setToast(`Link: ${url}`); }
+  function share(dashboard: Dashboard, widget?: DashboardWidget, filters?: ConsumerFilters) {
+    if (dashboard.organizationId !== organizationId) return;
+    const membership = organizations.find(item => item.id === dashboard.organizationId);
+    if (!membership) return;
+    const snapshotKey = `${dashboard.organizationId}:${dashboard.id}`;
+    const selectedFilters = filters ?? (viewingSnapshot.current?.key === snapshotKey
+      ? viewingSnapshot.current.filters : defaultConsumerFilters);
+    setShareRequest({ dashboard, organizationName: membership.name, filters: { ...selectedFilters }, widget });
   }
 
   const preview = editMode && draft && activeDashboard
@@ -400,14 +413,16 @@ export default function App() {
                   </div>
                   <div className="heading-actions">
                     {editMode ? <><button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
-                      : <><button className="button button-light" onClick={() => void share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => startEditing()}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
+                      : <><button className="button button-light" onClick={() => share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => startEditing()}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
                   </div>
                 </div>
                 {editMode && <div className="composition-status" role="status" aria-live="polite"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Arrange and configure your dashboard before publishing changes to your team.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available.</div>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
                   && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)} />
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)}
+                  onFiltersChange={filters => { viewingSnapshot.current = { key: `${organizationId}:${preview.id}`, filters }; }}
+                  onShareInsight={(widget, filters) => share(preview, widget, filters)} />
               </>
             ) : <div><EmptyState title="Dashboard not found" message="This dashboard is unavailable in the selected organization. Return to its dashboard list to choose an accessible view." /><button type="button" className="button button-light recovery-action" onClick={() => navigate('dashboards')}>Back to dashboards</button></div>
             : view.page === 'dashboards' ? (
@@ -422,7 +437,7 @@ export default function App() {
                 </fieldset>
                 <div className="list-toolbar"><div className="list-search"><Search size={18} /><input aria-label="Search dashboards" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search dashboards..." /></div><div className="list-count"><LayoutDashboard size={16} /> {filtered.length} dashboards</div></div>
                 {(search || questionFilter) && <div className="discovery-summary" role="status"><span>Showing {filtered.length} matching {filtered.length === 1 ? 'dashboard' : 'dashboards'}{questionFilter ? ` for “${businessQuestions.find(item => item.id === questionFilter)?.question}”` : ''}.</span><button type="button" className="text-link" onClick={() => { setSearch(''); setQuestionFilter(''); }}>Clear search and questions</button></div>}
-                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => openCatalogDashboard(item)} aria-label={`Open ${item.name} — Fictional sample preview`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><ShieldCheck size={14} /> Fictional sample</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Copy share link" onClick={() => void share(item)}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => openCatalogDashboard(item)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
+                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => openCatalogDashboard(item)} aria-label={`Open ${item.name} — Fictional sample preview`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><ShieldCheck size={14} /> Fictional sample</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Review sharing context" onClick={() => share(item, undefined, { ...defaultConsumerFilters })}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => openCatalogDashboard(item)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
                   {canEdit && <button className="new-dashboard-card" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><div><Plus size={26} /></div><strong>Create new dashboard</strong><p>Bring your data together in a new view.</p></button>}</div>
                 {filtered.length === 0 && <div className="discovery-empty"><EmptyState title={dashboards.length === 0 ? 'No dashboards in this organization' : 'No matching dashboards'} message={dashboards.length === 0 ? canEdit ? 'Create a dashboard with sample visualizations to make a starting point available.' : 'Ask an organization editor to add a dashboard. There are no sample dashboards to explore yet.' : 'Try another business question, clear your search, or browse all dashboards.'} />{(search || questionFilter) && <button type="button" className="button button-light recovery-action" onClick={() => { setSearch(''); setQuestionFilter(''); }}>Show all dashboards</button>}</div>}
                 {canEdit && filtered.length > 0 && <section className="manage-section"><h2>Manage dashboards</h2><p>Editors can remove dashboards. All organization members can view and share dashboard links.</p><div>{filtered.map(item => <div className="manage-row" key={item.id}><span>{item.name}</span><button className="icon-button danger-hover" onClick={() => void removeDashboard(item)} title={`Delete ${item.name}`} aria-label={`Delete ${item.name}`}><Trash2 size={16} /></button></div>)}</div></section>}
@@ -442,6 +457,10 @@ export default function App() {
       </div>
 
       {toast && <div className="toast" role="status" aria-live="polite"><Check size={16} aria-hidden="true" />{toast}</div>}
+      {shareRequest && organizations.some(item => item.id === shareRequest.dashboard.organizationId) && <ShareContextDialog
+        key={`${shareRequest.dashboard.organizationId}:${shareRequest.dashboard.id}:${shareRequest.widget?.id ?? 'dashboard'}`}
+        dashboard={shareRequest.dashboard} organizationName={shareRequest.organizationName} filters={shareRequest.filters}
+        widget={shareRequest.widget} onDismiss={() => setShareRequest(null)} />}
       {createOpen && draft && <ModalDialog title="Create dashboard" eyebrow="NEW WORKSPACE VIEW" description="Give your dashboard a name. Add visualizations after creating it." initialFocus="input" onDismiss={() => setCreateOpen(false)}>
         {createError && <p role="alert" className="error-banner">{createError}</p>}
         <label className="form-label">Dashboard name<input maxLength={100} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder="e.g. Customer health overview" /></label>

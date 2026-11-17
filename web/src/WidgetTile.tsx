@@ -27,9 +27,10 @@ interface Props {
   filters?: ConsumerFilters;
   onChannelSelect?: (channel: string) => void;
   onReturnToIndex?: () => void;
+  onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex }: Props) {
+export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const context = sampleMetricContext(widget.datasetKey, widget.metricKey, widget.dimensionKey, data, filters);
@@ -159,6 +160,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           <div><dt>Source</dt><dd>{context.provenance}</dd></div>
           <div><dt>Cannot conclude</dt><dd>{context.limitation} These values cannot explain causes, statistical significance or current customer performance.</dd></div>
         </dl>
+        {onShareInsight && <button type="button" className="text-link insight-share" onClick={() => onShareInsight(widget)}>Share this insight’s context</button>}
       </details>
       {widget.kind === 'donut' && <div className="donut-legend">
         {data.map((row, index) => channelInteraction
