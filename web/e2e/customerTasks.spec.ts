@@ -60,50 +60,61 @@ test.use({ reducedMotion: 'reduce' });
 
 test('SC-UX11-01/02/03/04/05: first value through exact data, independent filters, dense index and saved handoff', async ({ page }, info) => {
   const errors: string[] = [];
-  const steps: string[] = [];
+  const milestones: string[] = [];
+  const scriptedInteractions: string[] = [];
+  // A milestone can involve more than one interaction. Neither measure is
+  // participant effort, elapsed time, or observed human task success.
+  async function interact(label: string, operation: () => Promise<unknown>) {
+    await operation();
+    scriptedInteractions.push(label);
+  }
   page.on('pageerror', error => errors.push(error.message));
   await fixture(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
   await expect(page.getByText(/fictional sample metrics/)).toBeVisible();
-  await page.getByRole('button', { name: /Explore answer: How is revenue changing/ }).click(); steps.push('Select a fictional sample question');
+  await interact('Choose revenue question', () => page.getByRole('button', { name: /Explore answer: How is revenue changing/ }).click()); milestones.push('Select a fictional sample question');
   await expect(page.getByRole('heading', { name: 'How is revenue changing?' })).toBeFocused();
-  await page.getByRole('button', { name: 'Go to Revenue over time' }).click(); steps.push('Review question context and jump to chart');
+  await interact('Open matching chart', () => page.getByRole('button', { name: 'Go to Revenue over time' }).click()); milestones.push('Review question context and jump to chart');
   const chart = page.getByRole('article', { name: 'Revenue over time' });
   await expect(chart.getByRole('heading', { name: 'Revenue over time' })).toBeFocused();
-  await chart.getByText('What this means').click(); steps.push('Inspect definition, source and limits');
+  await interact('Expand metric interpretation', () => chart.getByText('What this means').click()); milestones.push('Inspect definition, source and limits');
   await expect(chart.getByText('Cannot conclude')).toBeVisible();
-  await chart.getByText('View data table').click(); steps.push('Inspect exact supporting values');
+  await interact('Expand supporting table', () => chart.getByText('View data table').click()); milestones.push('Inspect exact supporting values');
   await expect(chart.getByRole('table').getByText('$18,400')).toBeVisible();
-  await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m'); steps.push('Apply final-three-month commerce filter');
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct'); steps.push('Apply independent channel filter');
+  await interact('Select final three sample months', () => page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m')); milestones.push('Apply final-three-month commerce filter');
+  await interact('Select Direct channel', () => page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct')); milestones.push('Apply independent channel filter');
   await expect(chart.getByRole('table').getByText('$41,400')).toBeVisible();
   await expect(chart.getByRole('table').getByText('$18,400')).toHaveCount(0);
   await expect(page.getByRole('article', { name: 'Orders by channel' }).locator('.chart-insight')).toContainText('1,530');
-  await page.getByRole('button', { name: 'Reset filters' }).click(); steps.push('Reset both filters');
+  await interact('Reset both filters', () => page.getByRole('button', { name: 'Reset filters' }).click()); milestones.push('Reset both filters');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
-  await page.getByRole('combobox', { name: 'Find a visualization' }).selectOption(widget(12).id);
-  await page.getByRole('button', { name: 'Go to visualization' }).click(); steps.push('Find visualization twelve');
+  await interact('Select visualization twelve', () => page.getByRole('combobox', { name: 'Find a visualization' }).selectOption(widget(12).id));
+  await interact('Open visualization twelve', () => page.getByRole('button', { name: 'Go to visualization' }).click()); milestones.push('Find visualization twelve');
   await expect(page.getByRole('heading', { name: 'Insight 12' })).toBeFocused();
-  await page.getByRole('button', { name: 'Back to visualization list from Insight 12' }).click(); steps.push('Return to exact index entry');
+  await interact('Return to visualization index', () => page.getByRole('button', { name: 'Back to visualization list from Insight 12' }).click()); milestones.push('Return to exact index entry');
   await expect(page.getByRole('button', { name: '12. Insight 12' })).toBeFocused();
-  await chart.getByRole('button', { name: 'Share this insight’s context' }).click(); steps.push('Review insight handoff');
+  await interact('Open insight-sharing dialog', () => chart.getByRole('button', { name: 'Share this insight’s context' }).click()); milestones.push('Review insight handoff');
   const dialog = page.getByRole('dialog', { name: 'Share insight context' });
-  await dialog.getByText('Include this insight’s context and exact values').click();
+  await interact('Expand optional exact insight context', () => dialog.getByText('Include this insight’s context and exact values').click());
   await expect(dialog.getByRole('textbox', { name: /Context note/ })).toHaveValue(/Jan: \$18,400/);
   await expect(dialog).toContainText('default filters');
   await capture(page, info, 'desktop-handoff');
-  await dialog.getByRole('button', { name: 'Done' }).click();
-  await page.reload(); steps.push('Revisit saved dashboard with default filters');
+  await interact('Close sharing dialog', () => dialog.getByRole('button', { name: 'Done' }).click());
+  await interact('Reload saved dashboard', () => page.reload()); milestones.push('Revisit saved dashboard with default filters');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
   await noPageOverflow(page);
   expect(errors).toEqual([]);
+  expect(milestones).toHaveLength(11);
+  expect(scriptedInteractions).toHaveLength(14);
   await writeFile(info.outputPath('ux11-customer-journey.json'), JSON.stringify({ os: process.platform,
-    chromium: page.context().browser()?.version(), viewport: page.viewportSize(), scriptedSteps: steps,
-    deliberateActions: steps.length, errors, outcome: 'automated completion',
-    limitations: 'Fictional Playwright fixture, not human usability, live-data validation, screen-reader speech or measured elapsed time',
+    chromium: page.context().browser()?.version(), viewport: page.viewportSize(), scriptedMilestones: milestones,
+    milestoneCount: milestones.length, scriptedInteractions, interactionCount: scriptedInteractions.length,
+    interactionScope: 'Playwright clicks, select changes and a page reload after initial setup; excludes focus assertions and browser-internal steps',
+    errors, outcome: 'automated completion',
+    limitations: 'Fictional Playwright fixture; interactions are not participant actions, human usability, live-data validation, screen-reader speech or elapsed time',
   }, null, 2));
 });
 
@@ -112,8 +123,11 @@ test('SC-UX11-06: dashboard retrieval failure is not misrepresented as empty con
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Dashboards temporarily unavailable' })).toBeVisible();
   await expect(page.getByText('No matching dashboard here yet')).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: /Dashboards/ })).toHaveText('Dashboards');
+  await expect(page.getByRole('alert')).not.toContainText('Request failed (503)');
   await page.getByRole('button', { name: 'Retry' }).click();
   await expect(page.getByRole('button', { name: /Explore answer: How is revenue changing/ })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: /Dashboards/ })).toHaveText('Dashboards1');
 });
 
 test('SC-UX11-06/07: stale dashboard data is hidden after a failed refresh, and navigation gives a focused recovery', async ({ page }) => {
