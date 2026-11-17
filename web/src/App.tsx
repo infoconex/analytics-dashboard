@@ -19,6 +19,9 @@ import { VisualizationGallery } from './VisualizationGallery';
 import { Button } from './ui/Button';
 import { ModalDialog } from './ui/ModalDialog';
 import { organizationHash, parseOrganizationHash } from './organizationRoute';
+import { businessQuestions, findQuestionMatches, type QuestionMatch } from './dashboardDiscovery';
+import { DashboardStartingPoints } from './DashboardStartingPoints';
+import { DashboardTaskGuide } from './DashboardTaskGuide';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
@@ -50,6 +53,8 @@ export default function App() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
+  const [questionFilter, setQuestionFilter] = useState('');
+  const [selectedTask, setSelectedTask] = useState<{ organizationId: string; dashboardId: string; questionId: string; widgetId: string } | null>(null);
   const [period, setPeriod] = useState('12m');
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState<DashboardDraft | null>(null);
@@ -73,6 +78,9 @@ export default function App() {
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
 
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
+
+  // Discovery is ephemeral consumer context, never persisted across tenants.
+  useEffect(() => { setSearch(''); setQuestionFilter(''); setSelectedTask(null); }, [organizationId]);
 
   useEffect(() => {
     if (sidebarOpen) sidebar.current?.querySelector<HTMLButtonElement>('.nav-button')?.focus();
@@ -211,8 +219,23 @@ export default function App() {
     setDraft(null);
     setWidgetDraft(null);
     setSaveError('');
+    setSelectedTask(null);
     if (sidebarOpen) window.requestAnimationFrame(() => mainContent.current?.focus());
     setSidebarOpen(false);
+  }
+
+  function openQuestion(match: QuestionMatch, questionId: string) {
+    if (!organizationId || match.dashboard.organizationId !== organizationId) return;
+    const stillAvailable = dashboards.some(item => item.id === match.dashboard.id && item.widgets.some(widget => widget.id === match.widget.id));
+    if (!stillAvailable) return;
+    navigate('dashboards', match.dashboard.id);
+    setSelectedTask({ organizationId, dashboardId: match.dashboard.id, questionId, widgetId: match.widget.id });
+  }
+
+  function openCatalogDashboard(dashboard: Dashboard) {
+    const match = questionMatches.find(item => item.dashboard.id === dashboard.id);
+    if (match && questionFilter) openQuestion(match, questionFilter);
+    else navigate('dashboards', dashboard.id);
   }
 
   async function createFromExplore(name: string, widget: DashboardWidget) {
@@ -291,8 +314,10 @@ export default function App() {
   const preview = editMode && draft && activeDashboard
     ? { ...activeDashboard, ...draft } : activeDashboard;
   const featured = dashboards[0];
+  const questionMatches = questionFilter ? findQuestionMatches(dashboards, organizationId, questionFilter) : [];
   const filtered = dashboards.filter(item =>
-    `${item.name} ${item.description}`.toLowerCase().includes(search.toLowerCase()));
+    (!questionFilter || questionMatches.some(match => match.dashboard.id === item.id))
+    && `${item.name} ${item.description}`.toLowerCase().includes(search.trim().toLowerCase()));
 
   return (
     <div className="app-shell">
@@ -376,20 +401,31 @@ export default function App() {
                 </div>
                 {editMode && <div className="composition-status" role="status" aria-live="polite"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Arrange and configure your dashboard before publishing changes to your team.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available.</div>}
+                {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
+                  && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
                 <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)} />
               </>
-            ) : <EmptyState title="Dashboard not found" message="This dashboard may have been deleted or is not in your organization." />
+            ) : <div><EmptyState title="Dashboard not found" message="This dashboard is unavailable in the selected organization. Return to its dashboard list to choose an accessible view." /><button type="button" className="button button-light recovery-action" onClick={() => navigate('dashboards')}>Back to dashboards</button></div>
             : view.page === 'dashboards' ? (
               <>
                 <div className="page-heading"><div><div className="eyebrow">{organization?.name ?? 'YOUR WORKSPACE'} · SAMPLE DATA</div><h1>Dashboards</h1><p>Explore dashboards in this organization. {canEdit ? 'You can create and manage dashboards.' : 'You can view and share dashboards.'}</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
+                <fieldset className="question-filter" aria-label="Find dashboards by business question">
+                  <legend>Find a dashboard by question</legend>
+                  <div className="question-filter-options">
+                    <button type="button" aria-pressed={questionFilter === ''} onClick={() => setQuestionFilter('')}>All dashboards</button>
+                    {businessQuestions.map(question => <button type="button" key={question.id} aria-pressed={questionFilter === question.id} onClick={() => setQuestionFilter(question.id)}>{question.question}</button>)}
+                  </div>
+                </fieldset>
                 <div className="list-toolbar"><div className="list-search"><Search size={18} /><input aria-label="Search dashboards" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search dashboards..." /></div><div className="list-count"><LayoutDashboard size={16} /> {filtered.length} dashboards</div></div>
-                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => navigate('dashboards', item.id)} aria-label={`Open ${item.name} sample preview, +24.8% illustration`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><TrendingUp size={14} /> +24.8%</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Copy share link" onClick={() => void share(item)}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => navigate('dashboards', item.id)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
+                {(search || questionFilter) && <div className="discovery-summary" role="status"><span>Showing {filtered.length} matching {filtered.length === 1 ? 'dashboard' : 'dashboards'}{questionFilter ? ` for “${businessQuestions.find(item => item.id === questionFilter)?.question}”` : ''}.</span><button type="button" className="text-link" onClick={() => { setSearch(''); setQuestionFilter(''); }}>Clear search and questions</button></div>}
+                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card"><button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => openCatalogDashboard(item)} aria-label={`Open ${item.name} sample preview, +24.8% illustration`}><div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div><div className="thumbnail-float"><TrendingUp size={14} /> +24.8%</div></button><div className="dashboard-card-body"><div className="dashboard-card-title"><h3>{item.name}</h3><button className="icon-button" aria-label={`Share ${item.name}`} title="Copy share link" onClick={() => void share(item)}><Share2 size={16} /></button></div><p>{item.description || 'Your custom analytics workspace.'}</p><div className="card-footer"><span><FileBarChart size={15} /> {item.widgets.length} visuals</span><button onClick={() => openCatalogDashboard(item)}>View dashboard <ArrowRight size={14} /></button></div></div></article>)}
                   {canEdit && <button className="new-dashboard-card" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><div><Plus size={26} /></div><strong>Create new dashboard</strong><p>Bring your data together in a new view.</p></button>}</div>
-                {filtered.length === 0 && !canEdit && <EmptyState title="No dashboards found" message="Try another search, or ask an editor to create a dashboard." />}
+                {filtered.length === 0 && <div className="discovery-empty"><EmptyState title={dashboards.length === 0 ? 'No dashboards in this organization' : 'No matching dashboards'} message={dashboards.length === 0 ? canEdit ? 'Create a dashboard with sample visualizations to make a starting point available.' : 'Ask an organization editor to add a dashboard. There are no sample dashboards to explore yet.' : 'Try another business question, clear your search, or browse all dashboards.'} />{(search || questionFilter) && <button type="button" className="button button-light recovery-action" onClick={() => { setSearch(''); setQuestionFilter(''); }}>Show all dashboards</button>}</div>}
                 {canEdit && filtered.length > 0 && <section className="manage-section"><h2>Manage dashboards</h2><p>Editors can remove dashboards. All organization members can view and share dashboard links.</p><div>{filtered.map(item => <div className="manage-row" key={item.id}><span>{item.name}</span><button className="icon-button danger-hover" onClick={() => void removeDashboard(item)} title={`Delete ${item.name}`} aria-label={`Delete ${item.name}`}><Trash2 size={16} /></button></div>)}</div></section>}
               </>
             ) : <>
-              <div className="page-heading overview-heading"><div><div className="eyebrow">{organization?.name ?? 'YOUR WORKSPACE'} · SAMPLE ANALYTICS <span className="eyebrow-dot" /></div><h1>Welcome back, {identity?.displayName.split(' ')[0] ?? 'there'} <span className="wave">✳</span></h1><p>Here's what's happening in {organization?.name ?? 'your workspace'} today. {canEdit ? 'You can create and manage dashboards.' : 'Your access is view-only.'}</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
+              <div className="page-heading overview-heading"><div><div className="eyebrow">{organization?.name ?? 'YOUR WORKSPACE'} · SAMPLE ANALYTICS <span className="eyebrow-dot" /></div><h1>Welcome back, {identity?.displayName.split(' ')[0] ?? 'there'} <span className="wave">✳</span></h1><p>Explore fictional sample metrics for {organization?.name ?? 'your workspace'}. {canEdit ? 'You can create and manage dashboards.' : 'Your access is view-only.'}</p></div>{canEdit && <button className="button button-primary" onClick={() => { setDraft(emptyDraft()); setCreateOpen(true); }}><Plus size={18} /> New dashboard</button>}</div>
+              <DashboardStartingPoints dashboards={dashboards} organizationId={organizationId} onOpen={openQuestion} onBrowse={() => navigate('dashboards')} />
               <div className="summary-row"><SummaryCard icon={<BarChart3 size={20} />} title="Total revenue" value="$375.3K" trend="+24.8%" color="blue" /><SummaryCard icon={<FolderKanban size={20} />} title="Total orders" value="7,891" trend="+18.2%" color="violet" /><SummaryCard icon={<Users size={20} />} title="New customers" value="5,014" trend="+12.6%" color="mint" /><SummaryCard icon={<Activity size={20} />} title="Conversion rate" value="4.82%" trend="+2.1%" color="peach" /></div>
               <div className="section-title-row"><div><h2>Performance overview</h2><p>Your key metrics, all in one place.</p></div><PeriodPicker period={period} setPeriod={setPeriod} /></div>
               <div className="overview-charts"><WidgetTile widget={{ id: 'overview-revenue', title: 'Revenue trends', kind: 'area', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month' }} period={period} /><WidgetTile widget={{ id: 'overview-sources', title: 'Traffic by channel', kind: 'donut', datasetKey: 'channels', metricKey: 'sessions', dimensionKey: 'channel' }} period={period} /></div>

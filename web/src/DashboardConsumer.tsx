@@ -25,6 +25,12 @@ export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStar
 
   return <>
     <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Sample dataset</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> Updated {new Date(updatedAt).toLocaleDateString()}</span></div></div>
+    {!editing && <details className="consumer-guidance"><summary>How to explore this dashboard</summary>
+      <ul><li>Start with a visualization's title and “At a glance” insight when available.</li>
+        <li>Choose “View data table” below a chart to see exact fictional values and use keyboard-accessible controls.</li>
+        <li>Change the date range or marketing channel when available. Remove an active filter to return to the full sample view.</li>
+        <li>{canEdit ? 'For advanced composition, choose Edit dashboard above. Viewing and filtering never save changes.' : 'This is a read-only view; exploring and filtering never change the saved dashboard.'}</li></ul>
+    </details>}
     {(hasCommerce || hasChannels) && <DashboardFiltersBar filters={filters} onChange={setFilters} hasCommerce={hasCommerce} hasChannels={hasChannels} />}
     <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onEdit={onEdit} onAdd={onAdd} onChange={onChange}
       onChannelSelect={channel => setFilters(current => ({ ...current, channel: toggleChannel(current.channel, channel) }))} />
