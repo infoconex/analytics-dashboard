@@ -36,7 +36,7 @@ test('switching organizations retains a scoped context after reload and browser 
 test('unavailable organization URL cannot become selected tenant context', async ({ page }) => {
   await page.route('**/api/organizations', route => route.fulfill({ json: memberships }));
   await page.goto('/#/organization/untrusted/dashboard/18ff3350-79f4-4bb8-8d73-9b5e6885df89');
-  await expect(page.getByRole('status')).toContainText('requested organization is unavailable');
+  await expect(page.getByText('The requested organization is unavailable to your account. Showing an authorized workspace.')).toBeVisible();
   await expect(page).toHaveURL(/#\/organization\/northstar\/overview$/);
   await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
   await expect(page.getByText('Isolated customer report')).toHaveCount(0);
