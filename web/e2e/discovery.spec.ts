@@ -3,6 +3,8 @@ import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+test.use({ reducedMotion: 'reduce' });
+
 const membership = [
   { id: 'northstar', name: 'Northstar Commerce', role: 'viewer' },
   { id: 'isolated', name: 'Isolated Tenant', role: 'viewer' },
@@ -25,9 +27,11 @@ test('first arrival reaches and understands a sample insight, filters and recove
   await expect(page.getByText('Northstar Commerce').first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'What would you like to understand?' })).toBeVisible();
   await expect(page.getByText('fictional sample metrics')).toBeVisible();
-  await page.screenshot({ path: info.outputPath('ux8-first-arrival-desktop.png'), fullPage: true });
+  await page.locator('.overview-charts').scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: info.outputPath('ux8-first-arrival-desktop.png'), fullPage: true, animations: 'disabled' });
 
-  await page.getByRole('button', { name: /Explore: How is revenue changing\?/ }).click(); steps.push('Select relevant question');
+  await page.getByRole('button', { name: /Explore answer: How is revenue changing\?/ }).click(); steps.push('Select relevant question');
   const title = page.getByRole('heading', { name: 'How is revenue changing?' });
   await expect(title).toBeFocused();
   await expect(page.getByText('YOUR STARTING POINT · SAMPLE DATA')).toBeVisible();
@@ -77,7 +81,7 @@ test('catalog discovers dashboards by business question and search, with no-matc
 test('keyboard-only first-value entry preserves a meaningful focus destination and read-only role', async ({ page }) => {
   await page.route('**/api/organizations', route => route.fulfill({ json: [membership[0]] }));
   await page.goto('/');
-  const choice = page.getByRole('button', { name: /Explore: Which channels bring visitors\?/ });
+  const choice = page.getByRole('button', { name: /Explore answer: Which channels bring visitors\?/ });
   let reached = false;
   for (let i = 0; i < 30; i++) {
     await page.keyboard.press('Tab');
@@ -100,8 +104,8 @@ test('empty organization and missing question have no fictional recommendations 
   await page.route('**/api/organizations/isolated/dashboards', route => route.fulfill({ json: [] }));
   await page.goto('/#/organization/isolated/overview');
   await expect(page.getByText('No matching dashboard here yet')).toHaveCount(3);
-  await expect(page.getByRole('button', { name: /Explore: / })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Browse all dashboards' }).click();
+  await expect(page.getByRole('button', { name: /Explore answer: / })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Browse catalog' }).click();
   await expect(page.getByRole('heading', { name: 'No dashboards in this organization' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'New dashboard' })).toHaveCount(0);
 });
@@ -115,10 +119,10 @@ test('retry after unavailable dashboard list restores actual suggestions', async
   });
   await page.goto('/');
   await expect(page.getByRole('alert')).toContainText('Request failed (503)');
-  await expect(page.getByRole('button', { name: /Explore: / })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Explore answer: / })).toHaveCount(0);
   await page.getByRole('button', { name: 'Retry' }).click();
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Explore: How is revenue changing\?/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Explore answer: How is revenue changing\?/ })).toBeVisible();
   expect(attempts).toBe(2);
 });
 
@@ -134,7 +138,7 @@ test('switching organizations clears old question/search and prevents cross-tena
   await expect(page.getByRole('textbox', { name: 'Search dashboards' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
   await expect(page.getByText('Business performance')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Dashboards' }).click();
+  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Dashboards' }).click();
   await expect(page.getByRole('textbox', { name: 'Search dashboards' })).toHaveValue('');
   await expect(page.getByRole('heading', { name: 'Sample isolated-only' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Business performance' })).toHaveCount(0);
@@ -149,7 +153,7 @@ test('dense dashboard question jump and return to index preserve focus', async (
   await page.getByRole('button', { name: 'View dashboard' }).click();
   await page.getByRole('button', { name: 'Go to Insight 1' }).click();
   await expect(page.getByRole('heading', { name: 'Insight 1', exact: true })).toBeFocused();
-  await page.getByRole('button', { name: 'Back to visualization list from Insight 1' }).click();
+  await page.getByRole('button', { name: 'Back to visualization list from Insight 1', exact: true }).click();
   await expect(page.getByRole('button', { name: '1. Insight 1' })).toBeFocused();
 });
 
@@ -171,9 +175,11 @@ for (const { width, height, label } of [
     await page.setViewportSize({ width, height });
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'What would you like to understand?' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Explore: How is revenue changing\?/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Explore answer: How is revenue changing\?/ })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    await page.screenshot({ path: info.outputPath(`ux8-first-value-${label}.png`), fullPage: true });
+    await page.locator('.overview-charts').scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: info.outputPath(`ux8-first-value-${label}.png`), fullPage: true, animations: 'disabled' });
   });
 }
 
@@ -222,7 +228,7 @@ test('genuine Chromium 200% and 400% tab zoom reflows question-first navigation'
       expect(actual).toBeCloseTo(factor, 1);
       expect(observed.dpr / baseline.dpr).toBeCloseTo(factor, 1);
       expect(observed.overflow).toBe(false);
-      const start = page.getByRole('button', { name: /Explore: How is revenue changing\?/ });
+      const start = page.getByRole('button', { name: /Explore answer: How is revenue changing\?/ });
       await expect(start).toBeVisible();
       await start.focus();
       await expect(start).toBeFocused();

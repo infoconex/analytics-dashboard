@@ -51,4 +51,12 @@ describe('sample-only business question discovery', () => {
     const chosen = matchQuestion([dashboard('sales', 'northstar', [total, revenue])], 'northstar', 'revenue-trend');
     expect(chosen?.widget.id).toBe('rev');
   });
+
+  it('recommends the most informative matching dashboard over an earlier one-chart draft', () => {
+    const draft = dashboard('draft', 'northstar', [revenue]);
+    const richer = dashboard('business-overview', 'northstar', [orders, revenue, {
+      ...orders, id: 'traffic', metricKey: 'sessions', kind: 'donut',
+    }]);
+    expect(matchQuestion([draft, richer], 'northstar', 'revenue-trend')?.dashboard.id).toBe('business-overview');
+  });
 });

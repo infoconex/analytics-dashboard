@@ -47,5 +47,10 @@ export function findQuestionMatches(dashboards: readonly Dashboard[], organizati
 }
 
 export function matchQuestion(dashboards: readonly Dashboard[], organizationId: string, questionId: string): QuestionMatch | null {
-  return findQuestionMatches(dashboards, organizationId, questionId)[0] ?? null;
+  const matches = findQuestionMatches(dashboards, organizationId, questionId);
+  // A richer sample overview is usually a better first-use destination than
+  // an incidental one-chart draft created during another task. Keep API order
+  // as the deterministic tie-breaker; never widen the organization scope.
+  return matches.reduce<QuestionMatch | null>((best, item) =>
+    !best || item.dashboard.widgets.length > best.dashboard.widgets.length ? item : best, null);
 }

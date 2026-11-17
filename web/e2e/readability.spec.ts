@@ -95,7 +95,7 @@ test('forced-colors mode retains visible focus and chart data alternatives', asy
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
   await page.goto('/#/dashboards');
   await page.getByRole('button', { name: /Open Business performance/ }).click();
-  const disclosure = page.getByText('View data table').first();
+  const disclosure = page.locator('details.chart-data > summary').first();
   await disclosure.focus();
   const outline = await disclosure.evaluate(element => getComputedStyle(element).outlineStyle);
   expect(outline).not.toBe('none');
