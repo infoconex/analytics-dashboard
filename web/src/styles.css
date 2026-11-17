@@ -542,6 +542,13 @@ button:disabled { opacity:.6; }
 .overview-context-note { margin:0 0 var(--space-4); color:var(--color-muted); font-size:var(--type-caption); line-height:1.5; }
 .toolbar-left { flex-wrap:wrap; min-width:0; }
 .toolbar-muted { flex-wrap:wrap; overflow-wrap:anywhere; }
+/* Keep the saved-dashboard icon with its caption when the toolbar stacks. */
+@media(max-width:720px) {
+  .dashboard-toolbar .toolbar-separator { display:none; }
+  .dashboard-toolbar .toolbar-muted { display:block; }
+  .dashboard-toolbar .toolbar-muted svg { vertical-align:middle; margin-right:var(--space-1); }
+}
+.chart-data .widget-table th { text-transform:none; }
 @media(forced-colors:active) {
   .insight-context,.summary-definition { border-color:CanvasText; }
   .insight-context summary,.summary-definition summary { color:LinkText; }

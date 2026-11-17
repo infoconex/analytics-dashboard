@@ -45,8 +45,8 @@ test('exploration is keyboard-operable on a narrow viewport', async ({ page }) =
 
 test('preview date range is visibly temporary and updates the underlying sample rows', async ({ page }) => {
   await page.goto('/#/explore');
-  await page.getByRole('combobox', { name: 'Preview date range' }).selectOption('3m');
-  await expect(page.getByText('This changes the preview only.')).toBeVisible();
+  await page.getByRole('combobox', { name: 'Preview sample months' }).selectOption('3m');
+  await expect(page.getByText('These fictional Jan–Dec months have no year.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Underlying sample records (3)' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Oct' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Jan' })).toHaveCount(0);

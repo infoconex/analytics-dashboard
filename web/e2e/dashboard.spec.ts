@@ -168,7 +168,7 @@ test('switching organizations ignores a late response from the previous tenant',
   releaseNorthstar();
   await expect(page.getByText('Northstar internal')).toHaveCount(0);
   await page.goto(`/#/organization/isolated/dashboard/${activeDashboard.id}`);
-  await expect(page.getByText('No sample data is available for dataset')).toBeVisible();
+  await expect(page.getByText('Insight unavailable.')).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
 
