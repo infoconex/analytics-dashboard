@@ -118,7 +118,7 @@ test('retry after unavailable dashboard list restores actual suggestions', async
     return route.continue();
   });
   await page.goto('/');
-  await expect(page.getByRole('alert')).toContainText('Request failed (503)');
+  await expect(page.getByRole('alert')).toContainText('We could not check dashboards. Retry to load an authorized view.');
   await expect(page.getByRole('button', { name: /Explore answer: / })).toHaveCount(0);
   await page.getByRole('button', { name: 'Retry' }).click();
   await expect(page.getByRole('alert')).toHaveCount(0);

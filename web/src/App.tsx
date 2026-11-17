@@ -244,7 +244,9 @@ export default function App() {
       viewingSnapshot.current = null;
       setSelectedTask(null);
       setShareRequest(null);
-      setError(exception instanceof Error ? exception.message : 'Unable to load dashboards.');
+      // Backend errors may include HTTP internals and do not establish that
+      // there are zero dashboards or that access has permanently changed.
+      setError('We could not check dashboards. Retry to load an authorized view.');
     } finally {
       if (requestVersion === loadVersion.current) setLoading(false);
     }
@@ -417,7 +419,7 @@ export default function App() {
           <span className="nav-caption">WORKSPACE</span>
           <NavButton active={view.page === 'overview'} label="Overview" onClick={() => navigate('overview')} icon={<Gauge size={18} />} />
           <NavButton active={view.page === 'explore'} label="Explore" onClick={() => navigate('explore')} icon={<Search size={18} />} />
-          <NavButton active={view.page === 'dashboards'} label="Dashboards" onClick={() => navigate('dashboards')} icon={<LayoutDashboard size={18} />} count={dashboards.length} />
+          <NavButton active={view.page === 'dashboards'} label="Dashboards" onClick={() => navigate('dashboards')} icon={<LayoutDashboard size={18} />} count={!dashboardLoadFailed && dashboardList?.organizationId === organizationId ? dashboards.length : undefined} />
           <NavButton active={view.page === 'sources'} label="Data sources" onClick={() => navigate('sources')} icon={<Database size={18} />} />
           <div className="sidebar-divider" />
           <span className="nav-caption">MANAGEMENT</span>
