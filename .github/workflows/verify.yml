@@ -40,6 +40,10 @@ jobs:
             web/test-results/embed-*/**/*.webm
             web/test-results/embed-*/**/*.json
             web/test-results/embed-*/**/trace.zip
+            web/test-results/organization-*/**/*.png
+            web/test-results/organization-*/**/*.webm
+            web/test-results/organization-*/**/*.json
+            web/test-results/organization-*/**/trace.zip
           if-no-files-found: warn
           retention-days: 14
 
