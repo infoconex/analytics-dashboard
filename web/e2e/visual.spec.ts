@@ -172,7 +172,7 @@ test('tablet, narrow reflow and forced-colors views preserve readable sample dat
   await assertNoDocumentOverflow(page, 320);
   await capture(page, testInfo, '18-consumption-reflow-320');
 
-  await page.getByText('View data table').first().click();
+  await page.locator('details.chart-data > summary').first().click();
   await capture(page, testInfo, '19-chart-data-reflow-320');
 
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
