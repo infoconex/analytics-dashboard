@@ -527,6 +527,10 @@ button:disabled { opacity:.6; }
   outline-offset:3px;
 }
 @media(forced-colors:active) {
+  /* A system palette must also override the old dark workspace and active-nav fills. */
+  .sidebar .workspace-switch,.sidebar .workspace-avatar { background:Canvas; color:CanvasText; border:1px solid CanvasText; }
+  .sidebar .workspace-switch > svg,.sidebar .nav-button.nav-active svg { color:CanvasText; }
+  .sidebar .nav-button.nav-active { background:Canvas; color:CanvasText; border:2px solid Highlight; }
   .form-label :is(input,select,textarea),.consumer-filter-field select,
   .period-picker,.list-search,.button-light,.back-button,.reset-filters,
   .donut-legend-button,.donut-legend-button[aria-pressed="true"],.filter-chip {
