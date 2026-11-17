@@ -3,6 +3,7 @@ import { Clock3 } from 'lucide-react';
 import { DashboardCanvas } from './DashboardCanvas';
 import { DashboardFiltersBar } from './DashboardFiltersBar';
 import { defaultConsumerFilters, toggleChannel } from './consumerFilters';
+import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 
 interface Props {
@@ -14,14 +15,21 @@ interface Props {
   onChange: (widgets: DashboardWidget[]) => void;
   onEdit: (widget: DashboardWidget) => void;
   onAdd: () => void;
+  onFiltersChange?: (filters: ConsumerFilters) => void;
+  onShareInsight?: (widget: DashboardWidget, filters: ConsumerFilters) => void;
 }
 
 // Mount with a dashboard-and-organization key to keep unsaved consumer filters
 // scoped to one open dashboard, not to a link or server-persisted draft.
-export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onChange, onEdit, onAdd }: Props) {
+export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onFiltersChange, onShareInsight }: Props) {
   const [filters, setFilters] = useState({ ...defaultConsumerFilters });
   const hasCommerce = widgets.some(widget => widget.datasetKey === 'commerce');
   const hasChannels = widgets.some(widget => widget.datasetKey === 'channels');
+
+  function changeFilters(next: ConsumerFilters) {
+    setFilters(next);
+    onFiltersChange?.(next);
+  }
 
   return <>
     <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Static fictional sample</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> Dashboard saved {new Date(updatedAt).toLocaleDateString()} · Sample freshness unavailable</span></div></div>
@@ -31,8 +39,9 @@ export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStar
         <li>Change the date range or marketing channel when available. Remove an active filter to return to the full sample view.</li>
         <li>{canEdit ? 'For advanced composition, choose Edit dashboard above. Viewing and filtering never save changes.' : 'This is a read-only view; exploring and filtering never change the saved dashboard.'}</li></ul>
     </details>}
-    {(hasCommerce || hasChannels) && <DashboardFiltersBar filters={filters} onChange={setFilters} hasCommerce={hasCommerce} hasChannels={hasChannels} />}
+    {(hasCommerce || hasChannels) && <DashboardFiltersBar filters={filters} onChange={changeFilters} hasCommerce={hasCommerce} hasChannels={hasChannels} />}
     <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onEdit={onEdit} onAdd={onAdd} onChange={onChange}
-      onChannelSelect={channel => setFilters(current => ({ ...current, channel: toggleChannel(current.channel, channel) }))} />
+      onChannelSelect={channel => changeFilters({ ...filters, channel: toggleChannel(filters.channel, channel) })}
+      onShareInsight={onShareInsight ? widget => onShareInsight(widget, filters) : undefined} />
   </>;
 }

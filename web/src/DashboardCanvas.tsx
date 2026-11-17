@@ -17,9 +17,10 @@ interface Props {
   onEdit: (widget: DashboardWidget) => void;
   onAdd: () => void;
   onChannelSelect: (channel: string) => void;
+  onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onChannelSelect }: Props) {
+export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onChannelSelect, onShareInsight }: Props) {
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -132,7 +133,8 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
             <button className="icon-button" aria-label={`Move ${widget.title} later`} title="Move later" disabled={index === widgets.length - 1} onClick={() => announceMove(moveWidget(widgets, widget.id, 1), widget.id)}><ArrowDown size={17} /></button>
           </div>}
           <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined}
-            onReturnToIndex={!editing && widgets.length >= 8 ? () => returnToIndex(widget.id) : undefined} />
+            onReturnToIndex={!editing && widgets.length >= 8 ? () => returnToIndex(widget.id) : undefined}
+            onShareInsight={!editing ? onShareInsight : undefined} />
         </div>)}
         {editing && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Choose a chart and see it on your dashboard</small></button>}
       </div>
