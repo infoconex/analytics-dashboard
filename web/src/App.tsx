@@ -19,7 +19,7 @@ import { ExplorePage } from './ExplorePage';
 import { VisualizationGallery } from './VisualizationGallery';
 import { Button } from './ui/Button';
 import { ModalDialog } from './ui/ModalDialog';
-import { organizationHash, parseOrganizationHash } from './organizationRoute';
+import { isSupportedAppHash, organizationHash, parseOrganizationHash } from './organizationRoute';
 import { businessQuestions, findQuestionMatches, type QuestionMatch } from './dashboardDiscovery';
 import { DashboardStartingPoints } from './DashboardStartingPoints';
 import { DashboardTaskGuide } from './DashboardTaskGuide';
@@ -54,6 +54,7 @@ export default function App() {
   const activeOrganization = useRef(organizationId);
   activeOrganization.current = organizationId;
   const [loading, setLoading] = useState(true);
+  const [dashboardLoadFailed, setDashboardLoadFailed] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
@@ -76,6 +77,7 @@ export default function App() {
   const mainContent = useRef<HTMLElement>(null);
   const skipNextHashPrompt = useRef(false);
   const acceptedHash = useRef(window.location.hash);
+  const focusOnNavigation = useRef(false);
 
   const organization = organizations.find(item => item.id === organizationId);
   const canEdit = organization?.role === 'owner' || organization?.role === 'editor';
@@ -126,11 +128,20 @@ export default function App() {
       }
       skipNextHashPrompt.current = false;
       acceptedHash.current = window.location.hash;
+      focusOnNavigation.current = true;
       const next = currentView();
       viewingSnapshot.current = null;
       setShareRequest(null);
       setView(next);
-      if (next.organizationId) {
+      if (!isSupportedAppHash(window.location.hash) && organizations.length > 0) {
+        const fallbackId = organizations.some(item => item.id === activeOrganization.current)
+          ? activeOrganization.current : organizations[0]!.id;
+        setOrganizationNotice('The requested destination is invalid. Showing an authorized workspace.');
+        window.history.replaceState(null, '', organizationHash(fallbackId, 'overview'));
+        acceptedHash.current = window.location.hash;
+        setOrganizationId(fallbackId);
+        setView({ page: 'overview' });
+      } else if (next.organizationId) {
         if (organizations.some(item => item.id === next.organizationId)) {
           setOrganizationId(next.organizationId);
           setOrganizationNotice('');
@@ -151,6 +162,23 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHash);
   }, [organizations, hasChanges]);
 
+  // Navigation replaces the previous control; place keyboard focus on the new
+  // page heading instead of leaving it on a detached element. The question
+  // guide owns focus when a customer explicitly chose a business question.
+  useEffect(() => {
+    if (!focusOnNavigation.current || loading) return;
+    if (selectedTask?.organizationId === organizationId && selectedTask.dashboardId === view.id) {
+      focusOnNavigation.current = false;
+      return;
+    }
+    const heading = mainContent.current?.querySelector<HTMLElement>('.page-heading h1, .empty-state h2, .embedded-state h1');
+    if (!heading) return;
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    heading.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    focusOnNavigation.current = false;
+  }, [view, loading, selectedTask, organizationId, dashboardLoadFailed]);
+
   useEffect(() => {
     if (!hasChanges) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
@@ -165,10 +193,18 @@ export default function App() {
       setOrganizations(items);
       setIdentity(user);
       const requestedId = currentView().organizationId;
+      const invalidDestination = !isSupportedAppHash(window.location.hash);
       const selectedId = items.find(item => item.id === requestedId)?.id || items[0]?.id || '';
       setOrganizationId(selectedId);
       if (requestedId && requestedId !== selectedId && selectedId) {
+        focusOnNavigation.current = true;
         setOrganizationNotice('The requested organization is unavailable to your account. Showing an authorized workspace.');
+        window.history.replaceState(null, '', organizationHash(selectedId, 'overview'));
+        acceptedHash.current = window.location.hash;
+        setView({ page: 'overview' });
+      } else if (invalidDestination && selectedId) {
+        focusOnNavigation.current = true;
+        setOrganizationNotice('The requested destination is invalid. Showing an authorized workspace.');
         window.history.replaceState(null, '', organizationHash(selectedId, 'overview'));
         acceptedHash.current = window.location.hash;
         setView({ page: 'overview' });
@@ -189,13 +225,20 @@ export default function App() {
     if (!organizationId) return;
     const requestVersion = ++loadVersion.current;
     setLoading(true);
+    setDashboardLoadFailed(false);
+    setError('');
     try {
       const items = await dashboardApi.list(organizationId);
       if (requestVersion !== loadVersion.current) return;
+      setDashboardLoadFailed(false);
       setDashboardList({ organizationId, items });
       setError('');
     } catch (exception) {
       if (requestVersion !== loadVersion.current) return;
+      // A failed refresh must not masquerade as an empty catalog or continue
+      // displaying previously fetched content after possible access revocation.
+      setDashboardList(null);
+      setDashboardLoadFailed(true);
       setError(exception instanceof Error ? exception.message : 'Unable to load dashboards.');
     } finally {
       if (requestVersion === loadVersion.current) setLoading(false);
@@ -217,6 +260,7 @@ export default function App() {
     if (!confirmDiscard()) return;
     if (!organizations.some(item => item.id === nextOrganizationId)) return;
     const nextHash = organizationHash(nextOrganizationId, next, id);
+    focusOnNavigation.current = true;
     skipNextHashPrompt.current = window.location.hash !== nextHash;
     window.location.hash = nextHash;
     acceptedHash.current = window.location.hash;
@@ -400,6 +444,8 @@ export default function App() {
           {error && <div role="alert" className="error-banner"><span>{error}</span><button className="error-retry" onClick={() => { void (organizations.length === 0 ? loadWorkspace() : loadDashboards()); }}>Retry</button></div>}
           {loading ? <div className="loading-state" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /> Loading workspace…</div>
             : organizations.length === 0 ? <EmptyState title={error ? 'Workspace unavailable' : 'No organizations available'} message={error ? 'We could not load your organization and identity. Retry when the service is available.' : 'Your identity has no assigned organization. Ask your platform administrator for access.'} />
+            : dashboardLoadFailed && (view.page === 'overview' || view.page === 'dashboards')
+              ? <EmptyState title="Dashboards temporarily unavailable" message="We could not check the dashboards in this organization. This is not an empty dashboard list. Retry to load an authorized view." />
             : view.page === 'explore' ? <ExplorePage key={organizationId} canEdit={canEdit} onCreate={createFromExplore} />
             : view.page === 'sources' ? <DataSourcesPage key={organizationId} organizationId={organizationId} organizationName={organization?.name ?? 'Workspace'} canEdit={canEdit} onNotice={setToast} />
             : view.page === 'settings' ? <SettingsPage organization={organization} />

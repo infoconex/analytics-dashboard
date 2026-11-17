@@ -20,6 +20,15 @@ export function parseOrganizationHash(hash: string): OrganizationRoute | null {
   return null;
 }
 
+/** Recognize the existing standalone destinations; never treat untrusted fragments as permissions. */
+export function isSupportedAppHash(hash: string): boolean {
+  if (!hash || hash === '#/' || hash === '#') return true;
+  if (parseOrganizationHash(hash)) return true;
+  if (['#/explore', '#/sources', '#/settings', '#/dashboards'].includes(hash)) return true;
+  // Preserve the previously accepted legacy dashboard locator without expanding it.
+  return hash.startsWith('#/dashboard/') && hash.length > '#/dashboard/'.length;
+}
+
 export function organizationHash(organizationId: string, page: OrganizationPage, dashboardId?: string): string {
   if (!validSegment(organizationId) || (dashboardId !== undefined && !validSegment(dashboardId))) throw new Error('Invalid organization navigation target');
   return dashboardId ? `#/organization/${organizationId}/dashboard/${dashboardId}` : `#/organization/${organizationId}/${page}`;

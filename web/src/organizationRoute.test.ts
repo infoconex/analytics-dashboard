@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { organizationHash, parseOrganizationHash } from './organizationRoute';
+import { isSupportedAppHash, organizationHash, parseOrganizationHash } from './organizationRoute';
 
 describe('organization navigation', () => {
   it('keeps an explicit organization on overview, dashboards, sources and settings', () => {
@@ -16,6 +16,17 @@ describe('organization navigation', () => {
   it('rejects malformed or ambiguous scoped routes', () => {
     for (const hash of ['#/organization/', '#/organization/%', '#/organization/tenant-a/settings/extra', '#/organization/tenant-a/dashboard/', '#/organization/tenant-a/dashboards/%2f']) {
       expect(parseOrganizationHash(hash)).toBeNull();
+    }
+  });
+
+  it('recognizes only the existing standalone hash grammar for safe recovery', () => {
+    for (const hash of ['', '#/', '#/dashboards', '#/explore', '#/sources', '#/settings',
+      '#/dashboard/previously-supported-id', '#/organization/northstar/dashboard/abc-123']) {
+      expect(isSupportedAppHash(hash)).toBe(true);
+    }
+    for (const hash of ['#/organization/northstar/not-a-page', '#/organization/tenant-a/dashboard/',
+      '#/organization/%2f/overview', '#/forgotten-page', '#/dashboards/extra']) {
+      expect(isSupportedAppHash(hash)).toBe(false);
     }
   });
 });
