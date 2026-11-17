@@ -6,6 +6,7 @@ import {
 import { formatDetailedMetric, formatMetric, selectRows } from './demoData';
 import { chartInsight } from './chartInsights';
 import { selectConsumerRows } from './consumerFilters';
+import { aggregateSampleMetric, sampleMetricContext } from './sampleInterpretation';
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 
@@ -31,31 +32,35 @@ interface Props {
 export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex }: Props) {
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
+  const context = sampleMetricContext(widget.datasetKey, widget.metricKey, widget.dimensionKey, data, filters);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
   const selectedChannel = filters?.channel;
-  const insight = widget.kind !== 'table' && widget.kind !== 'metric'
+  const insight = context && widget.kind !== 'table' && widget.kind !== 'metric'
     ? chartInsight(widget.dimensionKey, widget.metricKey, data)
     : null;
   function selectCategory(index: number) {
     const category = data[index]?.channel;
     if (channelInteraction && typeof category === 'string') onChannelSelect?.(category);
   }
-  const value = data.reduce((total, row) => total + Number(row[widget.metricKey] ?? 0), 0);
+  const aggregate = aggregateSampleMetric(widget.datasetKey, widget.metricKey, data);
+  const value = aggregate ?? 0;
   const metric = widget.metricKey;
   const axis = widget.dimensionKey;
   const first = data[0];
   const last = data[data.length - 1];
-  const trend = Number(first?.[metric]) > 0
+  const trend = widget.datasetKey === 'commerce' && data.length > 1 && Number(first?.[metric]) > 0
     ? ((Number(last?.[metric]) - Number(first?.[metric])) / Number(first?.[metric])) * 100
-    : 0;
+    : null;
 
-  if (data.length === 0) {
+  if (!context) {
     return (
       <article className="widget-tile" aria-labelledby={headingId}>
         <div className="widget-heading"><div><h2 className="widget-title" id={headingId} tabIndex={-1}>{widget.title}</h2></div></div>
-        <p className="widget-empty">{filters && widget.datasetKey === 'channels' && selectedChannel
-          ? 'No sample records match this channel. Remove the filter to see all channels.'
-          : `No sample data is available for dataset “${widget.datasetKey}”.`}</p>
+        <p className="widget-empty"><strong>Insight unavailable.</strong> {data.length === 0
+          ? selectedChannel && widget.datasetKey === 'channels'
+            ? 'No sample records match this channel. Remove the channel filter to see all channels.'
+            : 'This dataset has no available sample records.'
+          : 'The saved metric or dimension is not supported by the fictional sample. Ask a dashboard editor to choose an available metric.'} No value has been inferred.</p>
         {editing && <div className="widget-actions">
           <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
           <button aria-label={`Remove ${widget.title}`} className="icon-button danger-hover" onClick={() => onRemove?.(widget.id)}><Trash2 size={15} /></button>
@@ -70,7 +75,8 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
       <div className="widget-heading">
         <div>
           <h2 className="widget-title" id={headingId} tabIndex={-1}>{widget.title}</h2>
-          <div className="widget-subtitle">{widget.datasetKey === 'commerce' ? 'Commerce performance' : 'Marketing channels'}{filters && widget.datasetKey === 'channels' && selectedChannel ? ` · ${selectedChannel}` : ''}</div>
+          <div className="widget-subtitle">{widget.datasetKey === 'commerce' ? 'Commerce performance' : 'Marketing channels'} · {context.label} ({context.unit})</div>
+          <p className="widget-scope">{context.coverage}</p>
         </div>
         {position && total && !editing && <span className="widget-position"><span aria-hidden="true">{position} / {total}</span><span className="sr-only">Visualization {position} of {total}</span></span>}
         {editing ? (
@@ -83,24 +89,25 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
 
       {widget.kind === 'metric' ? (
         <div className="metric-content">
-          <div className="metric-number">{formatMetric(value, metric)}</div>
-          <div className="metric-trend"><TrendingUp size={14} /> {trend > 0 ? '+' : ''}{trend.toFixed(1)}% <span>across selected period</span></div>
-          <div className="metric-sparkline" aria-hidden="true">
+          <div className="metric-number">{aggregate !== null ? formatMetric(aggregate, metric) : 'Combined rate unavailable'}</div>
+          {aggregate === null && <p className="metric-limitation">A combined conversion rate cannot be calculated from these independent example percentages. Inspect the individual channels below.</p>}
+          {trend !== null && <div className="metric-trend"><TrendingUp size={14} aria-hidden="true" /> {trend > 0 ? '+' : ''}{trend.toFixed(1)}% <span>last versus first sample month, not year-over-year</span></div>}
+          {aggregate !== null && <div className="metric-sparkline" aria-hidden="true">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} accessibilityLayer={false}>
                 <defs><linearGradient id={`gradient-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.22} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0} /></linearGradient></defs>
                 <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.2} fill={`url(#gradient-${widget.id})`} />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </div>}
         </div>
       ) : widget.kind === 'table' ? (
         <div className="widget-table-wrap" role="region" aria-label={`Scrollable ${widget.title} table`} tabIndex={0}>
           <table className="widget-table">
             <caption className="sr-only">{widget.title}: sample {metric} values by {axis}</caption>
-            <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th><th scope="col">Share (rounded)</th></tr></thead>
+            <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{context.label} ({context.unit})</th>{context.additive && <th scope="col">Share (rounded)</th>}</tr></thead>
             <tbody>{data.map((row) => (
-              <tr key={String(row[axis])}><th scope="row">{channelInteraction ? <button type="button" className="table-filter-button" aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button> : row[axis]}</th><td>{formatDetailedMetric(Number(row[metric] ?? 0), metric)}</td><td>{value ? Math.round(Number(row[metric] ?? 0) / value * 100) : 0}%</td></tr>
+              <tr key={String(row[axis])}><th scope="row">{channelInteraction ? <button type="button" className="table-filter-button" aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button> : row[axis]}</th><td>{formatDetailedMetric(Number(row[metric]), metric)}</td>{context.additive && <td>{value ? Math.round(Number(row[metric]) / value * 100) : 0}%</td>}</tr>
             ))}</tbody>
           </table>
         </div>
@@ -144,6 +151,15 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
         </div>
       )}
       {insight && <p className="chart-insight"><strong>At a glance:</strong> {insight}</p>}
+      <details className="insight-context">
+        <summary>What this means</summary>
+        <dl>
+          <div><dt>Metric</dt><dd>{context.label} · {context.unit}. {context.meaning}</dd></div>
+          <div><dt>Scope</dt><dd>{context.coverage}. {context.filterScope}</dd></div>
+          <div><dt>Source</dt><dd>{context.provenance}</dd></div>
+          <div><dt>Cannot conclude</dt><dd>{context.limitation} These values cannot explain causes, statistical significance or current customer performance.</dd></div>
+        </dl>
+      </details>
       {widget.kind === 'donut' && <div className="donut-legend">
         {data.map((row, index) => channelInteraction
           ? <button type="button" className="donut-legend-button" key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: palette[index % palette.length] }} />{row[axis]}</button>
@@ -155,12 +171,12 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
         <div className="chart-data-scroll" role="region" aria-label={`Scrollable ${widget.title} data`} tabIndex={0}>
           <table className="widget-table">
             <caption>{widget.title} — sample values by {axis}</caption>
-            <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{metric}</th></tr></thead>
+            <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{context.label} ({context.unit})</th></tr></thead>
             <tbody>{data.map(row => <tr key={String(row[axis])}>
               <th scope="row">{channelInteraction
                 ? <button type="button" className="table-filter-button" aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button>
                 : row[axis]}</th>
-              <td>{formatDetailedMetric(Number(row[metric] ?? 0), metric)}</td>
+              <td>{formatDetailedMetric(Number(row[metric]), metric)}</td>
             </tr>)}</tbody>
           </table>
         </div>

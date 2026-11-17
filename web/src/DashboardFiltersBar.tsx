@@ -12,9 +12,9 @@ interface Props {
 }
 
 const periods: Record<ConsumerPeriod, string> = {
-  '3m': 'Last 3 months',
-  '6m': 'Last 6 months',
-  '12m': 'Last 12 months',
+  '3m': 'Final 3 sample months',
+  '6m': 'Final 6 sample months',
+  '12m': 'All 12 sample months',
 };
 
 export function DashboardFiltersBar({ filters, onChange, hasCommerce, hasChannels }: Props) {
@@ -51,7 +51,7 @@ export function DashboardFiltersBar({ filters, onChange, hasCommerce, hasChannel
     {(hasCommerce || hasChannels) && <div className="consumer-controls">
       {hasCommerce && <label className="consumer-filter-field"><span><CalendarDays size={14} aria-hidden="true" /> Date range <small>Commerce only</small></span>
         <select ref={dateSelect} aria-label="Date range (commerce only)" value={filters.period} onChange={event => onChange({ ...filters, period: event.target.value as ConsumerPeriod })}>
-          <option value="12m">Last 12 months</option><option value="6m">Last 6 months</option><option value="3m">Last 3 months</option>
+          <option value="12m">All 12 sample months</option><option value="6m">Final 6 sample months</option><option value="3m">Final 3 sample months</option>
         </select></label>}
       {hasChannels && <label className="consumer-filter-field"><span>Marketing channel <small>Channel charts only</small></span>
         <select ref={channelSelect} aria-label="Marketing channel" value={filters.channel ?? ''} onChange={event => onChange({ ...filters, channel: event.target.value || null })}>

@@ -48,6 +48,10 @@ jobs:
             web/test-results/discovery-*/**/*.webm
             web/test-results/discovery-*/**/*.json
             web/test-results/discovery-*/**/trace.zip
+            web/test-results/interpretation-*/**/*.png
+            web/test-results/interpretation-*/**/*.webm
+            web/test-results/interpretation-*/**/*.json
+            web/test-results/interpretation-*/**/trace.zip
           if-no-files-found: warn
           retention-days: 14
 

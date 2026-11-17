@@ -14,7 +14,7 @@ test('dashboard consumers coordinate date and channel filters and reset independ
   await expect(channelTable.locator('tbody tr')).toHaveCount(5);
 
   await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
-  await expect(page.getByRole('button', { name: 'Remove Last 3 months filter' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Remove Final 3 sample months filter' })).toBeVisible();
   await expect(channels.locator('.donut-legend')).toHaveText(initialChannelRows?.trim() ?? '');
   await expect(revenue).toBeVisible();
   expect(await revenue.locator('.metric-number').allTextContents()).not.toEqual(revenueTotal);
@@ -28,7 +28,7 @@ test('dashboard consumers coordinate date and channel filters and reset independ
   await expect(channelTable.locator('tbody tr')).toHaveCount(1);
   await expect(channelTable.getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
 
-  await page.getByRole('button', { name: 'Remove Last 3 months filter' }).click();
+  await page.getByRole('button', { name: 'Remove Final 3 sample months filter' }).click();
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
   await page.getByRole('button', { name: 'Reset filters' }).click();
@@ -108,7 +108,7 @@ test('filter removal and reset restore focus to surviving controls with truthful
 
   await date.selectOption('3m');
   await channel.selectOption('Direct');
-  await page.getByRole('button', { name: 'Remove Last 3 months filter' }).focus();
+  await page.getByRole('button', { name: 'Remove Final 3 sample months filter' }).focus();
   await page.keyboard.press('Enter');
   await expect(date).toBeFocused();
   await expect(date).toHaveValue('12m');

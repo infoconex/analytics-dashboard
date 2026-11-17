@@ -26,7 +26,7 @@ export function chartInsight(dimension: string, metric: string, rows: SampleRow[
 
   const last = rows.at(-1) ?? first;
   if (rows.length === 1) return `${first[dimension]}: ${namedValue(first)} (1 ${dimension}).`;
-  const direction = Number(last[metric]) > Number(first[metric]) ? 'increased'
-    : Number(last[metric]) < Number(first[metric]) ? 'decreased' : 'unchanged';
-  return `From ${first[dimension]} (${value(first)}) to ${last[dimension]} (${value(last)}): ${direction} across ${rows.length} ${dimension}s.`;
+  const comparison = Number(last[metric]) > Number(first[metric]) ? 'higher than'
+    : Number(last[metric]) < Number(first[metric]) ? 'lower than' : 'equal to';
+  return `First ${dimension}: ${first[dimension]} (${value(first)}); last ${dimension}: ${last[dimension]} (${value(last)}). Last is ${comparison} first; intermediate values may vary.`;
 }
