@@ -74,7 +74,7 @@ test('SC-UX10-01/02/03: discover, share, interpret, keyboard, copy failure, and 
   await page.keyboard.press('Enter'); steps.push('Open catalog share with keyboard');
   const dialog = page.getByRole('dialog', { name: 'Share dashboard' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText('Northstar Commerce')).toBeVisible();
+  await expect(dialog.getByText('Northstar Commerce', { exact: true })).toBeVisible();
   await expect(dialog.getByText(/default filters for people authorized/)).toBeVisible();
   await expect(dialog.locator('.share-link-field')).toBeFocused();
   await expect(dialog.locator('.share-link-field')).toHaveValue(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${id}`);
