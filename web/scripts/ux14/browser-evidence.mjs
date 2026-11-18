@@ -267,7 +267,7 @@ async function runKibanaTaskChecks() {
 
 async function runAnalyticsSpecialStates() {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
-  await restrictAnalytics(context, web);
+  const attempts = await restrictAnalytics(context, web);
   const page = await context.newPage();
   try {
     await page.goto(`${web}/#/organization/northstar/dashboard/not-found`);
@@ -284,6 +284,7 @@ async function runAnalyticsSpecialStates() {
     await frame.getByRole('row').filter({ hasText: 'Oct' }).scrollIntoViewIfNeeded();
     await capture(page, 'analytics', 'T13', 'same-origin-host', 'desktop');
     summary.paths.push({ product: 'analytics', task: 'T13', completed: true, note: 'Same-origin sample only; no equivalent Kibana host' });
+    assertNoApiWrites(attempts);
   } finally { await context.close(); }
   const failureContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await restrictAnalytics(failureContext, web);
