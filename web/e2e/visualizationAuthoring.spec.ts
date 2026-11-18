@@ -106,6 +106,17 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await expect(page.getByRole('heading', { name: 'Orders versus revenue' })).toBeVisible();
   await image(page, info, '04-saved-three-visualizations-desktop');
 
+  const pie = page.getByRole('article', { name: 'Orders by channel pie' });
+  await pie.getByRole('button', { name: 'Show only Direct' }).first().click();
+  await expect(page.getByRole('button', { name: 'Remove Direct filter' })).toBeVisible();
+  await pie.getByText('View data table').click();
+  await expect(pie.getByRole('table')).toContainText('1,530');
+  await expect(pie.getByRole('table')).not.toContainText('1,820');
+  await expect(page.getByRole('article', { name: 'Revenue distribution' })).toContainText('12 observed fictional months');
+  await image(page, info, '04b-pie-filter-independent-of-commerce');
+  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await expect(pie.getByRole('table')).toContainText('1,820');
+
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
   await page.getByRole('button', { name: 'Edit Orders versus revenue' }).click();
   await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders versus customers');
