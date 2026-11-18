@@ -10,6 +10,7 @@ import { dashboardId as kibanaId } from '../ux13/kibana-dashboard.mjs';
 import { basicHeader } from '../ux13/elastic-lab.mjs';
 import { dashboardId as analyticsId, restrictAnalytics, assertNoApiWrites } from './analytics-fixture.mjs';
 import { tasks, decidePair, assertEvidenceSafe } from './task-parity.mjs';
+import { classifyConsoleError, summarizeBrowserErrors } from './browser-observations.mjs';
 
 // Captures automation-only, synthetic evidence. Does not score human task
 // success; no participant fields, recordings, telemetry or stored credentials.
@@ -49,10 +50,15 @@ const modes = [
 ];
 
 async function restrictKibana(context) {
+  const blocked = [];
   await context.route('**/*', route => {
-    if (!route.request().url().startsWith(`${elasticUi}/`)) return route.abort();
+    if (!route.request().url().startsWith(`${elasticUi}/`)) {
+      blocked.push({ type: 'external-network-blocked' });
+      return route.abort();
+    }
     return route.continue({ headers: { ...route.request().headers(), authorization: auth } });
   });
+  return blocked;
 }
 
 async function connect(context, product) {
@@ -104,10 +110,11 @@ async function openFromCatalog(page, product) {
 async function runDiscovery(product, mode) {
   const context = await browser.newContext({ viewport: { width: mode.width, height: mode.height },
     forcedColors: mode.forcedColors, reducedMotion: 'reduce' });
-  await connect(context, product);
+  const blocked = await connect(context, product);
   const page = await context.newPage();
   page.on('pageerror', () => errors.push({ product, mode: mode.id, category: 'browser-pageerror' }));
-  page.on('console', message => { if (message.type() === 'error') errors.push({ product, mode: mode.id, category: 'browser-console-error' }); });
+  page.on('console', message => { if (message.type() === 'error') errors.push({ product, mode: mode.id,
+    category: 'browser-console-error', kind: classifyConsoleError(message.text()) }); });
   const result = { product, task: 'T02', mode: mode.id, initial: 'dashboard-catalog',
     role: 'read-only', fixtureSha: source.sourceSha256, completed: false };
   try {
@@ -134,6 +141,7 @@ async function runDiscovery(product, mode) {
     result.failureClass = 'script-or-task-path-unverified';
     await capture(page, product, 'T02', 'incomplete', mode.id).catch(() => {});
   } finally {
+    result.blockedExternalRequests = blocked.filter(item => item.type === 'external-network-blocked').length;
     summary.paths.push(result);
     await context.close();
   }
@@ -164,6 +172,7 @@ async function runAnalyticsTaskChecks() {
       await revenue.getByText('View data table').click();
       const october = await revenue.getByRole('table').getByText('$41,400').isVisible();
       assert.ok(october, 'October exact value absent from source table');
+      await revenue.getByRole('row').filter({ hasText: 'Oct' }).scrollIntoViewIfNeeded();
       await capture(page, 'analytics', 'T04', 'october-row', 'desktop');
       summary.paths.push({ product: 'analytics', task: 'T04', completed: true, endpoint: 'source-table-october-41400', initial: 'fresh-revenue-view' });
     });
@@ -256,6 +265,7 @@ async function runAnalyticsSpecialStates() {
     await frame.getByRole('heading', { name: 'Business performance' }).waitFor();
     await frame.getByRole('article', { name: 'Revenue over time' }).getByText('View data table').click();
     assert.ok(await frame.getByRole('table').getByText('$41,400').isVisible());
+    await frame.getByRole('row').filter({ hasText: 'Oct' }).scrollIntoViewIfNeeded();
     await capture(page, 'analytics', 'T13', 'same-origin-host', 'desktop');
     summary.paths.push({ product: 'analytics', task: 'T13', completed: true, note: 'Same-origin sample only; no equivalent Kibana host' });
   } finally { await context.close(); }
@@ -286,6 +296,12 @@ async function runZoom(product) {
     const worker = context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker');
     const baseline = await measure(page);
     for (const factor of [2, 4]) {
+      // Reset scroll before each independent zoom condition; chart-target
+      // inspection below deliberately scrolls after the initial screenshot.
+      await page.evaluate(() => {
+        window.scrollTo(0, 0);
+        for (const element of document.querySelectorAll('*')) if (element.scrollTop > 0) element.scrollTop = 0;
+      });
       const actual = await worker.evaluate(async ({ target, factor }) => {
         const tab = (await chrome.tabs.query({})).find(t => t.url?.includes(target));
         if (tab?.id === undefined) throw new Error('Native-zoom target tab absent');
@@ -297,6 +313,29 @@ async function runZoom(product) {
       assert.ok(Math.abs(actual - factor) < 0.05 &&
         Math.abs(observed.dpr / baseline.dpr - factor) < 0.05, 'Zoom must be genuine Chromium tab zoom');
       await capture(page, product, 'T02', 'revenue', `native-${factor * 100}`, actual);
+      const target = product === 'analytics'
+        ? page.getByRole('heading', { name: 'Revenue over time', exact: true }).first()
+        : page.getByText('Revenue over time', { exact: true }).first();
+      try {
+        await target.scrollIntoViewIfNeeded({ timeout: 10_000 });
+        await page.waitForTimeout(350);
+        const visibility = await target.evaluate(element => {
+          const r = element.getBoundingClientRect();
+          const x = Math.max(0, Math.min(innerWidth - 1, r.left + r.width / 2));
+          const y = Math.max(0, Math.min(innerHeight - 1, r.top + r.height / 2));
+          const hit = document.elementFromPoint(x, y);
+          return { targetTopCss: Math.round(r.top), targetBottomCss: Math.round(r.bottom),
+            withinViewport: r.bottom > 0 && r.top < innerHeight && r.width > 0,
+            unobscuredAtCenter: hit === element || element.contains(hit) };
+        });
+        await capture(page, product, 'T02', 'chart-target', `native-${factor * 100}`, actual);
+        summary.paths.push({ product, task: 'T02', mode: `native-${factor * 100}-chart-target`,
+          completed: true, ...visibility });
+      } catch {
+        await capture(page, product, 'T02', 'chart-target-unverified', `native-${factor * 100}`, actual).catch(() => {});
+        summary.paths.push({ product, task: 'T02', mode: `native-${factor * 100}-chart-target`,
+          completed: false, failureClass: 'zoom-target-or-test-script-limitation' });
+      }
     }
     summary.paths.push({ product, task: 'T02', mode: 'native-zoom', completed: true });
   } catch {
@@ -351,7 +390,7 @@ try {
     note: 'Only T02 can qualify a scripted comparison once both fresh catalog UI paths pass; no R1 or R2 study approval' });
   summary.findings.push({ id: 'HYP-14-01', category: 'hypothesis-requiring-human-research',
     note: 'Different context, time-picker and dashboard index treatments may affect understanding; no participant evidence' });
-  summary.findings.push(...errors.map(item => ({ id: 'BROWSER-14', category: 'browser-console-error', ...item })));
+  summary.findings.push(...summarizeBrowserErrors(errors).map(item => ({ id: 'BROWSER-14', ...item })));
   await copyFile(join(root, 'lab/ux13/evidence/environment.json'), join(output, 'ux13-environment.json'));
   await copyFile(join(root, 'lab/ux13/fixtures/manifest.json'), join(output, 'ux13-fixture-manifest.json'));
   assertEvidenceSafe(summary);
