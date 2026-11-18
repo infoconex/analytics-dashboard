@@ -323,11 +323,15 @@ async function runAnalyticsSpecialStates() {
     assert.equal(await frame.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), 'Direct');
     await frame.getByRole('button', { name: 'Reset filters' }).click();
     assert.equal(await frame.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
-    await frame.getByRole('button', { name: 'Share', exact: true }).click();
-    const share = frame.getByRole('dialog', { name: 'Share dashboard' });
+    await frame.getByRole('row').filter({ hasText: 'Oct' }).scrollIntoViewIfNeeded();
+    // The embedded contract deliberately has no page-level Share button:
+    // handoff exists only inside an insight's interpretation disclosure.
+    const embeddedRevenue = frame.getByRole('article', { name: 'Revenue over time' });
+    await embeddedRevenue.getByText('What this means').click();
+    await embeddedRevenue.getByRole('button', { name: 'Share this insight’s context' }).click();
+    const share = frame.getByRole('dialog', { name: 'Share insight context' });
     const embeddedLink = await share.getByRole('textbox', { name: 'Saved dashboard link' }).inputValue();
     assert.ok(embeddedLink.endsWith(analyticsId) && !embeddedLink.includes('?'));
-    await frame.getByRole('row').filter({ hasText: 'Oct' }).scrollIntoViewIfNeeded();
     await capture(page, 'analytics', 'T13', 'same-origin-host', 'desktop');
     summary.paths.push({ product: 'analytics', task: 'T13', completed: true, note: 'Same-origin sample only; no equivalent Kibana host' });
     assertNoApiWrites(attempts);
