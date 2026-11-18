@@ -6,6 +6,7 @@ import { dashboardId, createComparisonDashboard, validateComparisonDashboard } f
 const elastic = 'http://127.0.0.1:19200';
 const kibana = 'http://127.0.0.1:15601';
 const isolatedIndex = 'ux13-isolated-sentinel';
+const isolatedView = 'ux13-isolated-only-view';
 const user = 'ux13-northstar-viewer';
 const role = 'ux13-northstar-reader';
 
@@ -109,6 +110,10 @@ export async function seedKibana() {
   const createSpace = await api(kibana, '/api/spaces/space', 'elastic', admin, { method: 'POST',
     body: { id: 'ux13-isolated', name: 'Isolated Tenant (fictional)' }, allowStatus: [409] });
   if (createSpace.status === 409) throw new Error('Kibana isolated space already exists; reset the disposable lab');
+  const sentinelView = await api(kibana, '/s/ux13-isolated/api/data_views/data_view', 'elastic', admin,
+    { method: 'POST', body: { data_view: { id: isolatedView,
+      name: 'Fictional isolated space only — do not share', title: isolatedIndex } } });
+  assert.equal(sentinelView.data_view?.id, isolatedView);
   for (const [index, id, label] of [
     [commerceIndex, 'ux13-commerce', 'Northstar Commerce — undated monthly sample'],
     [channelIndex, 'ux13-channels', 'Northstar Commerce — undated channel sample'],
@@ -144,16 +149,22 @@ export async function verifyViewer({ report = true } = {}) {
   const deniedIndex = await api(elastic, `/${isolatedIndex}/_search`, user, viewer,
     { allowStatus: [403, 404] });
   assert.equal([403, 404].includes(deniedIndex.status), true, 'Unexpected isolated index disclosure');
-  const deniedSpace = await api(kibana, '/s/ux13-isolated/api/data_views', user, viewer,
+  // Some Kibana read endpoints return HTTP 200 with an empty list for a space
+  // the caller cannot access. A bare 200 is not proof of cross-space exposure.
+  // Test the actual sentinel saved object and then ensure any list omits it.
+  const deniedSpace = await api(kibana, `/s/ux13-isolated/api/data_views/data_view/${isolatedView}`, user, viewer,
     { allowStatus: [403, 404] });
-  assert.equal([403, 404].includes(deniedSpace.status), true, 'Unexpected isolated space disclosure');
+  assert.equal([403, 404].includes(deniedSpace.status), true, 'Unexpected isolated saved-object disclosure');
+  const spaceListing = await api(kibana, '/s/ux13-isolated/api/data_views', user, viewer,
+    { allowStatus: [403, 404] });
+  assert.equal(JSON.stringify(spaceListing).includes(isolatedView), false, 'Unexpected isolated space listing disclosure');
   const accessible = await api(kibana, '/api/data_views', user, viewer);
   const values = JSON.stringify(accessible);
   assert.ok(values.includes('ux13-commerce') && values.includes('ux13-channels'), 'Default space data views absent');
   const dashboard = await api(kibana, `/api/dashboards/${dashboardId}`, user, viewer);
   const panels = dashboard.data?.panels ?? dashboard.panels;
   assert.equal(panels?.length, 12, 'The read-only viewer cannot retrieve the intended 12 charts');
-  if (report) process.stdout.write('PASS: 9.5.6 version, exact 12+5 fictional records, two undated data views, twelve saved panels, viewer index/space denials. This is NOT task parity or tenant-model equivalence.\n');
+  if (report) process.stdout.write('PASS: 9.5.6 version, exact 12+5 fictional records, two undated Northstar views, isolated space sentinel denial, twelve saved panels and viewer index denial. This is NOT task parity or tenant-model equivalence.\n');
 }
 
 if (process.argv[1] && process.argv[1].endsWith('/elastic-lab.mjs')) {

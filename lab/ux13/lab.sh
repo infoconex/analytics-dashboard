@@ -47,7 +47,7 @@ compose() { docker compose --env-file "${secret_path}" -f "${compose_file}" "$@"
 diagnose_elasticsearch() {
   echo 'Elasticsearch bootstrap preflight failed; recording non-sensitive container/network state.' >&2
   compose ps >&2 || true
-  compose port elasticsearch 9200 >&2 || true
+  compose port loopback-proxy 19200 >&2 || true
   docker inspect --format 'Elasticsearch state: running={{.State.Running}} exit={{.State.ExitCode}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' ux13lab-elasticsearch-1 >&2 || true
   curl --silent --show-error --output /dev/null --max-time 5 \
     --write-out 'Anonymous loopback HTTP status: %{http_code}\n' http://127.0.0.1:19200/ >&2 || true

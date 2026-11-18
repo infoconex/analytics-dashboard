@@ -14,7 +14,7 @@ function fictionalResponse(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
-function simulatedLab(unauthorizedStatus = 403) {
+function simulatedLab(unauthorizedStatus = 403, exposeIsolatedView = false) {
   return async (url, options) => {
     const target = new URL(url);
     if (target.port === '19200' && target.pathname === '/')
@@ -31,7 +31,10 @@ function simulatedLab(unauthorizedStatus = 403) {
     if (target.pathname === '/ux13-isolated-sentinel/_search')
       return fictionalResponse({ error: 'forbidden' }, unauthorizedStatus);
     if (target.pathname === '/s/ux13-isolated/api/data_views')
-      return fictionalResponse({ error: 'forbidden' }, unauthorizedStatus);
+      return fictionalResponse({ data_view: exposeIsolatedView ? [{ id: 'ux13-isolated-only-view' }] : [] });
+    if (target.pathname === '/s/ux13-isolated/api/data_views/data_view/ux13-isolated-only-view')
+      return fictionalResponse(exposeIsolatedView ? { data_view: { id: 'ux13-isolated-only-view' } } : { error: 'not found' },
+        exposeIsolatedView ? 200 : 404);
     if (target.pathname === '/api/data_views')
       return fictionalResponse({ data_view: [{ id: 'ux13-commerce' }, { id: 'ux13-channels' }] });
     if (target.pathname === `/api/dashboards/${dashboardId}`)
@@ -66,7 +69,7 @@ describe('UX-13 lab admission boundaries', () => {
     }
   });
 
-  it('verifies every imported row and requires explicit index and Space denials', async () => {
+  it('verifies every imported row, direct saved-object denial and empty-list behavior', async () => {
     const previous = globalThis.fetch;
     const oldAdmin = process.env.UX13_ELASTIC_PASSWORD;
     const oldViewer = process.env.UX13_VIEWER_PASSWORD;
@@ -77,6 +80,8 @@ describe('UX-13 lab admission boundaries', () => {
       await verifyViewer({ report: false });
       globalThis.fetch = simulatedLab(200);
       await assert.rejects(verifyViewer({ report: false }), /Unexpected isolated index disclosure/);
+      globalThis.fetch = simulatedLab(403, true);
+      await assert.rejects(verifyViewer({ report: false }), /Unexpected isolated saved-object disclosure/);
     } finally {
       globalThis.fetch = previous;
       if (oldAdmin === undefined) delete process.env.UX13_ELASTIC_PASSWORD;
