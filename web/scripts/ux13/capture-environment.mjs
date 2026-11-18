@@ -7,6 +7,7 @@ import os from 'node:os';
 import { checkFixtures, fixtureDirectory } from './lab-fixtures.mjs';
 import { api } from './elastic-lab.mjs';
 import { dashboardId, createComparisonDashboard, dashboardDigest } from './kibana-dashboard.mjs';
+import { inspectIsolation } from './network-topology.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const capture = (bin, args) => execFileSync(bin, args, { encoding: 'utf8' }).trim();
@@ -15,8 +16,11 @@ const images = {};
 for (const [name, digest] of [
   ['elasticsearch/elasticsearch', '79b4f1de4c15e6eca824723086a51e5934406d614d410cc11be77748cafac537'],
   ['kibana/kibana', 'c7ed45da5c3cfea020fc6c99ce027f4d21d19dab330379c5115d5eb95f6ecebc'],
+  ['node-proxy', '6868d4695b947ee120bffaa463fecd68cde370d7bfec92955e7c8ac576b4f475'],
 ]) {
-  const reference = `docker.elastic.co/${name}:9.5.6@sha256:${digest}`;
+  const reference = name === 'node-proxy'
+    ? `node:22.23.5-alpine3.23@sha256:${digest}`
+    : `docker.elastic.co/${name}:9.5.6@sha256:${digest}`;
   const inspected = JSON.parse(capture('docker', ['image', 'inspect', reference]));
   const image = inspected[0];
   if (!image?.RepoDigests?.length) throw new Error(`Missing immutable digest for ${reference}`);
@@ -34,6 +38,7 @@ const data = {
   docker: capture('docker', ['--version']),
   compose: capture('docker', ['compose', 'version', '--short']),
   images,
+  networkIsolation: inspectIsolation(),
   fixedLoopbackPorts: [19200, 15601],
   researchConsentGate: 'UNAPPROVED',
   parityGate: 'NOT VERIFIED BY IMAGE OR FIXTURE VALIDATION',

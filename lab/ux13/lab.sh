@@ -58,19 +58,21 @@ case "${action}" in
   up)
     node "${repo_dir}/web/scripts/ux13/lab-fixtures.mjs" check
     compose pull
-    compose up -d elasticsearch
+    compose up -d elasticsearch loopback-proxy
     if ! node "${repo_dir}/web/scripts/ux13/elastic-lab.mjs" seed-elasticsearch; then
       diagnose_elasticsearch
       exit 1
     fi
     compose up -d kibana
     node "${repo_dir}/web/scripts/ux13/elastic-lab.mjs" seed-kibana
+    node "${repo_dir}/web/scripts/ux13/network-topology.mjs"
     node "${repo_dir}/web/scripts/ux13/capture-environment.mjs"
     echo 'Disposable 9.5.6 lab ready at http://127.0.0.1:15601 (Kibana).'
     echo 'Viewer username: ux13-northstar-viewer. Retrieve its password from lab/ux13/secrets.env locally; never share it.'
     ;;
   verify)
     node "${repo_dir}/web/scripts/ux13/elastic-lab.mjs" verify
+    node "${repo_dir}/web/scripts/ux13/network-topology.mjs"
     node "${repo_dir}/web/scripts/ux13/capture-environment.mjs"
     ;;
   down)

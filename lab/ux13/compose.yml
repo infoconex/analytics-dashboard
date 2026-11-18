@@ -13,8 +13,6 @@ services:
       xpack.security.enrollment.enabled: 'false'
       ES_JAVA_OPTS: -Xms768m -Xmx768m
       ELASTIC_PASSWORD: ${UX13_ELASTIC_PASSWORD:?Run the UX-13 lab script}
-    ports:
-      - '127.0.0.1:19200:9200'
     networks: [fictional]
     volumes: [elastic-data:/usr/share/elasticsearch/data]
     healthcheck:
@@ -36,13 +34,32 @@ services:
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${UX13_SAVED_OBJECTS_KEY:?Run the UX-13 lab script}
       XPACK_REPORTING_ENCRYPTIONKEY: ${UX13_REPORTING_KEY:?Run the UX-13 lab script}
       TELEMETRY_OPTIN: 'false'
-    ports:
-      - '127.0.0.1:15601:5601'
     networks: [fictional]
+
+  # Only this uncredentialed TCP forwarder has a host-facing network. The two
+  # data services remain on an internal bridge with no default egress route.
+  # Docker intentionally does not publish ports directly from internal bridges.
+  loopback-proxy:
+    image: node:22.23.5-alpine3.23@sha256:6868d4695b947ee120bffaa463fecd68cde370d7bfec92955e7c8ac576b4f475
+    command: ['node', '/opt/ux13/loopback-proxy.mjs']
+    read_only: true
+    user: '1000:1000'
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    pids_limit: 48
+    mem_limit: 128m
+    volumes:
+      - './loopback-proxy.mjs:/opt/ux13/loopback-proxy.mjs:ro'
+    ports:
+      - '127.0.0.1:19200:19200'
+      - '127.0.0.1:15601:15601'
+    networks: [fictional, operator]
 
 networks:
   fictional:
     internal: true
+  operator:
+    driver: bridge
 
 volumes:
   elastic-data:
