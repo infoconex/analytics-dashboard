@@ -15,6 +15,16 @@ fi
 
 command -v docker >/dev/null || { echo 'Docker with Compose is required for this lab' >&2; exit 1; }
 docker compose version >/dev/null
+# Docker before 28.0 could expose localhost-published ports to L2 peers.
+# Refuse that unsafe transport behavior before generating any credentials.
+if [[ "${action}" != down ]]; then
+  server_version="$(docker version --format '{{.Server.Version}}')"
+  server_major="${server_version%%.*}"
+  if [[ ! "${server_major}" =~ ^[0-9]+$ ]] || (( server_major < 28 )); then
+    echo 'Docker Engine 28.0+ is required for trustworthy localhost-only port publishing' >&2
+    exit 1
+  fi
+fi
 if [[ "${action}" != up && ! -f "${secret_path}" ]]; then
   echo 'No disposable lab credentials found; nothing to verify or tear down' >&2
   exit 1
@@ -76,7 +86,8 @@ case "${action}" in
     node "${repo_dir}/web/scripts/ux13/capture-environment.mjs"
     ;;
   down)
-    compose down --volumes --remove-orphans
+    # Do not delete unreviewed orphan containers sharing a Compose project label.
+    compose down --volumes
     # The only removed credential file is the exact, named disposable lab file.
     rm -- "${secret_path}"
     echo 'Removed ux13lab containers, named lab volumes and local ephemeral credentials.'

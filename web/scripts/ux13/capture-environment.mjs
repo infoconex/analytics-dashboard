@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import os from 'node:os';
 import { checkFixtures, fixtureDirectory } from './lab-fixtures.mjs';
-import { api } from './elastic-lab.mjs';
+import { api, verifyViewer } from './elastic-lab.mjs';
 import { dashboardId, createComparisonDashboard, dashboardDigest } from './kibana-dashboard.mjs';
 import { inspectIsolation } from './network-topology.mjs';
 
@@ -39,6 +39,7 @@ const data = {
   compose: capture('docker', ['compose', 'version', '--short']),
   images,
   networkIsolation: inspectIsolation(),
+  actualAuthorizationProbe: await verifyViewer({ report: false }),
   fixedLoopbackPorts: [19200, 15601],
   researchConsentGate: 'UNAPPROVED',
   parityGate: 'NOT VERIFIED BY IMAGE OR FIXTURE VALIDATION',

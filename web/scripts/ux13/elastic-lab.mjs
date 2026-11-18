@@ -146,15 +146,19 @@ export async function verifyViewer({ report = true } = {}) {
   await requireLabVersion(elastic, 'elastic', admin);
   await requireLabVersion(kibana, 'elastic', admin);
   await verifyElasticsearch(user, viewer);
+  const exactIsolatedPath = `/s/ux13-isolated/api/data_views/data_view/${isolatedView}`;
+  // Positive control: a mistaken URL must not masquerade as isolation.
+  const adminSentinel = await api(kibana, exactIsolatedPath, 'elastic', admin);
+  assert.equal(adminSentinel.data_view?.id, isolatedView, 'Isolated Space control object not retrievable');
   const deniedIndex = await api(elastic, `/${isolatedIndex}/_search`, user, viewer,
     { allowStatus: [403, 404] });
   assert.equal([403, 404].includes(deniedIndex.status), true, 'Unexpected isolated index disclosure');
   // Some Kibana read endpoints return HTTP 200 with an empty list for a space
   // the caller cannot access. A bare 200 is not proof of cross-space exposure.
   // Test the actual sentinel saved object and then ensure any list omits it.
-  const deniedSpace = await api(kibana, `/s/ux13-isolated/api/data_views/data_view/${isolatedView}`, user, viewer,
-    { allowStatus: [403, 404] });
-  assert.equal([403, 404].includes(deniedSpace.status), true, 'Unexpected isolated saved-object disclosure');
+  const deniedSpace = await api(kibana, exactIsolatedPath, user, viewer,
+    { allowStatus: [400, 403, 404] });
+  assert.equal([400, 403, 404].includes(deniedSpace.status), true, 'Unexpected isolated saved-object disclosure');
   const spaceListing = await api(kibana, '/s/ux13-isolated/api/data_views', user, viewer,
     { allowStatus: [403, 404] });
   assert.equal(JSON.stringify(spaceListing).includes(isolatedView), false, 'Unexpected isolated space listing disclosure');
@@ -164,7 +168,10 @@ export async function verifyViewer({ report = true } = {}) {
   const dashboard = await api(kibana, `/api/dashboards/${dashboardId}`, user, viewer);
   const panels = dashboard.data?.panels ?? dashboard.panels;
   assert.equal(panels?.length, 12, 'The read-only viewer cannot retrieve the intended 12 charts');
-  if (report) process.stdout.write('PASS: 9.5.6 version, exact 12+5 fictional records, two undated Northstar views, isolated space sentinel denial, twelve saved panels and viewer index denial. This is NOT task parity or tenant-model equivalence.\n');
+  const probe = { isolatedIndexStatus: deniedIndex.status, isolatedSavedViewStatus: deniedSpace.status,
+    spaceListingStatus: spaceListing.status ?? 200, isolatedViewPresent: false };
+  if (report) process.stdout.write(`PASS: 9.5.6 exact 12+5 records, two undated Northstar views, twelve saved panels, isolated index/view denied (${deniedIndex.status}/${deniedSpace.status}); Space listing status ${probe.spaceListingStatus}, no isolated object. NOT task parity or tenant-model equivalence.\n`);
+  return probe;
 }
 
 if (process.argv[1] && process.argv[1].endsWith('/elastic-lab.mjs')) {

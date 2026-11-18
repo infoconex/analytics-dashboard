@@ -14,7 +14,7 @@ function fictionalResponse(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
-function simulatedLab(unauthorizedStatus = 403, exposeIsolatedView = false) {
+function simulatedLab(unauthorizedStatus = 403, exposeIsolatedView = false, deniedSpaceStatus = 404) {
   return async (url, options) => {
     const target = new URL(url);
     if (target.port === '19200' && target.pathname === '/')
@@ -32,9 +32,11 @@ function simulatedLab(unauthorizedStatus = 403, exposeIsolatedView = false) {
       return fictionalResponse({ error: 'forbidden' }, unauthorizedStatus);
     if (target.pathname === '/s/ux13-isolated/api/data_views')
       return fictionalResponse({ data_view: exposeIsolatedView ? [{ id: 'ux13-isolated-only-view' }] : [] });
+    if (target.pathname === '/s/ux13-isolated/api/data_views/data_view/ux13-isolated-only-view' && options.headers.authorization === basicHeader('elastic', 'fictional-admin'))
+      return fictionalResponse({ data_view: { id: 'ux13-isolated-only-view' } });
     if (target.pathname === '/s/ux13-isolated/api/data_views/data_view/ux13-isolated-only-view')
       return fictionalResponse(exposeIsolatedView ? { data_view: { id: 'ux13-isolated-only-view' } } : { error: 'not found' },
-        exposeIsolatedView ? 200 : 404);
+        exposeIsolatedView ? 200 : deniedSpaceStatus);
     if (target.pathname === '/api/data_views')
       return fictionalResponse({ data_view: [{ id: 'ux13-commerce' }, { id: 'ux13-channels' }] });
     if (target.pathname === `/api/dashboards/${dashboardId}`)
@@ -78,6 +80,9 @@ describe('UX-13 lab admission boundaries', () => {
       process.env.UX13_VIEWER_PASSWORD = 'fictional-viewer';
       globalThis.fetch = simulatedLab();
       await verifyViewer({ report: false });
+      globalThis.fetch = simulatedLab(403, false, 400);
+      const observed = await verifyViewer({ report: false });
+      assert.equal(observed.isolatedSavedViewStatus, 400, 'Kibana may reject unknown Spaces with HTTP 400');
       globalThis.fetch = simulatedLab(200);
       await assert.rejects(verifyViewer({ report: false }), /Unexpected isolated index disclosure/);
       globalThis.fetch = simulatedLab(403, true);
