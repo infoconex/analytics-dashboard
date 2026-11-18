@@ -22,11 +22,13 @@ const web = 'http://127.0.0.1:5173';
 const elasticUi = 'http://127.0.0.1:15601';
 const source = JSON.parse(await readFile(join(root, 'lab/ux13/fixtures/manifest.json'), 'utf8'));
 const environments = JSON.parse(await readFile(join(root, 'lab/ux13/evidence/environment.json'), 'utf8'));
+const osRelease = await readFile('/etc/os-release', 'utf8').catch(() => '');
+const osName = osRelease.match(/^PRETTY_NAME=(.*)$/m)?.[1].replace(/^"|"$/g, '') ?? null;
 await checkFixtures();
 await mkdir(raw, { recursive: true });
 const summary = { schemaVersion: 1, status: 'SCRIPTED_FICTIONAL_BROWSER_EVIDENCE_NOT_HUMAN_RESEARCH',
   issue: 54, sourceFixtureSha256: source.sourceSha256, fictionalOnly: true, participantCount: 0,
-  environment: { platform: platform(), release: release(), architecture: arch(), node: process.version,
+  environment: { platform: platform(), release: release(), distribution: osName, architecture: arch(), node: process.version,
     analyticsCommit: process.env.GITHUB_SHA ?? null, githubRunId: process.env.GITHUB_RUN_ID ?? null,
     githubRef: process.env.GITHUB_REF ?? null, prHeadSha: process.env.UX14_PR_HEAD_SHA ?? null,
     elasticVersion: '9.5.6', kibanaVersion: '9.5.6',
@@ -394,8 +396,11 @@ async function runZoom(product) {
 }
 
 async function makeSheet(productA, productB, mode) {
-  const a = summary.captures.find(item => item.product === productA && item.task === 'T02' && item.state === 'revenue' && item.mode === mode);
-  const b = summary.captures.find(item => item.product === productB && item.task === 'T02' && item.state === 'revenue' && item.mode === mode);
+  // At real browser zoom, chart-target DevTools captures show the actual
+  // scrolled pixels; the Playwright top-of-page snapshot may show only chrome.
+  const state = mode.startsWith('native-') ? 'chart-target-cdp' : 'revenue';
+  const a = summary.captures.find(item => item.product === productA && item.task === 'T02' && item.state === state && item.mode === mode);
+  const b = summary.captures.find(item => item.product === productB && item.task === 'T02' && item.state === state && item.mode === mode);
   if (!a || !b) return;
   const aData = (await readFile(join(output, a.screenshot))).toString('base64');
   const bData = (await readFile(join(output, b.screenshot))).toString('base64');
@@ -427,6 +432,19 @@ try {
   await runAnalyticsSpecialStates();
   await runZoom('analytics');
   await runZoom('kibana');
+  for (const product of ['analytics', 'kibana']) {
+    for (const mode of modes) {
+      assert.ok(summary.paths.some(path => path.product === product && path.task === 'T02' &&
+        path.mode === mode.id && path.completed), `${product} ${mode.id} catalog path incomplete`);
+    }
+    for (const zoom of [200, 400]) {
+      assert.ok(summary.paths.some(path => path.product === product && path.mode === `native-${zoom}-chart-target` && path.completed),
+        `${product} native ${zoom}% chart target incomplete`);
+      assert.ok(summary.captures.some(capture => capture.product === product && capture.task === 'T02' &&
+        capture.state === 'chart-target-cdp' && capture.mode === `native-${zoom}`),
+      `${product} native ${zoom}% original Chromium pixel capture missing`);
+    }
+  }
   const desktop = Object.fromEntries(['analytics', 'kibana'].map(product => [product,
     summary.paths.find(path => path.task === 'T02' && path.product === product && path.mode === 'desktop')]));
   for (const task of tasks) summary.taskDecisions.push({ id: task.id, goal: task.goal,
