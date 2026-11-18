@@ -87,3 +87,48 @@ describe('trustworthy interpretations', () => {
     expect(html).not.toContain('View data table');
   });
 });
+
+describe('expanded visualization fidelity', () => {
+  it('renders a pie from additive source records and preserves exact values', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: { ...channelDonut, title: 'Orders share', kind: 'pie', metricKey: 'orders' }, period: '12m',
+    }));
+    expect(html).toContain('pie chart');
+    expect(html).toContain('Organic search');
+    expect(html).toContain('1,820');
+    expect(html).toContain('615');
+    expect(html).toContain('What this means');
+  });
+
+  it('fails closed for non-additive proportions instead of drawing invented slices', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: { ...channelDonut, kind: 'pie', metricKey: 'conversion' }, period: '12m',
+    }));
+    expect(html).toContain('Insight unavailable');
+    expect(html).toContain('cannot be summed');
+    expect(html).not.toContain('View data table');
+  });
+
+  it('counts original months for a histogram and exposes original observations', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: { ...channelTable, title: 'Revenue distribution', kind: 'histogram',
+        datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month' }, period: '12m',
+    }));
+    expect(html).toContain('12 observed fictional months grouped into 4 value ranges');
+    expect(html).toContain('counts of source records');
+    expect(html).toContain('$18,400');
+    expect(html).toContain('$48,300');
+  });
+
+  it('pairs two exact measures from each original row in scatter', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: { ...channelTable, title: 'Sessions versus orders', kind: 'scatter',
+        metricKey: 'orders', dimensionKey: 'sessions' }, period: '12m',
+    }));
+    expect(html).toContain('scatter chart comparing Orders with Sessions from the same original records');
+    expect(html).toContain('<th scope="col">Sessions</th>');
+    expect(html).toContain('8,140');
+    expect(html).toContain('1,820');
+    expect(html).toContain('cannot establish causation');
+  });
+});

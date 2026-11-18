@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 import { dashboardApi } from './api';
 import { hasDashboardChanges } from './composition';
-import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics } from './demoData';
+import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics, selectRows } from './demoData';
 import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
-import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership } from './model';
+import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, WidgetKind } from './model';
 import { DashboardConsumer } from './DashboardConsumer';
 import { WidgetTile } from './WidgetTile';
 import { DataSourcesPage } from './DataSourcesPage';
@@ -26,6 +26,7 @@ import { DashboardTaskGuide } from './DashboardTaskGuide';
 import { ShareContextDialog } from './ShareContextDialog';
 import { defaultConsumerFilters } from './consumerFilters';
 import type { ConsumerFilters } from './consumerFilters';
+import { suggestedDimension, visualizationProblem } from './visualizationSemantics';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
@@ -387,6 +388,13 @@ export default function App() {
   const overviewIcons = [<BarChart3 size={20} />, <FolderKanban size={20} />, <Users size={20} />, <Activity size={20} />];
   const overviewColors = ['blue', 'violet', 'mint', 'peach'];
 
+  const widgetDraftProblem = widgetDraft ? visualizationProblem(widgetDraft, selectRows(widgetDraft.datasetKey, '12m')) : null;
+
+  function selectVisualizationKind(kind: WidgetKind) {
+    if (!widgetDraft) return;
+    setWidgetDraft({ ...widgetDraft, kind, dimensionKey: suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey) });
+  }
+
   return (
     <div className="app-shell">
       <button className="skip-link" onClick={() => mainContent.current?.focus()}>Skip to main content</button>
@@ -522,11 +530,17 @@ export default function App() {
       </ModalDialog>}
 
       {widgetDraft && editMode && draft && <ModalDialog title="Configure visualization" eyebrow="VISUALIZATION BUILDER · SAMPLE DATA" description="Pick a visual, then choose what it should show." className="visualization-modal" initialFocus=".gallery-card" onDismiss={() => setWidgetDraft(null)}>
-        <VisualizationGallery kind={widgetDraft.kind} onSelect={kind => setWidgetDraft({ ...widgetDraft, kind })} />
+        <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
-        <label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey: metrics[datasetKey][0]?.key ?? 'orders', dimensionKey: dimensions[datasetKey] }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
-        <label className="form-label">Metric<select value={widgetDraft.metricKey} onChange={event => setWidgetDraft({ ...widgetDraft, metricKey: event.target.value })}>{(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
-        <div className="modal-actions"><Button variant="light" onClick={() => setWidgetDraft(null)}>Cancel</Button><Button disabled={!widgetDraft.title.trim()} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> {draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
+        <label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; const metricKey = metrics[datasetKey][0]?.key ?? 'orders'; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey, dimensionKey: suggestedDimension(widgetDraft.kind, datasetKey, metricKey) }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        <label className="form-label">{widgetDraft.kind === 'scatter' ? 'Vertical measure' : 'Metric'}<select value={widgetDraft.metricKey} onChange={event => { const metricKey = event.target.value; setWidgetDraft({ ...widgetDraft, metricKey, dimensionKey: widgetDraft.kind === 'scatter' && widgetDraft.dimensionKey === metricKey ? suggestedDimension('scatter', widgetDraft.datasetKey, metricKey) : widgetDraft.dimensionKey }); }}>{(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        {widgetDraft.kind === 'scatter' && <label className="form-label">Horizontal measure<select value={widgetDraft.dimensionKey} onChange={event => setWidgetDraft({ ...widgetDraft, dimensionKey: event.target.value })}>{metrics[widgetDraft.datasetKey].filter(item => item.key !== widgetDraft.metricKey).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>}
+        <section className="visualization-preview" aria-label="Live visualization preview">
+          <h3>Live preview</h3><p>Original fictional sample records only. This preview does not save changes or query a customer data source.</p>
+          <WidgetTile widget={widgetDraft} period="12m" />
+        </section>
+        {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
+        <div className="modal-actions"><Button variant="light" onClick={() => setWidgetDraft(null)}>Cancel</Button><Button disabled={!widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> {draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
       </ModalDialog>}
     </div>
   );

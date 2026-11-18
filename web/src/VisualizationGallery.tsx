@@ -2,10 +2,12 @@ import { AreaChart, BarChart3, ChartLine, CircleDot, Hash, Table2 } from 'lucide
 import { visualizations } from './demoData';
 import type { WidgetKind } from './model';
 
-const chartIcons = { metric: Hash, area: AreaChart, line: ChartLine, bar: BarChart3, donut: CircleDot, table: Table2 };
+const chartIcons = { metric: Hash, area: AreaChart, line: ChartLine, bar: BarChart3, donut: CircleDot,
+  pie: CircleDot, histogram: BarChart3, scatter: ChartLine, table: Table2 };
 const descriptions: Record<WidgetKind, string> = {
   metric: 'One important number', area: 'Volume over time', line: 'Changes and trends',
   bar: 'Compare categories', donut: 'Share of the whole', table: 'Detailed values',
+  pie: 'Show parts of a total', histogram: 'Distribution of values', scatter: 'Compare two measures',
 };
 
 export function VisualizationGallery({ kind, onSelect }: { kind: WidgetKind; onSelect: (kind: WidgetKind) => void }) {

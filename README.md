@@ -9,8 +9,8 @@ An enterprise-oriented, multi-tenant analytics and visualization application ins
 | Capability | Current state |
 | --- | --- |
 | Responsive dashboard overview and library | Working |
-| Metric, line, area, bar, donut, and table visualizations | Working with labeled sample data |
-| Guided Explore and visual dashboard composition | Sample-only chart gallery, drag/keyboard widget ordering, responsive canvas, save/cancel and unsaved-change protection; [UX-2 details](docs/dashboard-composition.md) |
+| Metric, line, area, bar, donut, pie, histogram, scatter, and table visualizations | Working with labeled fictional sample data; pie requires additive measures, scatter pairs measures from the same source record, and histograms count observed records; [UX-15 guidance](docs/ux15-expanded-visualizations.md) |
+| Guided Explore and visual dashboard composition | Sample-only chart gallery with live editor preview, drag/keyboard widget ordering, responsive canvas, save/cancel and unsaved-change protection; [UX-2 details](docs/dashboard-composition.md) |
 | Shared visual foundations and repeatable UX evidence | Light-theme design tokens, accessible native modal behavior and fixed-sample screenshot/video journeys; [UX-4a design system and evaluation](docs/design-system.md) |
 | Create, edit, delete, and share dashboard links | Working in local development |
 | Dashboard definitions, optimistic revisions, and persistence | SQLite metadata catalog |

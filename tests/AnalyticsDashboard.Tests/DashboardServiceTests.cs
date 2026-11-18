@@ -83,6 +83,33 @@ public sealed class DashboardServiceTests
     }
 
     [Test]
+    public async Task ExpandedVisualizationDefinitionsRoundTripWithoutChangingExistingEnumValues()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That((int)VisualizationKind.Metric, Is.EqualTo(0));
+            Assert.That((int)VisualizationKind.Table, Is.EqualTo(5));
+            Assert.That((int)VisualizationKind.Pie, Is.EqualTo(6));
+            Assert.That((int)VisualizationKind.Histogram, Is.EqualTo(7));
+            Assert.That((int)VisualizationKind.Scatter, Is.EqualTo(8));
+        });
+
+        var expanded = new DashboardDraft("Fictional visualizations", "Sample-only", [
+            new DashboardWidget(Guid.NewGuid(), "Channel share", VisualizationKind.Pie, "channels", "orders", "channel"),
+            new DashboardWidget(Guid.NewGuid(), "Revenue distribution", VisualizationKind.Histogram, "commerce", "revenue", "month"),
+            new DashboardWidget(Guid.NewGuid(), "Orders compared", VisualizationKind.Scatter, "commerce", "orders", "revenue")
+        ]);
+        var saved = await service.CreateAsync("northstar", "demo-owner", expanded, CancellationToken.None);
+        var reopened = new SqliteCatalog(databasePath);
+        await reopened.InitializeAsync();
+        var persisted = await reopened.FindAsync("northstar", saved.Id, CancellationToken.None);
+
+        Assert.That(persisted?.Widgets.Select(widget => widget.Kind), Is.EqualTo(new[] {
+            VisualizationKind.Pie, VisualizationKind.Histogram, VisualizationKind.Scatter
+        }));
+    }
+
+    [Test]
     public async Task DuplicateWidgetIdsAreRejected()
     {
         var widget = Draft().Widgets[0];
