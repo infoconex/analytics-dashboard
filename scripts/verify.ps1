@@ -21,6 +21,9 @@ try {
     npm --prefix web run check
     if ($LASTEXITCODE -ne 0) { throw 'Web tests or build failed.' }
 
+    npm --prefix web run test:lab
+    if ($LASTEXITCODE -ne 0) { throw 'UX-13 fictional lab fixture or admission tests failed.' }
+
     if ($IncludeBrowserTests) {
         Push-Location (Join-Path $repository 'web')
         try {

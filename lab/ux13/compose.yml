@@ -1,0 +1,65 @@
+name: ux13lab
+
+# Deliberately local, throwaway Elastic Stack. Never deploy this as a production service.
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.6@sha256:79b4f1de4c15e6eca824723086a51e5934406d614d410cc11be77748cafac537
+    environment:
+      cluster.name: ux13-evaluation-lab
+      discovery.type: single-node
+      xpack.security.enabled: 'true'
+      xpack.security.http.ssl.enabled: 'false'
+      xpack.security.transport.ssl.enabled: 'false'
+      xpack.security.enrollment.enabled: 'false'
+      ES_JAVA_OPTS: -Xms768m -Xmx768m
+      ELASTIC_PASSWORD: ${UX13_ELASTIC_PASSWORD:?Run the UX-13 lab script}
+    networks: [fictional]
+    volumes: [elastic-data:/usr/share/elasticsearch/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'curl --silent --fail --user "elastic:$$ELASTIC_PASSWORD" http://localhost:9200/_cluster/health >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.5.6@sha256:c7ed45da5c3cfea020fc6c99ce027f4d21d19dab330379c5115d5eb95f6ecebc
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${UX13_KIBANA_SYSTEM_PASSWORD:?Run the UX-13 lab script}
+      XPACK_SECURITY_ENCRYPTIONKEY: ${UX13_ENCRYPTION_KEY:?Run the UX-13 lab script}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${UX13_SAVED_OBJECTS_KEY:?Run the UX-13 lab script}
+      XPACK_REPORTING_ENCRYPTIONKEY: ${UX13_REPORTING_KEY:?Run the UX-13 lab script}
+      TELEMETRY_OPTIN: 'false'
+    networks: [fictional]
+
+  # Only this uncredentialed TCP forwarder has a host-facing network. The two
+  # data services remain on an internal bridge with no default egress route.
+  # Docker intentionally does not publish ports directly from internal bridges.
+  loopback-proxy:
+    image: node:22.23.5-alpine3.23@sha256:6868d4695b947ee120bffaa463fecd68cde370d7bfec92955e7c8ac576b4f475
+    command: ['node', '/opt/ux13/loopback-proxy.mjs']
+    read_only: true
+    user: '1000:1000'
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    pids_limit: 48
+    mem_limit: 128m
+    volumes:
+      - './loopback-proxy.mjs:/opt/ux13/loopback-proxy.mjs:ro'
+    ports:
+      - '127.0.0.1:19200:19200'
+      - '127.0.0.1:15601:15601'
+    networks: [fictional, operator]
+
+networks:
+  fictional:
+    internal: true
+  operator:
+    driver: bridge
+
+volumes:
+  elastic-data:
