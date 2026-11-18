@@ -135,7 +135,7 @@ export async function seedKibana() {
   await verifyViewer();
 }
 
-export async function verifyViewer() {
+export async function verifyViewer({ report = true } = {}) {
   await checkFixtures();
   const { admin, viewer } = credentials();
   await requireLabVersion(elastic, 'elastic', admin);
@@ -153,7 +153,7 @@ export async function verifyViewer() {
   const dashboard = await api(kibana, `/api/dashboards/${dashboardId}`, user, viewer);
   const panels = dashboard.data?.panels ?? dashboard.panels;
   assert.equal(panels?.length, 12, 'The read-only viewer cannot retrieve the intended 12 charts');
-  process.stdout.write('PASS: 9.5.6 version, exact 12+5 fictional records, two undated data views, twelve saved panels, viewer index/space denials. This is NOT task parity or tenant-model equivalence.\n');
+  if (report) process.stdout.write('PASS: 9.5.6 version, exact 12+5 fictional records, two undated data views, twelve saved panels, viewer index/space denials. This is NOT task parity or tenant-model equivalence.\n');
 }
 
 if (process.argv[1] && process.argv[1].endsWith('/elastic-lab.mjs')) {

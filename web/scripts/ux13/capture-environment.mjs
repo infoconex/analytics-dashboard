@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import os from 'node:os';
 import { checkFixtures, fixtureDirectory } from './lab-fixtures.mjs';
+import { api } from './elastic-lab.mjs';
+import { dashboardId, createComparisonDashboard, dashboardDigest } from './kibana-dashboard.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const capture = (bin, args) => execFileSync(bin, args, { encoding: 'utf8' }).trim();
@@ -24,6 +26,7 @@ for (const [name, digest] of [
 const data = {
   artifactKind: 'SCRIPTED_FICTIONAL_LAB_ONLY',
   sourceSha256: manifest.sourceSha256,
+  expectedDashboardDefinitionSha256: dashboardDigest(createComparisonDashboard()),
   elasticStackVersion: '9.5.6',
   gitHead: capture('git', ['-C', root, 'rev-parse', 'HEAD']),
   os: { platform: os.platform(), release: os.release(), architecture: os.arch() },
@@ -37,5 +40,13 @@ const data = {
 };
 const evidenceDirectory = join(dirname(fixtureDirectory), 'evidence');
 await mkdir(evidenceDirectory, { recursive: true });
+const actualDashboard = await api('http://127.0.0.1:15601', `/api/dashboards/${dashboardId}`,
+  'ux13-northstar-viewer', process.env.UX13_VIEWER_PASSWORD);
+data.actualDashboardResponseSha256 = dashboardDigest(actualDashboard);
+await writeFile(join(evidenceDirectory, 'kibana-dashboard-response.json'), `${JSON.stringify(actualDashboard, null, 2)}\n`);
+const permissions = await api('http://127.0.0.1:15601', '/api/security/role/ux13-northstar-reader',
+  'elastic', process.env.UX13_ELASTIC_PASSWORD);
+data.actualPermissionSnapshotSha256 = dashboardDigest(permissions);
+await writeFile(join(evidenceDirectory, 'kibana-permissions.json'), `${JSON.stringify(permissions, null, 2)}\n`);
 await writeFile(join(evidenceDirectory, 'environment.json'), `${JSON.stringify(data, null, 2)}\n`);
 process.stdout.write(`UX-13 immutable image manifests captured for ${data.os.platform}/${data.os.architecture}; no secrets recorded.\n`);

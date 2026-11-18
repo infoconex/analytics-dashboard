@@ -20,6 +20,10 @@ export function extractSampleRows(source) {
     const pattern = new RegExp(`export\\s+const\\s+${name}\\s*=\\s*\\[([\\s\\S]*?)\\];`, 'g');
     const matches = [...source.matchAll(pattern)];
     if (matches.length !== 1) throw new Error(`Missing or duplicate literal array: ${name}`);
+    for (const [, objectBody] of matches[0][1].matchAll(/\{([^{}]*)\}/g)) {
+      const keys = [...objectBody.matchAll(/(?:^|,)\s*([A-Za-z][A-Za-z0-9]*)\s*:/g)].map(match => match[1]);
+      if (new Set(keys).size !== keys.length) throw new Error(`Duplicate field in ${name}`);
+    }
     // This is a deliberately narrow parser for the existing static source shape,
     // not JavaScript evaluation. Expressions, spreads and functions are rejected.
     const json = matches[0][1]
@@ -52,8 +56,9 @@ export function assertFixtureSemantics({ commerce, channels }) {
   }
   for (const row of channels) {
     exactFields(row, ['channel', 'orders', 'sessions', 'conversion']);
-    if (typeof row.channel !== 'string' || !Number.isSafeInteger(row.orders)
-      || !Number.isSafeInteger(row.sessions) || !Number.isFinite(row.conversion))
+    if (typeof row.channel !== 'string' || row.channel.length === 0 || !Number.isSafeInteger(row.orders)
+      || !Number.isSafeInteger(row.sessions) || row.sessions <= 0
+      || !Number.isFinite(row.conversion) || row.conversion < 0 || row.conversion > 100)
       throw new Error('Invalid channel record');
   }
   const orders = Object.fromEntries(channels.map(row => [row.channel, row.orders]));

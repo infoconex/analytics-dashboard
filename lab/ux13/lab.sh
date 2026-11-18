@@ -44,12 +44,25 @@ source "${secret_path}"
 set +a
 compose() { docker compose --env-file "${secret_path}" -f "${compose_file}" "$@"; }
 
+diagnose_elasticsearch() {
+  echo 'Elasticsearch bootstrap preflight failed; recording non-sensitive container/network state.' >&2
+  compose ps >&2 || true
+  compose port elasticsearch 9200 >&2 || true
+  docker inspect --format 'Elasticsearch state: running={{.State.Running}} exit={{.State.ExitCode}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' ux13lab-elasticsearch-1 >&2 || true
+  curl --silent --show-error --output /dev/null --max-time 5 \
+    --write-out 'Anonymous loopback HTTP status: %{http_code}\n' http://127.0.0.1:19200/ >&2 || true
+  # Do not print raw container logs, request bodies, environment, or credentials.
+}
+
 case "${action}" in
   up)
     node "${repo_dir}/web/scripts/ux13/lab-fixtures.mjs" check
     compose pull
     compose up -d elasticsearch
-    node "${repo_dir}/web/scripts/ux13/elastic-lab.mjs" seed-elasticsearch
+    if ! node "${repo_dir}/web/scripts/ux13/elastic-lab.mjs" seed-elasticsearch; then
+      diagnose_elasticsearch
+      exit 1
+    fi
     compose up -d kibana
     node "${repo_dir}/web/scripts/ux13/elastic-lab.mjs" seed-kibana
     node "${repo_dir}/web/scripts/ux13/capture-environment.mjs"

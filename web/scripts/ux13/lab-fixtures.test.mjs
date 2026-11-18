@@ -31,6 +31,7 @@ describe('UX-13 fictional fixture provenance', () => {
   it('fails closed on source drift and executable expressions', () => {
     assert.throws(() => buildFixtures(source.replace('revenue: 41400', 'revenue: 41401')), /sentinel/);
     assert.throws(() => buildFixtures(source.replace('revenue: 41400', 'revenue: 41399 + 1')), /nonliteral/);
+    assert.throws(() => buildFixtures(source.replace('revenue: 41400', 'revenue: 41400, revenue: 41400')), /Duplicate field/);
     assert.throws(() => buildFixtures(source.replace("month: 'Jan'", "month: 'Feb'")), /Invalid commerce/);
   });
 

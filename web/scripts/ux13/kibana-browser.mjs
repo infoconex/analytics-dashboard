@@ -35,7 +35,7 @@ async function measure(page, name, zoom = 1) {
 async function confirmDashboard(page) {
   await page.goto(`${origin}/app/dashboards#/view/${dashboardId}`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
   await page.getByText('Business performance', { exact: true }).first().waitFor({ timeout: 90_000 });
-  assert.equal(page.url().includes('/login'), false, 'Viewer did not reach Kibana Discover');
+  assert.equal(page.url().includes('/login'), false, 'Viewer did not reach the saved Kibana dashboard');
 }
 
 const browser = await chromium.launch({ headless: true,
@@ -47,6 +47,7 @@ try {
     const page = await context.newPage();
     page.on('pageerror', () => failures.push(`${name}: page error`));
     await confirmDashboard(page);
+    await page.keyboard.press('Tab');
     await measure(page, name);
     await context.close();
   }
