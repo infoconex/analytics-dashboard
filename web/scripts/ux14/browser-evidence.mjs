@@ -222,16 +222,34 @@ async function runAnalyticsTaskChecks() {
     });
     await freshTask('T09', async page => {
       const revenue = page.getByRole('article', { name: 'Revenue over time' });
-      // In the actual Analytics UI, the per-insight handoff lives inside the
-      // optional interpretation disclosure; a clean T09 start must open it.
+      await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
+      await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
+      // The per-insight handoff is inside the optional disclosure, not a
+      // persistent filter-bearing URL. Inspect the actual read-only link.
       await revenue.getByText('What this means').click();
       await revenue.getByRole('button', { name: 'Share this insight’s context' }).click();
-      await page.getByRole('dialog', { name: 'Share insight context' }).waitFor();
+      const dialog = page.getByRole('dialog', { name: 'Share insight context' });
+      await dialog.waitFor();
+      const link = await dialog.getByRole('textbox', { name: 'Saved dashboard link' }).inputValue();
+      assert.equal(new URL(link).origin, new URL(web).origin);
+      assert.ok(link.endsWith(analyticsId) && !link.includes('?'), 'Saved URL must not serialize temporary selections');
+      await dialog.getByText('Include this insight’s context and exact values').click();
+      const note = await dialog.getByRole('textbox', { name: 'Context note (selectable text)' }).inputValue();
+      assert.ok(note.includes('Final 3 sample months') && note.includes('Marketing channels: Direct') &&
+        note.includes('Oct: $41,400'), 'Standalone snapshot must disclose exact selected fictional rows');
       await capture(page, 'analytics', 'T09', 'handoff', 'desktop');
-      await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
-      await page.reload();
-      assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
-      summary.paths.push({ product: 'analytics', task: 'T09', completed: true, endpoint: 'saved-view-reload-defaults', initial: 'fresh-saved-view' });
+      const revisit = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      const revisitWrites = await restrictAnalytics(revisit, web);
+      try {
+        const revisitPage = await revisit.newPage();
+        await revisitPage.goto(link);
+        await revisitPage.getByRole('article', { name: 'Revenue over time' }).waitFor();
+        assert.equal(await revisitPage.getByRole('combobox', { name: 'Date range (commerce only)' }).inputValue(), '12m');
+        assert.equal(await revisitPage.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
+        assert.ok(!await revisitPage.getByRole('article', { name: 'Revenue over time' }).getByText('Cannot conclude').isVisible());
+        assertNoApiWrites(revisitWrites);
+      } finally { await revisit.close(); }
+      summary.paths.push({ product: 'analytics', task: 'T09', completed: true, endpoint: 'independent-authorized-saved-link-revisit-defaults', initial: 'fresh-saved-view-with-transient-filters' });
     });
   } catch (error) {
     summary.findings.push({ category: 'test-script-defect-or-product-defect', id: 'UX14-ANALYTICS-PATH',
@@ -281,6 +299,14 @@ async function runAnalyticsSpecialStates() {
     await frame.getByRole('heading', { name: 'Business performance' }).waitFor();
     await frame.getByRole('article', { name: 'Revenue over time' }).getByText('View data table').click();
     assert.ok(await frame.getByRole('table').getByText('$41,400').isVisible());
+    await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
+    assert.equal(await frame.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), 'Direct');
+    await frame.getByRole('button', { name: 'Reset filters' }).click();
+    assert.equal(await frame.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
+    await frame.getByRole('button', { name: 'Share', exact: true }).click();
+    const share = frame.getByRole('dialog', { name: 'Share dashboard' });
+    const embeddedLink = await share.getByRole('textbox', { name: 'Saved dashboard link' }).inputValue();
+    assert.ok(embeddedLink.endsWith(analyticsId) && !embeddedLink.includes('?'));
     await frame.getByRole('row').filter({ hasText: 'Oct' }).scrollIntoViewIfNeeded();
     await capture(page, 'analytics', 'T13', 'same-origin-host', 'desktop');
     summary.paths.push({ product: 'analytics', task: 'T13', completed: true, note: 'Same-origin sample only; no equivalent Kibana host' });
