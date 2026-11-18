@@ -85,6 +85,22 @@ async function capture(page, product, task, state, mode, zoom = 1) {
   summary.captures.push({ product, task, state, mode, screenshot: `raw/${file}`, zoom, ...dimensions });
 }
 
+async function captureNativeCdp(page, product, task, state, mode, zoom) {
+  // Native zoom can cause Playwright's page screenshot and CSS geometry to
+  // disagree after scroll. Independently capture Chrome's compositor viewport
+  // (the path used by the UX-11 native-zoom regression) for visual adjudication.
+  const session = await page.context().newCDPSession(page);
+  try {
+    const rawScreenshot = await session.send('Page.captureScreenshot', {
+      format: 'png', fromSurface: false, captureBeyondViewport: false,
+    });
+    const file = `${product}-${task}-${state}-${mode}.png`;
+    await writeFile(join(raw, file), Buffer.from(rawScreenshot.data, 'base64'));
+    summary.captures.push({ product, task, state, mode, screenshot: `raw/${file}`, zoom,
+      captureMethod: 'chromium-cdp-fromSurface-false', ...await measure(page) });
+  } finally { await session.detach(); }
+}
+
 async function openFromCatalog(page, product) {
   const initial = product === 'analytics'
     ? `${web}/#/organization/northstar/dashboards` : `${elasticUi}/app/dashboards`;
@@ -329,6 +345,12 @@ async function runZoom(product) {
             unobscuredAtCenter: hit === element || element.contains(hit) };
         });
         await capture(page, product, 'T02', 'chart-target', `native-${factor * 100}`, actual);
+        try {
+          await captureNativeCdp(page, product, 'T02', 'chart-target-cdp', `native-${factor * 100}`, actual);
+        } catch {
+          summary.findings.push({ category: 'test-script-or-browser-capture-limitation', id: `CDP-14-${product}-${factor}`,
+            note: 'Independent native Chromium compositor screenshot was not available; never infer visibility from DOM geometry alone.' });
+        }
         summary.paths.push({ product, task: 'T02', mode: `native-${factor * 100}-chart-target`,
           completed: true, ...visibility });
       } catch {
