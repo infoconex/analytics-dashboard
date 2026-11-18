@@ -25,7 +25,7 @@ export async function restrictAnalytics(context, origin) {
     if (!path.startsWith('/api/')) return route.continue();
     const method = route.request().method();
     if (method !== 'GET') {
-      attempts.push({ type: 'write-refused', method });
+      attempts.push({ type: 'write-refused', method, path });
       return route.fulfill({ status: 405, body: 'No fixture writes' });
     }
     if (path === '/api/identity') return route.fulfill({ json: { userId: 'sample', displayName: 'Sample Viewer' } });
@@ -39,4 +39,11 @@ export async function restrictAnalytics(context, origin) {
     return route.fulfill({ status: 403, body: 'Not available in fictional fixture' });
   });
   return attempts;
+}
+
+// An isolated page may attempt to load an external image or other resource.
+// Refusing that request protects the lab, but is not itself an API write.
+export function assertNoApiWrites(attempts) {
+  const writes = attempts.filter(attempt => attempt.type === 'write-refused');
+  if (writes.length) throw new Error(`Unexpected synthetic API write attempts: ${writes.map(item => `${item.method} ${item.path}`).join(', ')}`);
 }

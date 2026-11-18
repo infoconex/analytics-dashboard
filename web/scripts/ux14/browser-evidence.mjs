@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { checkFixtures } from '../ux13/lab-fixtures.mjs';
 import { dashboardId as kibanaId } from '../ux13/kibana-dashboard.mjs';
 import { basicHeader } from '../ux13/elastic-lab.mjs';
-import { dashboardId as analyticsId, restrictAnalytics } from './analytics-fixture.mjs';
+import { dashboardId as analyticsId, restrictAnalytics, assertNoApiWrites } from './analytics-fixture.mjs';
 import { tasks, decidePair, assertEvidenceSafe } from './task-parity.mjs';
 
 // Captures automation-only, synthetic evidence. Does not score human task
@@ -149,7 +149,7 @@ async function runAnalyticsTaskChecks() {
     try {
       await openFromCatalog(page, 'analytics');
       await verification(page);
-      assert.deepEqual(writes, [], 'Consumer evaluation must not write to the app API');
+      assertNoApiWrites(writes);
     } finally { await context.close(); }
   }
   try {
