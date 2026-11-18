@@ -1,0 +1,84 @@
+name: UX14 Matched Task Evidence
+
+on:
+  pull_request:
+    paths:
+      - 'lab/ux13/**'
+      - 'lab/ux14/**'
+      - 'web/scripts/ux13/**'
+      - 'web/scripts/ux14/**'
+      - 'web/src/demoData.ts'
+      - 'web/package*.json'
+      - '.github/workflows/ux14-comparison.yml'
+      - 'docs/ux14-matched-task-evidence.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paired-browser-lab:
+    name: Fictional Elastic and Analytics browser paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Verify fixtures and comparison guardrails
+        run: |
+          npm --prefix web ci --no-audit --no-fund
+          npm --prefix web run test:lab
+      - name: Provision exact pinned fictional lab and reverify isolation
+        run: |
+          bash lab/ux13/lab.sh up
+          bash lab/ux13/lab.sh verify
+      - name: Install isolated Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Start local fictional Analytics presentation
+        shell: bash
+        run: |
+          npm --prefix web run dev -- --host 127.0.0.1 > "$RUNNER_TEMP/ux14-vite.log" 2>&1 &
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:5173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo 'Local fictional presentation did not become ready' >&2
+          exit 1
+      - name: Execute real browser paths and seal original screenshots
+        shell: bash
+        working-directory: web
+        env:
+          UX14_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -a
+          source ../lab/ux13/secrets.env
+          set +a
+          node scripts/ux14/browser-evidence.mjs
+      - name: Archive fictional evidence, checksums and limitations
+        if: always()
+        shell: bash
+        run: |
+          if test -f lab/ux14/evidence/manifest.json; then
+            cd lab/ux14/evidence
+            zip -q -r ../ux14-review-package.zip .
+          fi
+      - name: Upload original evidence and review package
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux14-fictional-comparison
+          path: |
+            lab/ux14/evidence/**
+            lab/ux14/ux14-review-package.zip
+            lab/ux13/evidence/**
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Destroy exact named disposable UX13 lab
+        if: always()
+        run: |
+          if test -f lab/ux13/secrets.env; then bash lab/ux13/lab.sh down; fi

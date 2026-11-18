@@ -1,5 +1,7 @@
 # UX-13 — Independent evaluation lab and parity preflight
 
+**UX-14 follow-on:** [Matched synthetic task paths and original visual evidence](ux14-matched-task-evidence.md) use this unchanged 9.5.6 laboratory baseline. The narrower T02 catalog-to-report browser-path candidate does **not** retroactively make the UX-13 screenshot smoke test a human study or prove T01–T13 parity. Keep the UX-13 immutable source digests and negative authorization probes separate from usability scores.
+
 **Issue:** [#52](https://github.com/infoconex/analytics-dashboard/issues/52). Baseline: UX-12 merge `daf6656d98fb71bc23b1df1416f4f29e0bee7068`. **Status: lab preparation; no human research or paired superiority result.** This is a disposable, fictional, local-only evidence system. The research-consent/data-handling gate R0 is **unapproved**.
 
 ## 1. What is reproducible, and what is not yet a paired test

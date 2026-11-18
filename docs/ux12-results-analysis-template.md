@@ -1,5 +1,7 @@
 # UX-12 — Results analysis (blank template)
 
+**UX-14 cross-reference:** The synthetic [UX-14 browser-evidence manifest and task decisions](ux14-matched-task-evidence.md) must not populate any human observation or performance field below. A conditional T02 *scripted UI pair* does not count as approved human task parity (R1), a scored attempt, a completion time, a deliberate action count or a WCAG result. Archive original PNGs and manifest outside transient CI artifacts before research planning.
+
 **Status: NO HUMAN DATA COLLECTED.** Never fill a result from scripted Playwright, UX-11 screenshots, a simulated participant or moderator expectation. Copy this template into private approved research storage after [R0 approval](ux12-independent-evaluation.md) and link the approved version back by non-sensitive reference only.
 
 ## 1. Study registration
