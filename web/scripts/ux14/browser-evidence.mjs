@@ -197,6 +197,9 @@ async function runAnalyticsTaskChecks() {
     });
     await freshTask('T09', async page => {
       const revenue = page.getByRole('article', { name: 'Revenue over time' });
+      // In the actual Analytics UI, the per-insight handoff lives inside the
+      // optional interpretation disclosure; a clean T09 start must open it.
+      await revenue.getByText('What this means').click();
       await revenue.getByRole('button', { name: 'Share this insight’s context' }).click();
       await page.getByRole('dialog', { name: 'Share insight context' }).waitFor();
       await capture(page, 'analytics', 'T09', 'handoff', 'desktop');
