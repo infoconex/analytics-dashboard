@@ -7,6 +7,9 @@ on:
       - 'web/scripts/ux13/**'
       - 'web/src/demoData.ts'
       - 'web/package*.json'
+      - 'docs/ux13-independent-lab.md'
+      - 'docs/ux12-independent-evaluation.md'
+      - 'docs/ux12-task-matrix.csv'
       - '.github/workflows/ux13-lab.yml'
   workflow_dispatch:
 
