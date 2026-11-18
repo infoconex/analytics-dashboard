@@ -262,16 +262,37 @@ async function runAnalyticsTaskChecks() {
 }
 
 async function runKibanaTaskChecks() {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
-  await restrictKibana(context);
-  const page = await context.newPage();
-  try {
-    await openFromCatalog(page, 'kibana');
+  // Comparable candidates begin from their own fresh authorized catalog,
+  // even when the next task is deliberately classified unverified.
+  async function freshTask(task, verification) {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+    await restrictKibana(context);
+    const page = await context.newPage();
+    try {
+      await openFromCatalog(page, 'kibana');
+      await verification(page);
+    } catch {
+      summary.paths.push({ product: 'kibana', task, completed: false,
+        failureClass: 'script-or-environment-setup', note: 'Fresh Kibana path could not be independently inspected' });
+    } finally { await context.close(); }
+  }
+  await freshTask('T03', async page => {
+    const recent = await page.getByText('Last 15 minutes', { exact: true }).first().isVisible();
+    summary.paths.push({ product: 'kibana', task: 'T03', completed: false,
+      failureClass: 'task-parity-limitation', note: recent
+        ? 'Visible relative-time selector gives no accurate yearless-sample interpretation context'
+        : 'Equivalent undated sample caveat has not been demonstrated' });
+  });
+  await freshTask('T04', async page => {
     await capture(page, 'kibana', 'T04', 'dashboard-no-source-row', 'desktop');
     summary.paths.push({ product: 'kibana', task: 'T04', completed: false,
       failureClass: 'task-parity-limitation', note: 'Original October _source row not yet reached by a verified UI path; a plotted point is insufficient' });
+  });
+  await freshTask('T05', async () => {
     summary.paths.push({ product: 'kibana', task: 'T05', completed: false,
       failureClass: 'task-parity-limitation', note: 'No verified independent per-dataset filter/reset control path' });
+  });
+  await freshTask('T09', async page => {
     const share = page.getByRole('button', { name: 'Share', exact: true }).first();
     if (await share.isVisible()) {
       await share.click();
@@ -279,10 +300,7 @@ async function runKibanaTaskChecks() {
     }
     summary.paths.push({ product: 'kibana', task: 'T09', completed: false,
       failureClass: 'task-parity-limitation', note: 'Saved link state and transient-filter behavior not verified end to end' });
-  } catch {
-    summary.paths.push({ product: 'kibana', task: 'T04', completed: false,
-      failureClass: 'script-or-environment-setup', note: 'Kibana detail path failed; inspect CI lab artifacts' });
-  } finally { await context.close(); }
+  });
 }
 
 async function runAnalyticsSpecialStates() {
