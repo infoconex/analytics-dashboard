@@ -16,6 +16,8 @@ Tracking: [Issue #56](https://github.com/infoconex/analytics-dashboard/issues/56
 
 The fictional source arrays in `web/src/demoData.ts` remain unchanged: twelve month observations with `revenue/orders/customers`, and five independent channel observations with `orders/sessions/conversion`. `visualizationSemantics.ts` computes derived histogram bins directly from these rows and checks meaning before rendering; it does not persist derived data or connect to a real source. A source table below each chart remains independently inspectable, including both scatter axes. The meaning/provenance disclosure remains available. We made no inference about deduplicated customers across months.
 
+**UX-13 fixture manifest revision:** Expanding the chart-choice list in `demoData.ts` changes that source file's byte-level SHA-256 even though the fictional arrays are identical. The reviewed `lab/ux13/fixtures/manifest.json` therefore records the new whole-file SHA-256 `6316f43c4b3b0bd06c9a71d6bd7e3c1d5a62241b1a7aa6e7a4cc0e062a8c11b7`. The three generated payload SHA-256 values and all exact source rows remain unchanged; `npm run test:lab` verifies this byte-for-byte. Historical UX-13/UX-14 documents retain their original captured-run source SHA; they describe those earlier runs, not a newly captured lab result.
+
 ## Creator walkthrough for the product owner
 
 Requires the existing development API and Vite web app. Visit `http://localhost:5173` using only development sample data:

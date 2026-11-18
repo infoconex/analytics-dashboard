@@ -536,7 +536,7 @@ export default function App() {
         <label className="form-label">{widgetDraft.kind === 'scatter' ? 'Vertical measure' : 'Metric'}<select value={widgetDraft.metricKey} onChange={event => { const metricKey = event.target.value; setWidgetDraft({ ...widgetDraft, metricKey, dimensionKey: widgetDraft.kind === 'scatter' && widgetDraft.dimensionKey === metricKey ? suggestedDimension('scatter', widgetDraft.datasetKey, metricKey) : widgetDraft.dimensionKey }); }}>{(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
         {widgetDraft.kind === 'scatter' && <label className="form-label">Horizontal measure<select value={widgetDraft.dimensionKey} onChange={event => setWidgetDraft({ ...widgetDraft, dimensionKey: event.target.value })}>{metrics[widgetDraft.datasetKey].filter(item => item.key !== widgetDraft.metricKey).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>}
         <section className="visualization-preview" aria-label="Live visualization preview">
-          <h3>Live preview</h3><p>Original fictional sample records only. This preview does not save changes or query a customer data source.</p>
+          <h2>Live preview</h2><p>Original fictional sample records only. This preview does not save changes or query a customer data source.</p>
           <WidgetTile widget={widgetDraft} period="12m" />
         </section>
         {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
