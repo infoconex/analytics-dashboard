@@ -23,7 +23,7 @@ const source = JSON.parse(await readFile(join(root, 'lab/ux13/fixtures/manifest.
 const environments = JSON.parse(await readFile(join(root, 'lab/ux13/evidence/environment.json'), 'utf8'));
 await checkFixtures();
 await mkdir(raw, { recursive: true });
-const summary = { schemaVersion: 1, status: 'SCRIPTED_FIXTIONAL_BROWSER_EVIDENCE_NOT_HUMAN_RESEARCH',
+const summary = { schemaVersion: 1, status: 'SCRIPTED_FICTIONAL_BROWSER_EVIDENCE_NOT_HUMAN_RESEARCH',
   issue: 54, sourceFixtureSha256: source.sourceSha256, fictionalOnly: true, participantCount: 0,
   environment: { platform: platform(), release: release(), architecture: arch(), node: process.version,
     analyticsCommit: process.env.GITHUB_SHA ?? null, githubRunId: process.env.GITHUB_RUN_ID ?? null,
@@ -140,53 +140,77 @@ async function runDiscovery(product, mode) {
 }
 
 async function runAnalyticsTaskChecks() {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
-  const writes = await restrictAnalytics(context, web);
-  const page = await context.newPage();
+  let currentTask = 'T03';
+  async function freshTask(taskId, verification) {
+    currentTask = taskId;
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+    const writes = await restrictAnalytics(context, web);
+    const page = await context.newPage();
+    try {
+      await openFromCatalog(page, 'analytics');
+      await verification(page);
+      assert.deepEqual(writes, [], 'Consumer evaluation must not write to the app API');
+    } finally { await context.close(); }
+  }
   try {
-    await openFromCatalog(page, 'analytics');
-    const revenue = page.getByRole('article', { name: 'Revenue over time' });
-    await revenue.getByText('What this means').click();
-    const meaning = await revenue.getByText('Cannot conclude').isVisible();
-    summary.paths.push({ product: 'analytics', task: 'T03', completed: meaning, endpoint: 'metric-limit-disclosure' });
-    await revenue.getByText('View data table').click();
-    const october = await revenue.getByRole('table').getByText('$41,400').isVisible();
-    assert.ok(october, 'October exact value absent from source table');
-    await capture(page, 'analytics', 'T04', 'october-row', 'desktop');
-    summary.paths.push({ product: 'analytics', task: 'T04', completed: true, endpoint: 'source-table-october-41400' });
-    await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
-    await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
-    assert.equal(await revenue.getByRole('table').getByText('$18,400').count(), 0);
-    assert.ok(await revenue.getByRole('table').getByText('$41,400').isVisible());
-    await capture(page, 'analytics', 'T05', 'independent-filters', 'desktop');
-    summary.paths.push({ product: 'analytics', task: 'T05', completed: true, endpoint: 'oct-dec-and-direct' });
-    await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('12m');
-    assert.ok(await revenue.getByRole('table').getByText('$18,400').isVisible());
-    assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), 'Direct');
-    summary.paths.push({ product: 'analytics', task: 'T06', completed: true, endpoint: 'jan-dec-and-direct' });
-    await page.getByRole('button', { name: 'Reset filters' }).click();
-    assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
-    summary.paths.push({ product: 'analytics', task: 'T07', completed: true, endpoint: 'all-sample-records' });
-    await page.getByRole('combobox', { name: 'Find a visualization' }).selectOption('996e3063-18e9-4ddb-887a-229198c6dd12');
-    await page.getByRole('button', { name: 'Go to visualization' }).click();
-    await page.getByRole('heading', { name: 'Insight 12' }).waitFor();
-    await page.getByRole('button', { name: 'Back to visualization list from Insight 12' }).click();
-    assert.ok(await page.getByRole('button', { name: '12. Insight 12' }).evaluate(el => el === document.activeElement));
-    await capture(page, 'analytics', 'T08', 'index-focus', 'desktop');
-    summary.paths.push({ product: 'analytics', task: 'T08', completed: true, endpoint: 'focused-index-12' });
-    await revenue.getByRole('button', { name: 'Share this insight’s context' }).click();
-    await page.getByRole('dialog', { name: 'Share insight context' }).waitFor();
-    await capture(page, 'analytics', 'T09', 'handoff', 'desktop');
-    await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
-    await page.reload();
-    assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
-    summary.paths.push({ product: 'analytics', task: 'T09', completed: true, endpoint: 'saved-view-reload-defaults' });
-    assert.deepEqual(writes, [], 'Consumer evaluation must not write to the app API');
-  } catch {
+    await freshTask('T03', async page => {
+      const revenue = page.getByRole('article', { name: 'Revenue over time' });
+      await revenue.getByText('What this means').click();
+      const meaning = await revenue.getByText('Cannot conclude').isVisible();
+      summary.paths.push({ product: 'analytics', task: 'T03', completed: meaning, endpoint: 'metric-limit-disclosure', initial: 'fresh-revenue-view' });
+    });
+    await freshTask('T04', async page => {
+      const revenue = page.getByRole('article', { name: 'Revenue over time' });
+      await revenue.getByText('View data table').click();
+      const october = await revenue.getByRole('table').getByText('$41,400').isVisible();
+      assert.ok(october, 'October exact value absent from source table');
+      await capture(page, 'analytics', 'T04', 'october-row', 'desktop');
+      summary.paths.push({ product: 'analytics', task: 'T04', completed: true, endpoint: 'source-table-october-41400', initial: 'fresh-revenue-view' });
+    });
+    // T05 -> T06 -> T07 is the explicitly dependent exception: preserve the
+    // verified previous filter selection, and do not reset between substeps.
+    await freshTask('T05-T07', async page => {
+      const revenue = page.getByRole('article', { name: 'Revenue over time' });
+      await revenue.getByText('View data table').click();
+      await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
+      await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
+      assert.equal(await revenue.getByRole('table').getByText('$18,400').count(), 0);
+      assert.ok(await revenue.getByRole('table').getByText('$41,400').isVisible());
+      await capture(page, 'analytics', 'T05', 'independent-filters', 'desktop');
+      summary.paths.push({ product: 'analytics', task: 'T05', completed: true, endpoint: 'oct-dec-and-direct', initial: 'fresh-unfiltered-view' });
+      await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('12m');
+      assert.ok(await revenue.getByRole('table').getByText('$18,400').isVisible());
+      assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), 'Direct');
+      summary.paths.push({ product: 'analytics', task: 'T06', completed: true, endpoint: 'jan-dec-and-direct', initial: 'verified-T05-state' });
+      await page.getByRole('button', { name: 'Reset filters' }).click();
+      assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
+      summary.paths.push({ product: 'analytics', task: 'T07', completed: true, endpoint: 'all-sample-records', initial: 'verified-T06-state' });
+    });
+    await freshTask('T08', async page => {
+      await page.getByRole('combobox', { name: 'Find a visualization' }).selectOption('996e3063-18e9-4ddb-887a-229198c6dd12');
+      await page.getByRole('button', { name: 'Go to visualization' }).click();
+      await page.getByRole('heading', { name: 'Insight 12' }).waitFor();
+      await page.getByRole('button', { name: 'Back to visualization list from Insight 12' }).click();
+      assert.ok(await page.getByRole('button', { name: '12. Insight 12' }).evaluate(el => el === document.activeElement));
+      await capture(page, 'analytics', 'T08', 'index-focus', 'desktop');
+      summary.paths.push({ product: 'analytics', task: 'T08', completed: true, endpoint: 'focused-index-12', initial: 'fresh-dense-dashboard' });
+    });
+    await freshTask('T09', async page => {
+      const revenue = page.getByRole('article', { name: 'Revenue over time' });
+      await revenue.getByRole('button', { name: 'Share this insight’s context' }).click();
+      await page.getByRole('dialog', { name: 'Share insight context' }).waitFor();
+      await capture(page, 'analytics', 'T09', 'handoff', 'desktop');
+      await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
+      await page.reload();
+      assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
+      summary.paths.push({ product: 'analytics', task: 'T09', completed: true, endpoint: 'saved-view-reload-defaults', initial: 'fresh-saved-view' });
+    });
+  } catch (error) {
     summary.findings.push({ category: 'test-script-defect-or-product-defect', id: 'UX14-ANALYTICS-PATH',
-      note: 'A scripted Analytics endpoint assertion failed; inspect the last raw capture and CI logs; not a participant failure.' });
-    throw new Error('Analytics scripted task verification failed; do not approve paired scoring');
-  } finally { await context.close(); }
+      task: currentTask, note: 'A scripted Analytics endpoint assertion failed; not a participant failure.' });
+    process.stderr.write(`UX-14 scripted Analytics ${currentTask}: ${error?.name ?? 'Error'}: ${String(error?.message ?? '').split('\n')[0].slice(0, 200)}\n`);
+    throw new Error(`Analytics ${currentTask} scripted task verification failed; do not approve paired scoring`);
+  }
 }
 
 async function runKibanaTaskChecks() {
@@ -340,4 +364,10 @@ try {
   assert.equal(errors.filter(error => error.category === 'browser-pageerror').length, 0,
     'Browser page errors must be triaged');
   process.stdout.write(`UX-14 synthetic browser evidence: ${summary.captures.length} images, ${summary.paths.length} paths; T02 ${summary.taskDecisions[1].decision}; no human scoring.\n`);
+} catch (error) {
+  summary.status = 'INCOMPLETE_SCRIPTED_EVIDENCE_NOT_FOR_PAIRING';
+  summary.failClosed = true;
+  assertEvidenceSafe(summary);
+  await writeFile(join(output, 'incomplete-diagnostic.json'), `${JSON.stringify(summary, null, 2)}\n`);
+  throw error;
 } finally { await browser.close(); }
