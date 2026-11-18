@@ -15,6 +15,46 @@ await mkdir(evidence, { recursive: true });
 const records = [];
 const failures = [];
 
+async function chartState(page) {
+  return page.evaluate(() => {
+    const visible = element => {
+      const box = element.getBoundingClientRect();
+      return box.width > 0 && box.height > 0 && box.bottom > 0 && box.top < innerHeight;
+    };
+    return {
+      visibleCharts: [...document.querySelectorAll('.echChartContent')].filter(visible).length,
+      totalCharts: document.querySelectorAll('.echChartContent').length,
+      visibleLoadingCharts: [...document.querySelectorAll('[class*="euiLoadingChart"]')].filter(visible).length,
+      totalLoadingCharts: document.querySelectorAll('[class*="euiLoadingChart"]').length,
+      revenueHeader: document.body.innerText.includes('Revenue over time'),
+      channelHeader: document.body.innerText.includes('Orders by channel'),
+    };
+  });
+}
+
+async function requireRenderedCharts(page, name, minimumVisible) {
+  try {
+    // EUI recommends component-level readiness, rather than the global Kibana
+    // spinner. Requiring rendered Elastic Charts avoids accepting skeletons.
+    await page.waitForFunction(minimum => {
+      const visible = element => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.width > 0 && bounds.height > 0 && bounds.bottom > 0 && bounds.top < innerHeight;
+      };
+      const charts = [...document.querySelectorAll('.echChartContent')].filter(visible).length;
+      const loading = [...document.querySelectorAll('[class*="euiLoadingChart"]')].filter(visible).length;
+      return charts >= minimum && loading === 0;
+    }, minimumVisible, { timeout: 90_000 });
+  } catch {
+    await page.screenshot({ path: join(evidence, `kibana-incomplete-${name}.png`) });
+    const state = await chartState(page);
+    await writeFile(join(evidence, `kibana-incomplete-${name}.json`), `${JSON.stringify(state, null, 2)}\n`);
+    throw new Error(`Kibana ${name} did not render ${minimumVisible} visible charts within 90 seconds; see fictional diagnostic artifact`);
+  }
+  // A short repaint stabilization after the measured component-level signal.
+  await page.waitForTimeout(750);
+}
+
 async function restrictToLocalKibana(context) {
   await context.route('**/*', route => {
     const request = route.request();
@@ -27,9 +67,10 @@ async function measure(page, name, zoom = 1) {
   const values = await page.evaluate(() => ({ width: innerWidth, height: innerHeight,
     dpr: devicePixelRatio, documentWidth: document.documentElement.scrollWidth,
     focusTag: document.activeElement?.tagName ?? null }));
+  const charts = await chartState(page);
   const file = `kibana-${name}.png`;
   await page.screenshot({ path: join(evidence, file), animations: 'disabled' });
-  records.push({ name, screenshot: file, zoom, ...values });
+  records.push({ name, screenshot: file, zoom, ...values, ...charts });
 }
 
 async function confirmDashboard(page) {
@@ -47,6 +88,7 @@ try {
     const page = await context.newPage();
     page.on('pageerror', () => failures.push(`${name}: page error`));
     await confirmDashboard(page);
+    await requireRenderedCharts(page, name, width >= 1000 ? 2 : 1);
     await page.keyboard.press('Tab');
     await measure(page, name);
     await context.close();
@@ -56,6 +98,7 @@ try {
   const page = await context.newPage();
   page.on('pageerror', () => failures.push('forced-colors: page error'));
   await confirmDashboard(page);
+  await requireRenderedCharts(page, 'forced-colors', 2);
   await measure(page, 'forced-colors');
   await context.close();
 } finally { await browser.close(); }
@@ -85,6 +128,9 @@ try {
     const dimensions = await page.evaluate(() => ({ width: innerWidth, dpr: devicePixelRatio }));
     assert.ok(Math.abs(actual - zoom) < 0.05);
     assert.ok(Math.abs(dimensions.dpr / baseline.dpr - zoom) < 0.05);
+    await page.getByText('Revenue over time', { exact: true }).first().waitFor({ state: 'attached', timeout: 90_000 });
+    await page.getByText('Revenue over time', { exact: true }).first().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(1_500);
     await measure(page, `native-${zoom * 100}`, actual);
   }
 } finally { await context.close(); }
@@ -92,8 +138,8 @@ try {
 await writeFile(join(evidence, 'kibana-browser.json'), `${JSON.stringify({
   evidenceKind: 'SCRIPTED_UI_SETUP_ONLY', os: process.platform,
   chromiumVersion: browser.version(), records, pageErrorCount: failures.length,
-  parityStatus: 'UNVERIFIED: no 12-widget Kibana task dashboard or matched workflow',
+  parityStatus: 'UNVERIFIED: a 12-panel Kibana setup is not a matched end-to-end task workflow',
   participantCount: 0, limitations: 'No human usability research, screen-reader speech, tenant equivalence or WCAG conformance',
 }, null, 2)}\n`);
 assert.deepEqual(failures, [], 'Kibana scripted setup encountered page errors');
-process.stdout.write(`Kibana 9.5.6 scripted Discover captured at ${records.length} viewport/zoom/forced-colors conditions; task parity is unverified.\n`);
+process.stdout.write(`Kibana 9.5.6 scripted dashboard rendered at ${records.length} viewport/zoom/forced-colors conditions; task parity is unverified.\n`);
