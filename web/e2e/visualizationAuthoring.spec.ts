@@ -68,6 +68,9 @@ async function image(page: Page, info: TestInfo, label: string) {
 }
 
 test('author pie, histogram, scatter; preview, edit, save and revisit exact sample rows', async ({ page }, info) => {
+  // Multiple full-size original captures plus round trips exceed the generic
+  // 30-second single-test limit on slower CI runners; assertions remain strict.
+  test.setTimeout(90_000);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   const api = await sampleApi(page);
@@ -198,6 +201,7 @@ test('preview reflows at 390 and 320, preserves keyboard focus and forced colors
 });
 
 test('genuine Chromium 200% and 400% tab zoom preserves the creator dialog and its preview', async ({}, info) => {
+  test.setTimeout(90_000);
   const extension = join(dirname(fileURLToPath(import.meta.url)), 'zoom-extension');
   const context = await chromium.launchPersistentContext('', {
     channel: 'chromium', executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
