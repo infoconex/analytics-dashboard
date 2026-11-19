@@ -130,16 +130,20 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await expect(pie.getByRole('table')).not.toContainText('1,820');
   await expect(page.getByRole('article', { name: 'Revenue distribution' })).toContainText('12 observed fictional months');
   await image(page, info, '04b-pie-filter-independent-of-commerce');
-  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
-  await expect(pie.getByRole('table')).toContainText('1,820');
+  await test.step('remove one channel filter and recover the original pie rows', async () => {
+    await page.getByRole('button', { name: 'Remove Direct filter' }).click({ timeout: 8_000 });
+    await expect(pie.getByRole('table')).toContainText('1,820');
+  });
 
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await page.getByRole('button', { name: 'Edit Orders versus customers' }).click();
-  await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders versus customers');
-  await dialog.getByRole('button', { name: 'Update visualization' }).click();
-  await page.getByRole('button', { name: 'Save changes' }).click();
-  await page.reload();
-  await expect(page.getByRole('heading', { name: 'Orders versus customers' })).toBeVisible();
+  await test.step('reenter editing, update scatter and revisit the saved definition', async () => {
+    await page.getByRole('button', { name: 'Edit dashboard' }).click({ timeout: 8_000 });
+    await page.getByRole('button', { name: 'Edit Orders versus customers' }).click({ timeout: 8_000 });
+    await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders versus customers');
+    await dialog.getByRole('button', { name: 'Update visualization' }).click({ timeout: 8_000 });
+    await page.getByRole('button', { name: 'Save changes' }).click({ timeout: 8_000 });
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Orders versus customers' })).toBeVisible();
+  });
   expect(api.saved().widgets.map(widget => widget.kind)).toEqual(['pie', 'histogram', 'scatter']);
   expect(api.saved().widgets[2]?.dimensionKey).toBe('customers');
   expect(errors).toEqual([]);
