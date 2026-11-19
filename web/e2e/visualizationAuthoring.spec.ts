@@ -99,6 +99,7 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await dialog.getByRole('combobox', { name: 'Vertical measure' }).selectOption('orders');
   await expect(dialog.getByRole('combobox', { name: 'Horizontal measure' })).toHaveValue('revenue');
   await dialog.getByRole('combobox', { name: 'Horizontal measure' }).selectOption('customers');
+  await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders versus customers');
   await expect(dialog.locator('.recharts-scatter-symbol')).toHaveCount(12);
   await dialog.getByText('View data table').click();
   await expect(dialog.getByRole('table')).toContainText('280');
@@ -111,7 +112,7 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Orders by channel pie' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Revenue distribution' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Orders versus revenue' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Orders versus customers' })).toBeVisible();
   await expect(page.getByRole('article', { name: 'Orders by channel pie' }).locator('.recharts-pie-sector')).toHaveCount(5);
   await image(page, info, '04-saved-three-visualizations-desktop');
 
@@ -128,7 +129,7 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await expect(pie.getByRole('table')).toContainText('1,820');
 
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await page.getByRole('button', { name: 'Edit Orders versus revenue' }).click();
+  await page.getByRole('button', { name: 'Edit Orders versus customers' }).click();
   await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders versus customers');
   await dialog.getByRole('button', { name: 'Update visualization' }).click();
   await page.getByRole('button', { name: 'Save changes' }).click();
