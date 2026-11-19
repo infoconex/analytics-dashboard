@@ -254,9 +254,18 @@ test('genuine Chromium 200% and 400% tab zoom preserves the creator dialog and i
       expect(observed.dpr / baseline.dpr).toBeCloseTo(factor, 1);
       expect(observed.overflow).toBeLessThanOrEqual(1);
       await expect(dialog.getByRole('button', { name: 'Add to dashboard' })).toBeVisible();
-      await dialog.getByRole('combobox', { name: 'Horizontal measure' }).focus();
-      await expect(dialog.getByRole('combobox', { name: 'Horizontal measure' })).toBeFocused();
+      const horizontalMeasure = dialog.getByRole('combobox', { name: 'Horizontal measure' });
+      await horizontalMeasure.scrollIntoViewIfNeeded();
+      await horizontalMeasure.focus();
+      await expect(horizontalMeasure).toBeFocused();
       await expect(dialog.locator('.recharts-scatter-symbol')).toHaveCount(12);
+      const focusedUnobscured = await horizontalMeasure.evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        const center = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+        return center === element || element.contains(center);
+      });
+      expect(focusedUnobscured, `The selected horizontal measure must not be hidden at native ${factor * 100}% zoom`).toBe(true);
+      const captureMeasurements = await metrics();
 
       // CDP captures the actual browser surface at native tab zoom; Playwright
       // CSS screenshots may normalize scale and cannot establish genuine zoom.
@@ -268,9 +277,10 @@ test('genuine Chromium 200% and 400% tab zoom preserves the creator dialog and i
       await writeFile(picture, Buffer.from(raw.data, 'base64'));
       await info.attach(label, { path: picture, contentType: 'image/png' });
       const measurementFile = info.outputPath(`${label}-measurements.json`);
-      await writeFile(measurementFile, JSON.stringify({ ...observed,
+      await writeFile(measurementFile, JSON.stringify({ ...captureMeasurements,
         operatingSystem: `${platform()} ${release()}`, browserVersion: context.browser()?.version(),
-        nativeZoom: actual, baseline, method: 'Chromium chrome.tabs.setZoom/getZoom and CDP browser-surface capture',
+        nativeZoom: actual, focusedUnobscured, baseline,
+        method: 'Chromium chrome.tabs.setZoom/getZoom and CDP browser-surface capture',
       }, null, 2));
       await info.attach(`${label}-measurements`, { path: measurementFile, contentType: 'application/json' });
     }
