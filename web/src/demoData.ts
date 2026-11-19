@@ -57,6 +57,9 @@ export const visualizations: { key: WidgetKind; label: string }[] = [
   { key: 'line', label: 'Line chart' },
   { key: 'bar', label: 'Bar chart' },
   { key: 'donut', label: 'Donut chart' },
+  { key: 'pie', label: 'Pie chart' },
+  { key: 'histogram', label: 'Histogram' },
+  { key: 'scatter', label: 'Scatter plot' },
   { key: 'table', label: 'Data table' },
 ];
 

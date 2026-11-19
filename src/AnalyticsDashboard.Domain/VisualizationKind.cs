@@ -7,5 +7,8 @@ public enum VisualizationKind
     Area,
     Bar,
     Donut,
-    Table
+    Table,
+    Pie,
+    Histogram,
+    Scatter
 }

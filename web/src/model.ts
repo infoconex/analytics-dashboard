@@ -1,5 +1,5 @@
 export type OrganizationRole = 'viewer' | 'editor' | 'owner';
-export type WidgetKind = 'metric' | 'line' | 'area' | 'bar' | 'donut' | 'table';
+export type WidgetKind = 'metric' | 'line' | 'area' | 'bar' | 'donut' | 'table' | 'pie' | 'histogram' | 'scatter';
 export type DatasetKey = 'commerce' | 'channels';
 export type DataSourceProvider = 'sqlServer' | 'mySql' | 'postgreSql' | 'sqlite' | 'elasticsearch';
 
