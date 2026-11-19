@@ -1,7 +1,9 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { chromium, expect, test, type Page, type TestInfo } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { platform, release } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Dashboard, DashboardDraft } from '../src/model';
 
 const dashboardId = '72222222-2222-4222-8222-222222222222';
@@ -193,6 +195,79 @@ test('preview reflows at 390 and 320, preserves keyboard focus and forced colors
   await image(page, info, '08-scatter-preview-forced-colors');
   const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
   expect(scan.violations).toEqual([]);
+});
+
+test('genuine Chromium 200% and 400% tab zoom preserves the creator dialog and its preview', async ({}, info) => {
+  const extension = join(dirname(fileURLToPath(import.meta.url)), 'zoom-extension');
+  const context = await chromium.launchPersistentContext('', {
+    channel: 'chromium', executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+    headless: true, viewport: null,
+    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`, '--window-size=1440,900'],
+  });
+  try {
+    const page = context.pages()[0] ?? await context.newPage();
+    await sampleApi(page);
+    await page.goto(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${dashboardId}`);
+    await expect(page.getByRole('heading', { name: 'Fictional analytics' })).toBeVisible();
+    await page.getByRole('button', { name: 'Edit dashboard' }).click();
+    await page.getByRole('button', { name: /Add visualization/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+    await dialog.getByRole('button', { name: /Scatter plot/ }).click();
+    await expect(dialog.locator('.recharts-scatter-symbol')).toHaveCount(12);
+
+    const worker = context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker');
+    const nativeZoom = (factor: number) => worker.evaluate(async requested => {
+      const tabs = (globalThis as unknown as { chrome: { tabs: {
+        query(query: Record<string, never>): Promise<Array<{ id?: number; url?: string }>>;
+        setZoom(id: number, value: number): Promise<void>;
+        getZoom(id: number): Promise<number>;
+      } } }).chrome.tabs;
+      const tab = (await tabs.query({})).find(item => item.url?.startsWith('http://127.0.0.1:5173/'));
+      if (tab?.id === undefined) throw new Error('The authoring tab was not available to the test-only zoom extension');
+      await tabs.setZoom(tab.id, requested);
+      return tabs.getZoom(tab.id);
+    }, factor);
+    const metrics = () => page.evaluate(() => ({
+      cssViewport: { width: innerWidth, height: innerHeight }, dpr: devicePixelRatio,
+      visualViewportScale: visualViewport?.scale ?? null,
+      overflow: document.documentElement.scrollWidth - innerWidth,
+      focused: document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent?.slice(0, 90),
+    }));
+    const baseline = await metrics();
+    expect(await nativeZoom(1)).toBeCloseTo(1, 1);
+    for (const factor of [2, 4]) {
+      const actual = await nativeZoom(factor);
+      await expect.poll(async () => (await metrics()).cssViewport.width)
+        .toBeLessThanOrEqual(baseline.cssViewport.width / factor + 2);
+      const observed = await metrics();
+      expect(actual).toBeCloseTo(factor, 1);
+      expect(observed.dpr / baseline.dpr).toBeCloseTo(factor, 1);
+      expect(observed.overflow).toBeLessThanOrEqual(1);
+      await expect(dialog.getByRole('button', { name: 'Add to dashboard' })).toBeVisible();
+      await dialog.getByRole('combobox', { name: 'Horizontal measure' }).focus();
+      await expect(dialog.getByRole('combobox', { name: 'Horizontal measure' })).toBeFocused();
+      await expect(dialog.locator('.recharts-scatter-symbol')).toHaveCount(12);
+
+      // CDP captures the actual browser surface at native tab zoom; Playwright
+      // CSS screenshots may normalize scale and cannot establish genuine zoom.
+      const client = await context.newCDPSession(page);
+      const raw = await client.send('Page.captureScreenshot', { format: 'png', fromSurface: false, captureBeyondViewport: false });
+      await client.detach();
+      const label = `ux15-${factor === 2 ? '11' : '12'}-native-${factor * 100}-creator`;
+      const picture = info.outputPath(`${label}.png`);
+      await writeFile(picture, Buffer.from(raw.data, 'base64'));
+      await info.attach(label, { path: picture, contentType: 'image/png' });
+      const measurementFile = info.outputPath(`${label}-measurements.json`);
+      await writeFile(measurementFile, JSON.stringify({ ...observed,
+        operatingSystem: `${platform()} ${release()}`, browserVersion: context.browser()?.version(),
+        nativeZoom: actual, baseline, method: 'Chromium chrome.tabs.setZoom/getZoom and CDP browser-surface capture',
+      }, null, 2));
+      await info.attach(`${label}-measurements`, { path: measurementFile, contentType: 'application/json' });
+    }
+    await nativeZoom(1);
+  } finally {
+    await context.close();
+  }
 });
 
 test('new chart definitions remain read-only in the same-origin embed', async ({ page }) => {

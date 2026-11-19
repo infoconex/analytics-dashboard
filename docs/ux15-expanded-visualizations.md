@@ -52,7 +52,7 @@ cd web
 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium npx playwright test -c playwright.visualizations.config.ts
 ```
 
-This starts Vite and uses a deterministic, in-memory, request-intercepted fictional API with no back-end data writes. Its Playwright attachments include original desktop pie/histogram/scatter previews, saved view, invalid-rate recovery, 390×844 and 320×900 editor reflow, forced-colors focus state, and browser/viewport/DPR/focus measurements. The standard CI `Verify` browser job remains authoritative if the execution environment prohibits Chromium subprocess sockets. Screenshot automation is **not** a real screen-reader assessment, a zoom audit, WCAG conformance, or a task-completion measure.
+This starts Vite and uses a deterministic, in-memory, request-intercepted fictional API with no back-end data writes. Its Playwright attachments include original desktop pie/histogram/scatter previews, saved view, invalid-rate recovery, 390×844 and 320×900 editor reflow, forced-colors focus state, and browser/viewport/DPR/focus measurements. A separate test uses the existing **test-only Chromium extension** to call `chrome.tabs.setZoom/getZoom` at genuine 200% and 400% browser zoom, checks the change in both CSS viewport and DPR, and captures the actual browser surface with CDP plus per-state zoom measurements; it does not substitute device emulation or CSS scaling. The standard CI `Verify` browser job remains authoritative if the execution environment prohibits Chromium subprocess sockets. Screenshot automation is **not** a manual screen-reader assessment, full manual zoom audit, WCAG conformance, or a task-completion measure.
 
 ## Deferrals and boundaries
 
