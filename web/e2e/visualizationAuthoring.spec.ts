@@ -46,6 +46,8 @@ async function openEditor(page: Page) {
 
 async function image(page: Page, info: TestInfo, label: string) {
   const path = info.outputPath(`ux15-${label}.png`);
+  // Capture the chart itself, not a transient hover tooltip left by a pointer.
+  await page.mouse.move(10, 10);
   await page.screenshot({ path, animations: 'disabled' });
   await info.attach(label, { path, contentType: 'image/png' });
   const measurements = await page.evaluate(() => ({
@@ -147,6 +149,7 @@ test('refuses a misleading conversion pie; owner can recover, viewer cannot auth
   await expect(dialog.getByRole('alert')).toContainText('cannot be summed');
   await expect(dialog.getByText('Insight unavailable.')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Add to dashboard' })).toBeDisabled();
+  await dialog.getByRole('alert').scrollIntoViewIfNeeded();
   await image(page, info, '05-invalid-rate-recovery');
   await dialog.getByRole('combobox', { name: 'Metric' }).selectOption('sessions');
   await expect(dialog.getByRole('alert')).toHaveCount(0);
