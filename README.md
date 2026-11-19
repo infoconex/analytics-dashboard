@@ -100,6 +100,8 @@ npm run dev
 
 Open <http://localhost:5173>. The development identity is a fixed demo owner of *Northstar Commerce*. Its sample dashboard and data are intentionally fictional; no real database credentials are used.
 
+For a Windows workstation with **Linux Docker containers**, the [UX-16 local owner review setup](docs/ux16-owner-docker-review.md) starts the same fictional .NET API and Node/Vite UI using [development-only Compose](compose.ux16-owner.yml). This is not a production deployment or an embedding/security acceptance environment.
+
 ### Verification
 
 ```powershell
