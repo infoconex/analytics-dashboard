@@ -15,6 +15,12 @@ const datasetDescriptions: Record<DatasetKey, string> = {
   channels: 'Sessions, orders, and conversion across acquisition channels.',
 };
 
+function suggestedTitle(dataset: DatasetKey, metric: string, kind: WidgetKind, horizontal: string): string {
+  const label = metrics[dataset].find(option => option.key === metric)?.label ?? 'Measure';
+  const axis = metrics[dataset].find(option => option.key === horizontal)?.label ?? horizontal;
+  return kind === 'scatter' ? `${label} versus ${axis}` : `${label} by ${dimensions[dataset]}`;
+}
+
 export function ExplorePage({ canEdit, onCreate }: Props) {
   const [datasetKey, setDatasetKey] = useState<DatasetKey>('commerce');
   const [metricKey, setMetricKey] = useState('revenue');
@@ -26,7 +32,7 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
   const [saving, setSaving] = useState(false);
   const rows = selectRows(datasetKey, period);
   const dimensionKey = dimensions[datasetKey];
-  const defaultTitle = `${metrics[datasetKey].find(option => option.key === metricKey)?.label ?? 'Measure'} by ${dimensionKey}`;
+  const defaultTitle = suggestedTitle(datasetKey, metricKey, kind, horizontalKey);
   const widget: DashboardWidget = { id: 'explore-preview', title: title.trim() || 'Untitled visualization', kind, datasetKey, metricKey,
     dimensionKey: kind === 'scatter' ? horizontalKey : dimensionKey };
   const problem = visualizationProblem(widget, rows);
@@ -35,18 +41,30 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
   function chooseDataset(next: DatasetKey) {
     setDatasetKey(next);
     const metric = metrics[next][0]?.key ?? 'orders';
+    const horizontal = suggestedDimension('scatter', next, metric);
     setMetricKey(metric);
-    setHorizontalKey(suggestedDimension('scatter', next, metric));
-    setTitle(`${metrics[next][0]?.label ?? 'Measure'} by ${dimensions[next]}`);
+    setHorizontalKey(horizontal);
+    setTitle(suggestedTitle(next, metric, kind, horizontal));
     setPeriod('12m');
   }
 
   function chooseMetric(next: string) {
+    const horizontal = horizontalKey === next ? suggestedDimension('scatter', datasetKey, next) : horizontalKey;
     if (title === defaultTitle) {
-      setTitle(`${metrics[datasetKey].find(option => option.key === next)?.label ?? 'Measure'} by ${dimensionKey}`);
+      setTitle(suggestedTitle(datasetKey, next, kind, horizontal));
     }
     setMetricKey(next);
-    if (horizontalKey === next) setHorizontalKey(suggestedDimension('scatter', datasetKey, next));
+    setHorizontalKey(horizontal);
+  }
+
+  function chooseKind(next: WidgetKind) {
+    if (title === defaultTitle) setTitle(suggestedTitle(datasetKey, metricKey, next, horizontalKey));
+    setKind(next);
+  }
+
+  function chooseHorizontal(next: string) {
+    if (title === defaultTitle) setTitle(suggestedTitle(datasetKey, metricKey, kind, next));
+    setHorizontalKey(next);
   }
 
   async function save() {
@@ -73,8 +91,8 @@ export function ExplorePage({ canEdit, onCreate }: Props) {
         <p className="explore-hint">Explore by {dimensionKey}. All values are deterministic sample data.</p>
         <div className="explore-step">02 / VISUALIZE</div><h2>Make it meaningful</h2>
         <label className="form-label">Measure<select value={metricKey} onChange={event => chooseMetric(event.target.value)}>{metrics[datasetKey].map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
-        <label className="form-label">Chart type<select value={kind} onChange={event => setKind(event.target.value as WidgetKind)}>{visualizations.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
-        {kind === 'scatter' && <label className="form-label">Horizontal measure<select value={horizontalKey} onChange={event => setHorizontalKey(event.target.value)}>{metrics[datasetKey].filter(option => option.key !== metricKey).map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>}
+        <label className="form-label">Chart type<select value={kind} onChange={event => chooseKind(event.target.value as WidgetKind)}>{visualizations.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+        {kind === 'scatter' && <label className="form-label">Horizontal measure<select value={horizontalKey} onChange={event => chooseHorizontal(event.target.value)}>{metrics[datasetKey].filter(option => option.key !== metricKey).map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>}
         {problem && <p role="alert" className="error-banner">{problem} Choose another measure or chart type.</p>}
         {datasetKey === 'commerce' && <label className="form-label">Preview sample months<select value={period} onChange={event => setPeriod(event.target.value)}><option value="12m">All 12 sample months</option><option value="6m">Final 6 sample months</option><option value="3m">Final 3 sample months</option></select><span className="explore-field-note">These fictional Jan–Dec months have no year. This changes the preview only; dashboard viewers control their own sample selection.</span></label>}
         <label className="form-label">Visualization title<input maxLength={100} value={title} onChange={event => setTitle(event.target.value)} /></label>

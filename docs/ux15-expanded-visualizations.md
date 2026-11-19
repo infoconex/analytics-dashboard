@@ -22,7 +22,7 @@ The fictional source arrays in `web/src/demoData.ts` remain unchanged: twelve mo
 
 Requires the existing development API and Vite web app. Visit `http://localhost:5173` using only development sample data:
 
-1. In **Explore**, choose a sample measure and a new chart type. For scatter, choose a second numeric measure and inspect its exact same-row table. A non-additive conversion-rate pie/donut is blocked here too. You may create a dashboard from a valid Explore preview.
+1. In **Explore**, choose a sample measure and a new chart type. For scatter, choose a second numeric measure and inspect its exact same-row table. The suggested title updates to name both numeric measures while still automatic; once you type a custom title, changing an axis leaves your title intact. A non-additive conversion-rate pie/donut is blocked here too. You may create a dashboard from a valid Explore preview.
 2. Alternatively, choose **New dashboard**; name it and choose **Create dashboard**. This starts an empty saved definition.
 3. Choose **Edit dashboard**, then **Add visualization**. Select **Pie chart**. Pick *Marketing channels* and *Orders*; inspect the live preview and expand **View data table** to verify `Organic search → 1,820` and `Direct → 1,530`.
 4. Select *Conversion rate* on the pie. A visible error must explain why the percentages cannot be summed; **Add to dashboard** is disabled. Choose *Sessions* or *Orders* to recover.
