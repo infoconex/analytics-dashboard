@@ -74,10 +74,19 @@ test('Explore creates a valid scatter from two measures in the same original row
   await horizontal.selectOption('orders');
   await expect(title).toHaveValue('Revenue versus customers');
   await horizontal.selectOption('customers');
+  await expect(title).toHaveValue('Revenue versus customers');
   await page.getByRole('button', { name: 'Create dashboard' }).click();
   await expect(page.getByRole('heading', { name: 'Revenue versus customers' })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Revenue versus customers' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Revenue versus customers' })).toBeVisible().catch(async error => {
+    const detail = await page.evaluate(() => ({
+      route: location.hash,
+      headings: [...document.querySelectorAll('h1,h2,h3')].map(node => node.textContent?.trim()),
+      alerts: [...document.querySelectorAll('[role="alert"]')].map(node => node.textContent?.trim()),
+    }));
+    console.log(`[UX-15 Explore reload diagnostic] ${JSON.stringify(detail)}`);
+    throw error;
+  });
   await expect(page.getByRole('article', { name: 'Revenue versus customers' }).locator('.recharts-scatter-symbol')).toHaveCount(12);
 });
 

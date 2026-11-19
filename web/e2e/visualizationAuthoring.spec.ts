@@ -138,14 +138,16 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await test.step('reenter editing, update scatter and revisit the saved definition', async () => {
     await page.getByRole('button', { name: 'Edit dashboard' }).click({ timeout: 8_000 });
     await page.getByRole('button', { name: 'Edit Orders versus customers' }).click({ timeout: 8_000 });
-    await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders versus customers');
+    await dialog.getByRole('textbox', { name: 'Title' }).fill('Customers and orders relationship');
     await dialog.getByRole('button', { name: 'Update visualization' }).click({ timeout: 8_000 });
+    await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
     await page.getByRole('button', { name: 'Save changes' }).click({ timeout: 8_000 });
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Orders versus customers' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Customers and orders relationship' })).toBeVisible();
   });
   expect(api.saved().widgets.map(widget => widget.kind)).toEqual(['pie', 'histogram', 'scatter']);
   expect(api.saved().widgets[2]?.dimensionKey).toBe('customers');
+  expect(api.saved().widgets[2]?.title).toBe('Customers and orders relationship');
   expect(errors).toEqual([]);
 });
 
