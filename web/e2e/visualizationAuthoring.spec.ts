@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
+import { platform, release } from 'node:os';
 import type { Dashboard, DashboardDraft } from '../src/model';
 
 const dashboardId = '72222222-2222-4222-8222-222222222222';
@@ -53,9 +55,11 @@ async function image(page: Page, info: TestInfo, label: string) {
     overflow: document.documentElement.scrollWidth - innerWidth,
     focused: document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent?.slice(0, 90),
   }));
-  await info.attach(`${label}-measurements`, { body: JSON.stringify({ ...measurements,
+  const measurementFile = info.outputPath(`ux15-${label}-measurements.json`);
+  await writeFile(measurementFile, JSON.stringify({ ...measurements, operatingSystem: `${platform()} ${release()}`,
     browserVersion: page.context().browser()?.version(), forcedColors: await page.evaluate(() => matchMedia('(forced-colors: active)').matches),
-  }, null, 2), contentType: 'application/json' });
+  }, null, 2));
+  await info.attach(`${label}-measurements`, { path: measurementFile, contentType: 'application/json' });
   expect(measurements.overflow).toBeLessThanOrEqual(1);
 }
 
@@ -71,6 +75,7 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders by channel pie');
   await dialog.getByRole('combobox', { name: 'Dataset' }).selectOption('channels');
   await expect(dialog.getByRole('region', { name: 'Live visualization preview' })).toContainText('Organic search');
+  await expect(dialog.locator('.recharts-pie-sector')).toHaveCount(5);
   await dialog.getByText('View data table').click();
   await expect(dialog.getByRole('table')).toContainText('1,820');
   await image(page, info, '01-pie-preview-desktop');
@@ -81,6 +86,7 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await dialog.getByRole('textbox', { name: 'Title' }).fill('Revenue distribution');
   await expect(dialog.getByText('12 observed fictional months')).toBeVisible();
   await expect(dialog.locator('.recharts-bar-rectangle')).toHaveCount(4);
+  await dialog.locator('.widget-chart').scrollIntoViewIfNeeded();
   await image(page, info, '02-histogram-preview-desktop');
   await dialog.getByRole('button', { name: 'Add to dashboard' }).click();
 
@@ -104,10 +110,12 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   await expect(page.getByRole('heading', { name: 'Orders by channel pie' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Revenue distribution' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Orders versus revenue' })).toBeVisible();
+  await expect(page.getByRole('article', { name: 'Orders by channel pie' }).locator('.recharts-pie-sector')).toHaveCount(5);
   await image(page, info, '04-saved-three-visualizations-desktop');
 
   const pie = page.getByRole('article', { name: 'Orders by channel pie' });
   await pie.getByRole('button', { name: 'Show only Direct' }).first().click();
+  await expect(pie.locator('.recharts-pie-sector')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Remove Direct filter' })).toBeVisible();
   await pie.getByText('View data table').click();
   await expect(pie.getByRole('table')).toContainText('1,530');
@@ -165,8 +173,10 @@ test('preview reflows at 390 and 320, preserves keyboard focus and forced colors
   await expect(dialog.getByRole('combobox', { name: 'Horizontal measure' })).toBeFocused();
   await image(page, info, '06-scatter-preview-mobile-focus');
   await page.setViewportSize({ width: 320, height: 900 });
+  await dialog.locator('.widget-chart').scrollIntoViewIfNeeded();
   await image(page, info, '07-scatter-preview-narrow');
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+  await dialog.locator('.widget-chart').scrollIntoViewIfNeeded();
   await image(page, info, '08-scatter-preview-forced-colors');
   const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
   expect(scan.violations).toEqual([]);

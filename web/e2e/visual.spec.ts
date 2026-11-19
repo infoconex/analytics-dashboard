@@ -393,7 +393,7 @@ test('UX-5 deterministic task journey measures direct navigation and safe recove
   const add = page.getByRole('button', { name: /Add visualization/ });
   await add.click();
   const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
-  await expect(dialog.locator('.gallery-card')).toHaveCount(6);
+  await expect(dialog.locator('.gallery-card')).toHaveCount(9);
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(add).toBeFocused();

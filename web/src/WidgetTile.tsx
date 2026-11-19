@@ -122,7 +122,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
               <PieChart>
-                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" innerRadius={widget.kind === 'donut' ? '59%' : 0} outerRadius="80%" paddingAngle={3} stroke="none" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'}>
+                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" innerRadius={widget.kind === 'donut' ? '59%' : 0} outerRadius="80%" paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'}>
                   {data.map((row, index) => <Cell key={String(row[axis])} fill={palette[index % palette.length]} />)}
                 </Pie>
                 <Tooltip />
@@ -133,7 +133,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                 <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={false} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={axisTick} width={42} />
                 <Tooltip formatter={(count) => [`${count} sample ${widget.datasetKey === 'commerce' ? 'months' : 'channels'}`, 'Frequency']} />
-                <Bar dataKey="count" name="Frequency" fill="#6179f4" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" name="Frequency" fill="#6179f4" radius={[6, 6, 0, 0]} isAnimationActive={false} />
               </BarChart>
             ) : widget.kind === 'scatter' ? (
               <ScatterChart data={data} margin={{ top: 8, right: 14, left: 0, bottom: 8 }}>
@@ -141,7 +141,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                 <XAxis type="number" dataKey={widget.dimensionKey} name={xMeasure} tick={axisTick} tickFormatter={formatAxisValue} />
                 <YAxis type="number" dataKey={metric} name={context.label} tick={axisTick} tickFormatter={formatAxisValue} width={52} />
                 <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                <Scatter name={`${xMeasure} and ${context.label}`} data={data} fill="#6179f4" />
+                <Scatter name={`${xMeasure} and ${context.label}`} data={data} fill="#6179f4" isAnimationActive={false} />
               </ScatterChart>
             ) : widget.kind === 'bar' ? (
               <BarChart data={data} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
