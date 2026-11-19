@@ -177,6 +177,15 @@ test('preview reflows at 390 and 320, preserves keyboard focus and forced colors
   await image(page, info, '07-scatter-preview-narrow');
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
   await dialog.locator('.widget-chart').scrollIntoViewIfNeeded();
+  const scatterColor = await dialog.locator('.recharts-scatter-symbol').first().evaluate(symbol => {
+    const probe = document.createElement('span');
+    probe.style.color = 'Highlight';
+    document.body.append(probe);
+    const result = { actual: getComputedStyle(symbol).fill, expected: getComputedStyle(probe).color };
+    probe.remove();
+    return result;
+  });
+  expect(scatterColor.actual).toBe(scatterColor.expected);
   await image(page, info, '08-scatter-preview-forced-colors');
   const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
   expect(scan.violations).toEqual([]);
