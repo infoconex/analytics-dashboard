@@ -32,7 +32,8 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 120); do
-            if curl --silent --fail --max-time 3 http://127.0.0.1:5173/api/organizations +                | jq -e 'any(.[]; .id == "northstar" and .role == "owner")' >/dev/null 2>&1; then
+            response=$(curl --silent --fail --max-time 3 http://127.0.0.1:5173/api/organizations || true)
+            if jq -e 'any(.[]; .id == "northstar" and .role == "owner")' <<< "$response" >/dev/null 2>&1; then
               break
             fi
             if [ "$attempt" -eq 120 ]; then
@@ -43,7 +44,8 @@ jobs:
           done
           curl --silent --show-error --fail http://127.0.0.1:5173/ | grep -q 'root'
           curl --silent --show-error --fail http://127.0.0.1:5173/sample-host.html | grep -q 'Insights'
-          curl --silent --show-error --fail http://127.0.0.1:5173/api/organizations/northstar/dashboards +            | jq -e 'any(.[]; .name == "Business performance")'
+          dashboard_json=$(curl --silent --show-error --fail http://127.0.0.1:5173/api/organizations/northstar/dashboards)
+          jq -e 'any(.[]; .name == "Business performance")' <<< "$dashboard_json"
           if curl --silent --fail --max-time 2 http://127.0.0.1:5055/api/organizations >/dev/null; then
             echo "The API must not be published on the host."
             exit 1
