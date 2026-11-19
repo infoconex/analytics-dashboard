@@ -1,0 +1,58 @@
+name: UX16 Owner Docker Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'compose.ux16-owner.yml'
+      - 'docs/ux16-owner-docker-review.md'
+      - '.github/workflows/ux16-owner-docker.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'compose.ux16-owner.yml'
+      - 'docs/ux16-owner-docker-review.md'
+      - '.github/workflows/ux16-owner-docker.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  owner-compose:
+    name: Fictional owner Compose startup and cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate local-only Compose definition
+        run: docker compose -f compose.ux16-owner.yml config --quiet
+      - name: Start local fictional development services
+        run: docker compose -f compose.ux16-owner.yml up -d
+      - name: Verify demo API, frontend, same-origin host and port boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 120); do
+            if curl --silent --fail --max-time 3 http://127.0.0.1:5173/api/organizations +                | jq -e 'any(.[]; .id == "northstar" and .role == "owner")' >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$attempt" -eq 120 ]; then
+              echo "Timed out waiting for the fictional Northstar API behind Vite."
+              exit 1
+            fi
+            sleep 2
+          done
+          curl --silent --show-error --fail http://127.0.0.1:5173/ | grep -q 'root'
+          curl --silent --show-error --fail http://127.0.0.1:5173/sample-host.html | grep -q 'Insights'
+          curl --silent --show-error --fail http://127.0.0.1:5173/api/organizations/northstar/dashboards +            | jq -e 'any(.[]; .name == "Business performance")'
+          if curl --silent --fail --max-time 2 http://127.0.0.1:5055/api/organizations >/dev/null; then
+            echo "The API must not be published on the host."
+            exit 1
+          fi
+      - name: Inspect service state on failure
+        if: failure()
+        run: |
+          docker compose -f compose.ux16-owner.yml ps
+          docker compose -f compose.ux16-owner.yml logs --tail 60 api web
+      - name: Stop the disposable Compose services
+        if: always()
+        run: docker compose -f compose.ux16-owner.yml down
