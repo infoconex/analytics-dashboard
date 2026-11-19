@@ -200,3 +200,17 @@ test('new chart definitions remain read-only in the same-origin embed', async ({
   await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
   await expect(page.locator('.recharts-scatter-symbol')).toHaveCount(12);
 });
+
+test('guided Explore exposes valid scatter axes and exact fictional values', async ({ page }, info) => {
+  await sampleApi(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#/explore');
+  await page.getByRole('combobox', { name: 'Chart type' }).selectOption('scatter');
+  await page.getByRole('combobox', { name: 'Horizontal measure' }).selectOption('customers');
+  await expect(page.locator('.recharts-scatter-symbol')).toHaveCount(12);
+  await expect(page.getByRole('heading', { name: /Underlying sample records/ }).locator('..').getByRole('table')).toContainText('18,400');
+  await image(page, info, '09-explore-scatter-desktop');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('img', { name: /scatter chart comparing Revenue with Customers/ }).scrollIntoViewIfNeeded();
+  await image(page, info, '10-explore-scatter-mobile');
+});

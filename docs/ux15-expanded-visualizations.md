@@ -22,14 +22,15 @@ The fictional source arrays in `web/src/demoData.ts` remain unchanged: twelve mo
 
 Requires the existing development API and Vite web app. Visit `http://localhost:5173` using only development sample data:
 
-1. Choose **New dashboard**; name it and choose **Create dashboard**. This starts an empty saved definition.
-2. Choose **Edit dashboard**, then **Add visualization**. Select **Pie chart**. Pick *Marketing channels* and *Orders*; inspect the live preview and expand **View data table** to verify `Organic search → 1,820` and `Direct → 1,530`.
-3. Select *Conversion rate* on the pie. A visible error must explain why the percentages cannot be summed; **Add to dashboard** is disabled. Choose *Sessions* or *Orders* to recover.
-4. Add a **Histogram** of commerce *Revenue*; note the chart means counts of 12 observed monthly sample rows distributed into four value ranges.
-5. Add a **Scatter plot** of commerce *Orders* versus *Revenue* (or *Customers*). Change both axis selectors and expand the exact data table to check same-row pairs.
-6. Add/update a descriptive title. Finish **Add to dashboard**; use keyboard move controls to reorder; **Save changes**, reload and revisit.
-7. Re-enter **Edit dashboard** and **Edit [visualization title]**. Change its title, kind or measures. Confirm **Update visualization**, then **Save changes**; reload. Also try **Cancel** to verify unsaved draft is discarded.
-8. Review at desktop, mobile, narrow viewport, keyboard, and forced colors. Check that a *viewer* sees consumption, not authoring controls. In the same-origin sample embed the new kinds are rendered read-only.
+1. In **Explore**, choose a sample measure and a new chart type. For scatter, choose a second numeric measure and inspect its exact same-row table. A non-additive conversion-rate pie/donut is blocked here too. You may create a dashboard from a valid Explore preview.
+2. Alternatively, choose **New dashboard**; name it and choose **Create dashboard**. This starts an empty saved definition.
+3. Choose **Edit dashboard**, then **Add visualization**. Select **Pie chart**. Pick *Marketing channels* and *Orders*; inspect the live preview and expand **View data table** to verify `Organic search → 1,820` and `Direct → 1,530`.
+4. Select *Conversion rate* on the pie. A visible error must explain why the percentages cannot be summed; **Add to dashboard** is disabled. Choose *Sessions* or *Orders* to recover.
+5. Add a **Histogram** of commerce *Revenue*; note the chart means counts of 12 observed monthly sample rows distributed into four value ranges.
+6. Add a **Scatter plot** of commerce *Orders* versus *Revenue* (or *Customers*). Change both axis selectors and expand the exact data table to check same-row pairs.
+7. Add/update a descriptive title. Finish **Add to dashboard**; use keyboard move controls to reorder; **Save changes**, reload and revisit.
+8. Re-enter **Edit dashboard** and **Edit [visualization title]**. Change its title, kind or measures. Confirm **Update visualization**, then **Save changes**; reload. Also try **Cancel** to verify unsaved draft is discarded.
+9. Review at desktop, mobile, narrow viewport, keyboard, and forced colors. Check that a *viewer* sees consumption, not authoring controls. In the same-origin sample embed the new kinds are rendered read-only.
 
 This is an owner walkthrough, **not** recruitment or a human usability study. Take qualitative notes about discoverability, terminology, editor scrolling and preview usefulness. There is no participant-data collection or telemetry.
 
