@@ -28,7 +28,7 @@ Check startup output without exposing any real secrets:
 docker compose -f compose.ux16-owner.yml logs --tail 80 api web
 ```
 
-Expect the API to listen on `0.0.0.0:5055` **inside the container namespace** and Vite on `0.0.0.0:5173` inside the same namespace. Open:
+Expect the API to listen on `localhost:5055` **inside the shared container namespace** and Vite on `0.0.0.0:5173` inside that namespace. The API is not exposed on a container interface or a host port. Open:
 
 - [Standalone authoring](http://localhost:5173) — fixed Northstar Commerce demonstration; create and edit sample dashboards.
 - [Same-origin sample host](http://localhost:5173/sample-host.html) — read-only interface to the existing fictional sample dashboard. The interface does not revoke underlying API privileges or establish a production embedding contract.
