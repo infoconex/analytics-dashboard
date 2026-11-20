@@ -78,13 +78,6 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
       event.preventDefault(); selectCategory(activeKeyboardIndex);
     }
   }
-  function onBarChartClick(event: React.MouseEvent<HTMLDivElement>) {
-    if (!channelInteraction || widget.kind !== 'bar') return;
-    const bar = (event.target as Element).closest('.recharts-bar-rectangle');
-    if (!bar) return;
-    const index = Array.from(event.currentTarget.querySelectorAll('.recharts-bar-rectangle')).indexOf(bar);
-    if (index >= 0) selectCategory(index);
-  }
   const aggregate = aggregateSampleMetric(widget.datasetKey, widget.metricKey, data);
   const value = aggregate ?? 0;
   const metric = widget.metricKey;
@@ -164,7 +157,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </table>
         </div>
       ) : (
-        <div className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}${chartKeyboardInteraction && chartFocused && widget.kind === 'bar' ? ` keyboard-bar-${activeKeyboardIndex}` : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onClickCapture={widget.kind === 'bar' ? onBarChartClick : undefined} onFocus={chartKeyboardInteraction ? () => { setKeyboardIndex(0); setChartFocused(true); } : undefined} onBlur={chartKeyboardInteraction ? () => setChartFocused(false) : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
+        <div className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}${chartKeyboardInteraction && chartFocused && widget.kind === 'bar' ? ` keyboard-bar-${activeKeyboardIndex}` : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onFocus={chartKeyboardInteraction ? () => { setKeyboardIndex(0); setChartFocused(true); } : undefined} onBlur={chartKeyboardInteraction ? () => setChartFocused(false) : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
               <PieChart accessibilityLayer={false}>
@@ -202,12 +195,12 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                 <Scatter name={`${xMeasure} and ${context.label}`} data={data} fill="#6179f4" isAnimationActive={false} />
               </ScatterChart>
             ) : widget.kind === 'bar' ? (
-              <BarChart data={data} accessibilityLayer={false} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
+              <BarChart data={data} tabIndex={-1} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
                 <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
                 <Tooltip cursor={{ fill: '#f2f5fd' }} formatter={value => [tooltipValue(value), context.label]} />
-                <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" cursor={channelInteraction ? 'pointer' : 'default'} />
+                <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} />
               </BarChart>
             ) : widget.kind === 'line' ? (
               <LineChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
