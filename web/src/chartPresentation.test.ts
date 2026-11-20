@@ -10,6 +10,8 @@ describe('stable sample chart presentation', () => {
     expect(selected.size).toBe(5);
     expect([...selected]).toEqual(['M12', 'M11', 'M10', 'M9', 'M8']);
     expect(months[0]?.month).toBe('M1');
+    expect(selectedPieLabels(months, 'month', 'revenue', 8).size).toBe(8);
+    expect(selectedPieLabels(months, 'month', 'revenue', 12).size).toBe(11); // Tiny slices are still omitted.
     expect(selectedPieLabels([{ channel: 'A', sessions: 0 }], 'channel', 'sessions').size).toBe(0);
   });
   it('names both category and measure in pie/donut tooltip labels', () => {

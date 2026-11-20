@@ -52,6 +52,7 @@ describe('donut legend filter controls', () => {
     }));
     expect(html).toContain('widget-chart-keyboard');
     expect(html).toContain('Use arrow keys to choose a category');
+    expect(html).not.toContain('Keyboard chart selection:');
     expect(html).toContain('Show slice labels');
     expect(html).toContain('aria-pressed="false"');
   });
