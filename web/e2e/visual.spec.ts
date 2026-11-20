@@ -117,6 +117,43 @@ test('UX-18 chart regions filter with arrow keys and Enter, retaining focus and 
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
 });
 
+test('UX-19 keyboard category is visible only during focus, highlights and stops at boundaries', async ({ page }, info) => {
+  await fixedDemoApi(page);
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const donut = page.getByRole('article', { name: 'Traffic sources', exact: true });
+  const plot = donut.getByRole('group', { name: /Traffic sources donut chart/ });
+  await expect(donut.getByText('Keyboard chart selection:')).toHaveCount(0);
+  await plot.focus();
+  await expect(donut.getByText('Keyboard chart selection:')).toContainText('Organic search');
+  await expect(donut.getByRole('button', { name: 'Show only Organic search' })).toHaveClass(/keyboard-current/);
+  for (let index = 0; index < 8; index++) await page.keyboard.press('ArrowRight');
+  await expect(donut.getByText('Keyboard chart selection:')).toContainText('Referral');
+  await expect(donut.getByRole('button', { name: 'Show only Referral' })).toHaveClass(/keyboard-current/);
+  await expect(donut.locator('.recharts-pie-sector').nth(4).locator('path')).toHaveAttribute('stroke', '#172c55');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Referral');
+  await donut.getByRole('button', { name: 'Remove Referral filter from Traffic sources' }).click();
+  await expect(donut.getByText('Keyboard chart selection:')).toHaveCount(0);
+  await plot.focus();
+  await expect(donut.getByText('Keyboard chart selection:')).toContainText('Organic search');
+  await capture(page, info, 'ux19-keyboard-focus-synchronized');
+});
+
+test('UX-19 labeled donut keeps a usable ring and permits bounded label counts', async ({ page }, info) => {
+  await fixedDemoApi(page);
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const donut = page.getByRole('article', { name: 'Traffic sources', exact: true });
+  await donut.getByRole('button', { name: 'Show slice labels' }).click();
+  await donut.getByLabel('Maximum labels').selectOption('8');
+  await expect(donut.locator('.chart-outside-label')).toHaveCount(5);
+  const pie = donut.locator('.recharts-pie-sector').first().locator('path');
+  await expect(pie).toBeVisible();
+  await capture(page, info, 'ux19-labeled-donut');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertNoDocumentOverflow(page, 390);
+  await capture(page, info, 'ux19-labeled-donut-mobile');
+});
+
 test('UX-18 optional leader-line labels are capped and scatter axes have explicit titles', async ({ page }, info) => {
   const dashboard: Dashboard = { ...sampleDashboard, widgets: [...sampleDashboard.widgets, {
     id: '806e3063-18e9-4ddb-887a-229198c6dd07', title: 'Monthly revenue pie',
