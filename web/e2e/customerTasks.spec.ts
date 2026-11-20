@@ -109,8 +109,8 @@ test('SC-UX11-01/02/03/04/05: first value through exact data, independent filter
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
   await noPageOverflow(page);
   expect(errors).toEqual([]);
-  expect(milestones).toHaveLength(11);
-  expect(scriptedInteractions).toHaveLength(14);
+  expect(milestones).toHaveLength(12);
+  expect(scriptedInteractions).toHaveLength(15);
   await writeFile(info.outputPath('ux11-customer-journey.json'), JSON.stringify({ os: process.platform,
     chromium: page.context().browser()?.version(), viewport: page.viewportSize(), scriptedMilestones: milestones,
     milestoneCount: milestones.length, scriptedInteractions, interactionCount: scriptedInteractions.length,
