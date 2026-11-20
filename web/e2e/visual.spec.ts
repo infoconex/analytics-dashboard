@@ -136,6 +136,14 @@ test('UX-19 keyboard category is visible only during focus, highlights and stops
   await expect(donut.getByText('Keyboard chart selection:')).toHaveCount(0);
   await plot.focus();
   await expect(donut.getByText('Keyboard chart selection:')).toContainText('Organic search');
+  const bar = page.getByRole('article', { name: 'Orders by channel', exact: true });
+  const barPlot = bar.getByRole('group', { name: /Orders by channel bar chart/ });
+  await barPlot.focus();
+  await expect(barPlot).toHaveClass(/keyboard-bar-0/);
+  await page.keyboard.press('ArrowRight');
+  await expect(barPlot).toHaveClass(/keyboard-bar-1/);
+  await expect(bar.locator('.recharts-bar-rectangle').nth(1).locator('path')).toHaveCSS('stroke-width', '4px');
+  await plot.focus();
   await capture(page, info, 'ux19-keyboard-focus-synchronized');
 });
 
