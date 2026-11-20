@@ -91,6 +91,26 @@ async function assertNoDocumentOverflow(page: Page, width: number) {
 
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
 
+test('UX-17 names hovered donut categories and clears selected channels from interpretation', async ({ page }, testInfo) => {
+  await fixedDemoApi(page);
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const donut = page.getByRole('article', { name: 'Traffic sources', exact: true });
+  await donut.locator('.recharts-pie-sector').nth(4).locator('path').hover({ force: true });
+  await expect(donut.locator('.recharts-tooltip-wrapper')).toContainText('Referral');
+  await expect(donut.locator('.recharts-tooltip-wrapper')).toContainText('Sessions');
+  await expect(donut.locator('.recharts-tooltip-wrapper')).toContainText('2,820');
+  await capture(page, testInfo, 'ux17-referral-tooltip');
+  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
+  await donut.getByText('What this means').click();
+  const clear = donut.getByRole('button', { name: 'Remove Referral from What this means in Traffic sources' });
+  await clear.focus();
+  await page.keyboard.press('Enter');
+  await expect(donut.getByRole('heading', { name: 'Traffic sources' })).toBeFocused();
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
+  await expect(donut.locator('.recharts-pie-sector')).toHaveCount(5);
+  await capture(page, testInfo, 'ux17-channel-filter-cleared');
+});
+
 test('UX-16 filter cards disclose scope and permit in-place keyboard clearing', async ({ page }, testInfo) => {
   await fixedDemoApi(page);
   await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
@@ -100,8 +120,9 @@ test('UX-16 filter cards disclose scope and permit in-place keyboard clearing', 
   await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
   await expect(traffic.getByRole('button', { name: 'Remove Referral filter from Traffic sources' })).toBeVisible();
-  await expect(traffic.getByText(/Date range does not apply/)).toBeVisible();
-  await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' })).toBeVisible();
+  await expect(traffic.getByText(/Date range does not apply/)).toHaveCount(0);
+  await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' })).toHaveCount(0);
+  await expect(revenue.getByText('Oct–Dec', { exact: false }).first()).toBeVisible();
   await expect(revenue.getByText(/commerce records have no channel attribution/)).toBeVisible();
   await capture(page, testInfo, 'ux16-scoped-filter-cards');
 
@@ -113,10 +134,7 @@ test('UX-16 filter cards disclose scope and permit in-place keyboard clearing', 
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
   await expect(revenue.getByText(/commerce records have no channel attribution/)).toHaveCount(0);
 
-  const clearDate = revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' });
-  await clearDate.focus();
-  await page.keyboard.press('Enter');
-  await expect(revenue.getByRole('heading', { name: 'Revenue over time' })).toBeFocused();
+  await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('12m');
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
   await expect(revenue.getByLabel('Filter scope for Revenue over time')).toHaveCount(0);
 });
@@ -161,7 +179,7 @@ test('desktop UX journey captures all primary states using fixed sample data', a
   await capture(page, testInfo, '04-consumption-desktop');
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
   await capture(page, testInfo, '05-active-filters-desktop');
-  await page.getByRole('button', { name: 'Reset filters' }).click();
+  await page.getByRole('button', { name: 'Clear channel filter' }).click();
 
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
   await capture(page, testInfo, '06-composition-desktop');
