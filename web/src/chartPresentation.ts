@@ -18,6 +18,11 @@ export function formatChartTooltip(value: number, metric: string): string {
   return formatDetailedMetric(value, metric);
 }
 
+/** Identify both the selected slice and its measure, never just the measure. */
+export function categoryTooltipLabel(category: string, measure: string): string {
+  return `${category} · ${measure}`;
+}
+
 export function formatChartAxis(value: number, metric: string): string {
   if (!Number.isFinite(value)) return '—';
   if (metric === 'conversion') return `${value.toFixed(1)}%`;
