@@ -47,7 +47,7 @@ vertical counts must not become dollars.
 | F04 | Currency symbols and grouping missing from hover labels; histogram bucket labels lacked `$` | Owner observation and screenshot-confirmed histogram formatting inconsistency | **P2, selected here** |
 | F05 | Scatter axes lacked visible `Orders` / `Revenue (USD)` titles | Screenshot and owner preference | P3 |
 | F06 | Explore allows creation of a *new* dashboard but not selection of an existing authorized dashboard | Confirmed existing-workflow gap; owner wants both choices | P2, separate increment |
-| F07 | Channel filter affected only Marketing channels, not independent Commerce performance; local clear action would help | **Expected sample data scope**, plus discoverability/refinement hypothesis | P2, separate increment |
+| F07 | Channel filter affected only Marketing channels, not independent Commerce performance; local clear action would help | **Expected sample data scope**, plus owner-requested discoverability refinement in [issue #62](https://github.com/infoconex/analytics-dashboard/issues/62) | P2, selected follow-on |
 | F08 | Referral red in full Donut became blue when filtered; legend changed with it | **Screenshot-confirmed product defect** | **P2, selected here** |
 | F09 | Owner wants optional Pie/Donut labels with leader lines, auto-limited for collisions | Subjective product enhancement; not a defect | P2, separate increment |
 | F10 | Bar/Donut shapes not keyboard-operable; alternate category controls provided filtering | Accessibility/usability observation; scope and alternatives need audit | P2, separate increment |
@@ -65,8 +65,8 @@ participant data or persistent telemetry were collected.
 
 ## Ranked next increments after this change
 
-1. F07 contextual filter state/clear affordance and F10 keyboard affordances,
-   while preserving dataset separation and server permissions.
+1. F10 accessible chart-element alternatives and focus affordances; retain
+   keyboard-operable category controls without changing the data model.
 2. F03 chronological pie/donut ordering and F09 optional collision-aware labels.
 3. F06 add Explore insight to an existing **authorized same-organization**
    dashboard, preserving server ownership checks.
