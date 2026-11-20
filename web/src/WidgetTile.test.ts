@@ -59,6 +59,28 @@ describe('donut legend filter controls', () => {
   });
 });
 
+describe('contextual filter controls', () => {
+  it('makes active channel filters removable within every affected widget', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: channelDonut, period: '12m', filters: { period: '12m', channel: 'Referral' },
+      onChannelSelect: () => {},
+    }));
+    expect(html).toContain('aria-label="Remove Referral filter from Traffic sources"');
+    expect(html).toContain('Referral');
+    expect(html).not.toContain('Not affected');
+  });
+
+  it('identifies channel filtering as irrelevant to Commerce performance', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: { ...channelDonut, title: 'Revenue over time', datasetKey: 'commerce', kind: 'line', metricKey: 'revenue', dimensionKey: 'month' },
+      period: '12m', filters: { period: '12m', channel: 'Referral' },
+    }));
+    expect(html).toContain('Not affected');
+    expect(html).toContain('commerce records have no channel attribution');
+    expect(html).not.toContain('Remove Referral filter from Revenue over time');
+  });
+});
+
 describe('trustworthy interpretations', () => {
   it('provides optional metric definitions and static-sample provenance beside exact data', () => {
     const html = renderToStaticMarkup(createElement(WidgetTile, {

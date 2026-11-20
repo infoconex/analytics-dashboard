@@ -91,6 +91,36 @@ async function assertNoDocumentOverflow(page: Page, width: number) {
 
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
 
+test('UX-16 filter cards disclose scope and permit in-place keyboard clearing', async ({ page }, testInfo) => {
+  await fixedDemoApi(page);
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const revenue = page.getByRole('article', { name: 'Revenue over time', exact: true });
+  const traffic = page.getByRole('article', { name: 'Traffic sources', exact: true });
+  await expect(revenue.getByLabel('Filter scope for Revenue over time')).toHaveCount(0);
+  await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
+  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
+  await expect(traffic.getByRole('button', { name: 'Remove Referral filter from Traffic sources' })).toBeVisible();
+  await expect(traffic.getByText(/Date range does not apply/)).toBeVisible();
+  await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' })).toBeVisible();
+  await expect(revenue.getByText(/commerce records have no channel attribution/)).toBeVisible();
+  await capture(page, testInfo, 'ux16-scoped-filter-cards');
+
+  const clearChannel = traffic.getByRole('button', { name: 'Remove Referral filter from Traffic sources' });
+  await clearChannel.focus();
+  await page.keyboard.press('Enter');
+  await expect(traffic.getByRole('heading', { name: 'Traffic sources' })).toBeFocused();
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
+  await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
+  await expect(revenue.getByText(/commerce records have no channel attribution/)).toHaveCount(0);
+
+  const clearDate = revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' });
+  await clearDate.focus();
+  await page.keyboard.press('Enter');
+  await expect(revenue.getByRole('heading', { name: 'Revenue over time' })).toBeFocused();
+  await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
+  await expect(revenue.getByLabel('Filter scope for Revenue over time')).toHaveCount(0);
+});
+
 test('UX-16 filtered channel keeps its color and revenue hover keeps units', async ({ page }, testInfo) => {
   await fixedDemoApi(page);
   await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
@@ -319,7 +349,7 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await expect(bar.getByRole('table', { name: /Orders by channel/ }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
   await capture(page, testInfo, '29-filtered-chart-insight-and-table');
   await expect(lastTable.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove Direct filter' }).focus();
+  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toHaveText('Showing all sample records.');
@@ -403,8 +433,8 @@ test('UX-5 deterministic task journey measures direct navigation and safe recove
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
   await expect(orders.locator('.chart-insight')).toContainText('Showing Direct: 1,530 orders');
   await expect(orders.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Remove Direct filter' })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await expect(page.getByRole('button', { name: 'Remove Direct filter', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(orders.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders');
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
@@ -542,7 +572,7 @@ test('UX-4g inventories rendered controls, their targets, contrast, focus and mo
   expect(selected.controls.find(item => item.name === 'Show all channels instead of Direct' && item.className.includes('donut-legend'))?.borderContrast)
     .toBeGreaterThanOrEqual(3);
   await capture(page, testInfo, '41-ux4g-selected-Direct-desktop');
-  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   expect((await focusedControl(page)).fullyUnobscured).toBe(true);
 
@@ -736,7 +766,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       await expect(bar.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
       await expect(page.getByRole('article', { name: 'Traffic sources', exact: true })
         .getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
-      await page.getByRole('button', { name: 'Remove Direct filter' }).focus();
+      await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).focus();
       await page.keyboard.press('Enter');
       await expect(channel).toBeFocused();
       await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toHaveText('Showing all sample records.');

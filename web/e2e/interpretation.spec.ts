@@ -111,7 +111,7 @@ test('SC-UX9-01/02/03/08: precise overview, context, filtering, exact values and
   await expect(channels).toContainText('Direct (1 of 5 fictional channels; no dates)');
   await expect(channels).toContainText('Showing Direct: 1,530 orders');
   await expect(chart).toContainText('Oct–Dec (3 fictional sample months');
-  await page.getByRole('button', { name: 'Remove Direct filter' }).focus();
+  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).focus();
   await page.keyboard.press('Enter'); steps.push('Remove channel filter and restore focus');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(channels).toContainText('Highest: Organic search, 1,820 orders');

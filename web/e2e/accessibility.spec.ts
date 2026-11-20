@@ -52,7 +52,7 @@ test('mobile navigation, forms and active filters remain operable without page o
   await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Dashboards' }).click();
   await page.getByRole('button', { name: /Open Business performance/ }).click();
   await page.getByRole('combobox', { name: /Marketing channel/ }).selectOption('Organic search');
-  await expect(page.getByRole('button', { name: /Remove Organic search filter/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Remove Organic search filter', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
