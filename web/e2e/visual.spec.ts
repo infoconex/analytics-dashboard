@@ -91,6 +91,36 @@ async function assertNoDocumentOverflow(page: Page, width: number) {
 
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
 
+test('UX-16 filter cards disclose scope and permit in-place keyboard clearing', async ({ page }, testInfo) => {
+  await fixedDemoApi(page);
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const revenue = page.getByRole('article', { name: 'Revenue over time', exact: true });
+  const traffic = page.getByRole('article', { name: 'Traffic sources', exact: true });
+  await expect(revenue.getByLabel('Filter scope for Revenue over time')).toHaveCount(0);
+  await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
+  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
+  await expect(traffic.getByRole('button', { name: 'Remove Referral filter from Traffic sources' })).toBeVisible();
+  await expect(traffic.getByText(/Date range does not apply/)).toBeVisible();
+  await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' })).toBeVisible();
+  await expect(revenue.getByText(/commerce records have no channel attribution/)).toBeVisible();
+  await capture(page, testInfo, 'ux16-scoped-filter-cards');
+
+  const clearChannel = traffic.getByRole('button', { name: 'Remove Referral filter from Traffic sources' });
+  await clearChannel.focus();
+  await page.keyboard.press('Enter');
+  await expect(traffic.getByRole('heading', { name: 'Traffic sources' })).toBeFocused();
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
+  await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
+  await expect(revenue.getByText(/commerce records have no channel attribution/)).toHaveCount(0);
+
+  const clearDate = revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' });
+  await clearDate.focus();
+  await page.keyboard.press('Enter');
+  await expect(revenue.getByRole('heading', { name: 'Revenue over time' })).toBeFocused();
+  await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
+  await expect(revenue.getByLabel('Filter scope for Revenue over time')).toHaveCount(0);
+});
+
 test('UX-16 filtered channel keeps its color and revenue hover keeps units', async ({ page }, testInfo) => {
   await fixedDemoApi(page);
   await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
