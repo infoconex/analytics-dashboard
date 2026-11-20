@@ -42,9 +42,8 @@ test('first arrival reaches and understands a sample insight, filters and recove
   await chart.getByText('View data table').click(); steps.push('Inspect exact data');
   await expect(chart.getByRole('table')).toBeVisible();
   await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m'); steps.push('Apply filter');
-  await expect(page.getByRole('button', { name: 'Remove Final 3 sample months filter', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove Final 3 sample months filter', exact: true }).focus();
-  await page.keyboard.press('Enter'); steps.push('Remove filter');
+  await expect(page.getByText('Reporting period: Final 3 sample months').first()).toBeVisible();
+  await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('12m'); steps.push('Change reporting period');
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toBeFocused();
   await expect(page.getByText('All sample records', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to dashboards' }).click(); steps.push('Return to catalog');
