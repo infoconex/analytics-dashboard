@@ -552,11 +552,14 @@ button:disabled { opacity:.6; }
 .chart-keyboard-hint strong { color:var(--color-heading); }
 .chart-label-options,.scatter-axis-titles { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-2) var(--space-3); }
 .chart-label-options button { min-height:36px; }
+.chart-label-options select { min-height:36px; border:1px solid var(--color-selected-border); border-radius:var(--radius-control); background:var(--color-surface); color:var(--color-heading); padding:var(--space-1) var(--space-2); }
+.donut-legend-button.keyboard-current { outline:3px solid var(--color-focus); outline-offset:2px; background:var(--color-surface-muted); }
 .scatter-axis-titles strong { color:var(--color-heading); }
 .chart-outside-label { fill:var(--color-heading); font-size:11px; }
 .chart-outside-label path { stroke:var(--color-muted); stroke-width:1.5; }
 @media (forced-colors:active) {
   .widget-chart-keyboard:focus-visible { outline:3px solid Highlight; }
+  .donut-legend-button.keyboard-current { outline:3px solid Highlight; }
   .chart-outside-label { fill:CanvasText; }
   .chart-outside-label path { stroke:CanvasText; }
 }
