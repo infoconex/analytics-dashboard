@@ -45,6 +45,16 @@ describe('native dashboard data tables', () => {
 });
 
 describe('donut legend filter controls', () => {
+  it('offers chart keyboard navigation and optional slice labels', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: channelDonut, period: '12m', filters: defaultConsumerFilters,
+      onChannelSelect: () => {},
+    }));
+    expect(html).toContain('widget-chart-keyboard');
+    expect(html).toContain('Use arrow keys to choose a category');
+    expect(html).toContain('Show slice labels');
+    expect(html).toContain('aria-pressed="false"');
+  });
   it('retains the selected channel identity in its accessible name', () => {
     const html = renderToStaticMarkup(createElement(WidgetTile, {
       widget: channelDonut, period: '12m',
