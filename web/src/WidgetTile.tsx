@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pencil, Trash2, TrendingUp, X } from 'lucide-react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
@@ -10,7 +11,7 @@ import { aggregateSampleMetric, sampleMetricContext } from './sampleInterpretati
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 import { buildHistogram, visualizationProblem } from './visualizationSemantics';
-import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip } from './chartPresentation';
+import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip, selectedPieLabels } from './chartPresentation';
 import { describeWidgetFilters } from './widgetFilterContext';
 
 const axisTick = { fontSize: 12, fill: '#566780' };
@@ -30,6 +31,8 @@ interface Props {
 }
 
 export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
+  const [keyboardIndex, setKeyboardIndex] = useState(0);
+  const [showOutsideLabels, setShowOutsideLabels] = useState(false);
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const scatter = widget.kind === 'scatter';
@@ -41,6 +44,8 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const tooltipValue = (value: unknown) => formatChartTooltip(Number(value), metric);
   const axisValue = (value: number) => formatChartAxis(value, metric);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
+  const chartKeyboardInteraction = channelInteraction && (widget.kind === 'donut' || widget.kind === 'pie' || widget.kind === 'bar');
+  const pieLabels = selectedPieLabels(data, axis, widget.metricKey);
   const selectedChannel = filters?.channel;
   const filterContext = filters && !editing ? describeWidgetFilters(widget.datasetKey, filters) : null;
   function clearLocalFilter() {
@@ -56,6 +61,20 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   function selectCategory(index: number) {
     const category = data[index]?.channel;
     if (channelInteraction && typeof category === 'string') onChannelSelect?.(category);
+  }
+  const activeKeyboardIndex = Math.min(keyboardIndex, Math.max(0, data.length - 1));
+  const keyboardCategory = String(data[activeKeyboardIndex]?.[axis] ?? '');
+  function onChartKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (!chartKeyboardInteraction || !data.length) return;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault(); setKeyboardIndex((activeKeyboardIndex + 1) % data.length);
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault(); setKeyboardIndex((activeKeyboardIndex + data.length - 1) % data.length);
+    } else if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault(); setKeyboardIndex(event.key === 'Home' ? 0 : data.length - 1);
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault(); selectCategory(activeKeyboardIndex);
+    }
   }
   const aggregate = aggregateSampleMetric(widget.datasetKey, widget.metricKey, data);
   const value = aggregate ?? 0;
@@ -136,11 +155,23 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </table>
         </div>
       ) : (
-        <div className="widget-chart" role="img" aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
+        <div className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
               <PieChart>
-                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" innerRadius={widget.kind === 'donut' ? '59%' : 0} outerRadius="80%" paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'}>
+                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" startAngle={90} endAngle={-270} innerRadius={widget.kind === 'donut' ? '59%' : 0} outerRadius={showOutsideLabels ? '63%' : '80%'} paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} labelLine={false} label={showOutsideLabels ? (props) => {
+                  const { cx, cy, midAngle, outerRadius, payload } = props;
+                  const category = String(payload?.[axis] ?? '');
+                  if (!pieLabels.has(category)) return null;
+                  const radians = -Number(midAngle) * Math.PI / 180;
+                  const radius = Number(outerRadius);
+                  const x1 = Number(cx) + (radius + 3) * Math.cos(radians);
+                  const y1 = Number(cy) + (radius + 3) * Math.sin(radians);
+                  const x2 = Number(cx) + (radius + 13) * Math.cos(radians);
+                  const y2 = Number(cy) + (radius + 13) * Math.sin(radians);
+                  const right = Math.cos(radians) >= 0;
+                  return <g className="chart-outside-label" aria-hidden="true"><path d={`M${x1},${y1} L${x2},${y2} L${x2 + (right ? 6 : -6)},${y2}`} fill="none" /><text x={x2 + (right ? 9 : -9)} y={y2} textAnchor={right ? 'start' : 'end'} dominantBaseline="central">{category}</text></g>;
+                } : false}>
                   {data.map(row => <Cell key={String(row[axis])} fill={colorForCategory(widget.datasetKey, String(row[axis]))} />)}
                 </Pie>
                 <Tooltip formatter={(value, name, item) => [tooltipValue(value), categoryTooltipLabel(String(item.payload?.[axis] ?? name), context.label)]} />
@@ -190,6 +221,9 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </ResponsiveContainer>
         </div>
       )}
+      {chartKeyboardInteraction && <p className="chart-keyboard-hint" aria-live="polite">Keyboard chart selection: <strong>{keyboardCategory}</strong>. Use arrow keys to choose a category; Enter or Space to {selectedChannel === keyboardCategory ? 'clear' : 'apply'} its filter.</p>}
+      {(widget.kind === 'donut' || widget.kind === 'pie') && <div className="chart-label-options"><button type="button" className="text-link" aria-pressed={showOutsideLabels} onClick={() => setShowOutsideLabels(current => !current)}>{showOutsideLabels ? 'Hide slice labels' : 'Show slice labels'}</button><span>{showOutsideLabels ? `Showing up to ${pieLabels.size} leader-line labels; hover or open the data table for all categories.` : 'Optional leader-line labels'}</span></div>}
+      {scatter && <div className="scatter-axis-titles"><span><strong>X-axis:</strong> {xMeasure}</span><span><strong>Y-axis:</strong> {context.label} ({context.unit})</span></div>}
       {insight && <p className="chart-insight"><strong>At a glance:</strong> {insight}</p>}
       {widget.kind === 'histogram' && <p className="chart-insight"><strong>Distribution:</strong> {data.length} observed fictional {widget.datasetKey === 'commerce' ? 'months' : 'channels'} grouped into {histogram.length} value {histogram.length === 1 ? 'range' : 'ranges'}. These are counts of source records, not an additional business metric.</p>}
       {scatter && <p className="chart-insight"><strong>Relationship:</strong> Each point pairs {xMeasure} and {context.label} from one original fictional {widget.datasetKey === 'commerce' ? 'month' : 'channel'}. A visual relationship alone cannot establish causation or statistical significance.</p>}

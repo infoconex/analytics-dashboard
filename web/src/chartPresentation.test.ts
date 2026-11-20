@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip } from './chartPresentation';
+import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip, selectedPieLabels } from './chartPresentation';
 import { commerce } from './demoData';
 import { buildHistogram } from './visualizationSemantics';
 
 describe('stable sample chart presentation', () => {
+  it('limits leader labels by share and value while preserving source order', () => {
+    const months = Array.from({ length: 12 }, (_, index) => ({ month: `M${index + 1}`, revenue: (index + 1) * 100 }));
+    const selected = selectedPieLabels(months, 'month', 'revenue');
+    expect(selected.size).toBe(5);
+    expect([...selected]).toEqual(['M12', 'M11', 'M10', 'M9', 'M8']);
+    expect(months[0]?.month).toBe('M1');
+    expect(selectedPieLabels([{ channel: 'A', sessions: 0 }], 'channel', 'sessions').size).toBe(0);
+  });
   it('names both category and measure in pie/donut tooltip labels', () => {
     expect(categoryTooltipLabel('Referral', 'Sessions')).toBe('Referral · Sessions');
     expect(formatChartTooltip(2820, 'sessions')).toBe('2,820');
