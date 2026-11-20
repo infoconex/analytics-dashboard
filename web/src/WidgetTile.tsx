@@ -10,12 +10,9 @@ import { aggregateSampleMetric, sampleMetricContext } from './sampleInterpretati
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 import { buildHistogram, visualizationProblem } from './visualizationSemantics';
+import { colorForCategory, formatChartAxis, formatChartTooltip } from './chartPresentation';
 
-const palette = ['#435bc9', '#087b75', '#99620a', '#714eaf', '#b03057'];
 const axisTick = { fontSize: 12, fill: '#566780' };
-const formatAxisValue = (value: number) => new Intl.NumberFormat('en-US', {
-  notation: 'compact', maximumFractionDigits: 1,
-}).format(value);
 
 interface Props {
   widget: DashboardWidget;
@@ -40,6 +37,8 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const problem = visualizationProblem(widget, data);
   const histogram = widget.kind === 'histogram' ? buildHistogram(data, widget.metricKey) : [];
   const xMeasure = metrics[widget.datasetKey]?.find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
+  const tooltipValue = (value: unknown) => formatChartTooltip(Number(value), metric);
+  const axisValue = (value: number) => formatChartAxis(value, metric);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
   const selectedChannel = filters?.channel;
   const insight = context && !['table', 'metric', 'histogram', 'scatter'].includes(widget.kind)
@@ -123,9 +122,9 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
               <PieChart>
                 <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" innerRadius={widget.kind === 'donut' ? '59%' : 0} outerRadius="80%" paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'}>
-                  {data.map((row, index) => <Cell key={String(row[axis])} fill={palette[index % palette.length]} />)}
+                  {data.map(row => <Cell key={String(row[axis])} fill={colorForCategory(widget.datasetKey, String(row[axis]))} />)}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={value => [tooltipValue(value), context.label]} />
               </PieChart>
             ) : widget.kind === 'histogram' ? (
               <BarChart data={histogram} margin={{ top: 8, right: 8, left: 0, bottom: 5 }}>
@@ -138,25 +137,25 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
             ) : widget.kind === 'scatter' ? (
               <ScatterChart data={data} margin={{ top: 8, right: 14, left: 0, bottom: 8 }}>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" />
-                <XAxis type="number" dataKey={widget.dimensionKey} name={xMeasure} tick={axisTick} tickFormatter={formatAxisValue} />
-                <YAxis type="number" dataKey={metric} name={context.label} tick={axisTick} tickFormatter={formatAxisValue} width={52} />
-                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                <XAxis type="number" dataKey={widget.dimensionKey} name={xMeasure} tick={axisTick} tickFormatter={value => formatChartAxis(value, widget.dimensionKey)} />
+                <YAxis type="number" dataKey={metric} name={context.label} tick={axisTick} tickFormatter={axisValue} width={52} />
+                <Tooltip cursor={{ strokeDasharray: '3 3' }} formatter={(value, name) => [formatChartTooltip(Number(value), name === xMeasure ? widget.dimensionKey : metric), name]} />
                 <Scatter name={`${xMeasure} and ${context.label}`} data={data} fill="#6179f4" isAnimationActive={false} />
               </ScatterChart>
             ) : widget.kind === 'bar' ? (
               <BarChart data={data} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
-                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={formatAxisValue} width={52} />
-                <Tooltip cursor={{ fill: '#f2f5fd' }} />
+                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
+                <Tooltip cursor={{ fill: '#f2f5fd' }} formatter={value => [tooltipValue(value), context.label]} />
                 <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} />
               </BarChart>
             ) : widget.kind === 'line' ? (
               <LineChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
-                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={formatAxisValue} width={52} />
-                <Tooltip />
+                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
+                <Tooltip formatter={value => [tooltipValue(value), context.label]} />
                 <Line type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={3} dot={false} activeDot={{ r: 5 }} />
               </LineChart>
             ) : (
@@ -164,8 +163,8 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                 <defs><linearGradient id={`area-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.27} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0.01} /></linearGradient></defs>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
-                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={formatAxisValue} width={52} />
-                <Tooltip />
+                <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
+                <Tooltip formatter={value => [tooltipValue(value), context.label]} />
                 <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.7} fill={`url(#area-${widget.id})`} />
               </AreaChart>
             )}
@@ -186,9 +185,9 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
         {onShareInsight && <button type="button" className="text-link insight-share" onClick={() => onShareInsight(widget)}>Share this insight’s context</button>}
       </details>
       {(widget.kind === 'donut' || widget.kind === 'pie') && <div className="donut-legend">
-        {data.map((row, index) => channelInteraction
-          ? <button type="button" className="donut-legend-button" key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: palette[index % palette.length] }} />{row[axis]}</button>
-          : <span key={String(row[axis])}><i style={{ background: palette[index % palette.length] }} />{row[axis]}</span>)}
+        {data.map(row => channelInteraction
+          ? <button type="button" className="donut-legend-button" key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}</button>
+          : <span key={String(row[axis])}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}</span>)}
       </div>}
       {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut' || widget.kind === 'pie') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter, or use the keyboard-accessible channel selector or data table.</p>}
       {widget.kind !== 'table' && <details className="chart-data">
