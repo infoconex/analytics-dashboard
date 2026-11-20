@@ -1,1 +1,47 @@
-aW1wb3J0IHsgZGVzY3JpYmUsIGV4cGVjdCwgaXQgfSBmcm9tICd2aXRlc3QnOwppbXBvcnQgeyBjYXRlZ29yeVRvb2x0aXBMYWJlbCwgY29sb3JGb3JDYXRlZ29yeSwgZm9ybWF0Q2hhcnRBeGlzLCBmb3JtYXRDaGFydFRvb2x0aXAsIHNlbGVjdGVkUGllTGFiZWxzIH0gZnJvbSAnLi9jaGFydFByZXNlbnRhdGlvbic7CmltcG9ydCB7IGNvbW1lcmNlIH0gZnJvbSAnLi9kZW1vRGF0YSc7CmltcG9ydCB7IGJ1aWxkSGlzdG9ncmFtIH0gZnJvbSAnLi92aXN1YWxpemF0aW9uU2VtYW50aWNzJzsKCmRlc2NyaWJlKCdzdGFibGUgc2FtcGxlIGNoYXJ0IHByZXNlbnRhdGlvbicsICgpID0+IHsKICBpdCgnbGltaXRzIGxlYWRlciBsYWJlbHMgYnkgc2hhcmUgYW5kIHZhbHVlIHdoaWxlIHByZXNlcnZpbmcgc291cmNlIG9yZGVyJywgKCkgPT4gewogICAgY29uc3QgbW9udGhzID0gQXJyYXkuZnJvbSh7IGxlbmd0aDogMTIgfSwgKF8sIGluZGV4KSA9PiAoeyBtb250aDogYE0ke2luZGV4ICsgMX1gLCByZXZlbnVlOiAoaW5kZXggKyAxKSAqIDEwMCB9KSk7CiAgICBjb25zdCBzZWxlY3RlZCA9IHNlbGVjdGVkUGllTGFiZWxzKG1vbnRocywgJ21vbnRoJywgJ3JldmVudWUnKTsKICAgIGV4cGVjdChzZWxlY3RlZC5zaXplKS50b0JlKDUpOwogICAgZXhwZWN0KFsuLi5zZWxlY3RlZF0pLnRvRXF1YWwoWydNMTInLCAnTTExJywgJ00xMCcsICdNOScsICdNOCddKTsKICAgIGV4cGVjdChtb250aHNbMF0/Lm1vbnRoKS50b0JlKCdNMScpOwogICAgZXhwZWN0KHNlbGVjdGVkUGllTGFiZWxzKG1vbnRocywgJ21vbnRoJywgJ3JldmVudWUnLCA4KS5zaXplKS50b0JlKDgpOwogICAgZXhwZWN0KHNlbGVjdGVkUGllTGFiZWxzKG1vbnRocywgJ21vbnRoJywgJ3JldmVudWUnLCAxMikuc2l6ZSkudG9CZSgxMSk7IC8vIFRpbnkgc2xpY2VzIGFyZSBzdGlsbCBvbWl0dGVkLgogICAgZXhwZWN0KHNlbGVjdGVkUGllTGFiZWxzKFt7IGNoYW5uZWw6ICdBJywgc2Vzc2lvbnM6IDAgfV0sICdjaGFubmVsJywgJ3Nlc3Npb25zJykuc2l6ZSkudG9CZSgwKTsKICB9KTsKICBpdCgnbmFtZXMgYm90aCBjYXRlZ29yeSBhbmQgbWVhc3VyZSBpbiBwaWUvZG9udXQgdG9vbHRpcCBsYWJlbHMnLCAoKSA9PiB7CiAgICBleHBlY3QoY2F0ZWdvcnlUb29sdGlwTGFiZWwoJ1JlZmVycmFsJywgJ1Nlc3Npb25zJykpLnRvQmUoJ1JlZmVycmFsIMK3IFNlc3Npb25zJyk7CiAgICBleHBlY3QoZm9ybWF0Q2hhcnRUb29sdGlwKDI4MjAsICdzZXNzaW9ucycpKS50b0JlKCcyLDgyMCcpOwogIH0pOwogIGl0KCdwcmVzZXJ2ZXMgY2hhbm5lbCBpZGVudGl0eSBhY3Jvc3MgZmlsdGVyZWQgYW5kIGZ1bGwgZGF0YXNldHMnLCAoKSA9PiB7CiAgICBleHBlY3QoY29sb3JGb3JDYXRlZ29yeSgnY2hhbm5lbHMnLCAnUmVmZXJyYWwnKSkudG9CZSgnI2IwMzA1NycpOwogICAgZXhwZWN0KGNvbG9yRm9yQ2F0ZWdvcnkoJ2NoYW5uZWxzJywgJ09yZ2FuaWMgc2VhcmNoJykpLnRvQmUoJyM0MzViYzknKTsKICAgIGV4cGVjdChjb2xvckZvckNhdGVnb3J5KCdjaGFubmVscycsICdSZWZlcnJhbCcpKS5ub3QudG9CZShjb2xvckZvckNhdGVnb3J5KCdjaGFubmVscycsICdPcmdhbmljIHNlYXJjaCcpKTsKICB9KTsKCiAgaXQoJ2Fzc2lnbnMgc3RhYmxlIGNvbG9ycyB0byBjaHJvbm9sb2dpY2FsIG1vbnRocycsICgpID0+IHsKICAgIGV4cGVjdChjb2xvckZvckNhdGVnb3J5KCdjb21tZXJjZScsICdKYW4nKSkudG9CZShjb2xvckZvckNhdGVnb3J5KCdjb21tZXJjZScsICdKYW4nKSk7CiAgICBleHBlY3QoY29sb3JGb3JDYXRlZ29yeSgnY29tbWVyY2UnLCAnSmFuJykpLm5vdC50b0JlKGNvbG9yRm9yQ2F0ZWdvcnkoJ2NvbW1lcmNlJywgJ0ZlYicpKTsKICB9KTsKCiAgaXQoJ2Zvcm1hdHMgY3VycmVuY3ksIG51bWVyaWMgY291bnRzLCBhbmQgcGVyY2VudGFnZXMgY29uc2lzdGVudGx5JywgKCkgPT4gewogICAgZXhwZWN0KGZvcm1hdENoYXJ0VG9vbHRpcCgxODQwMCwgJ3JldmVudWUnKSkudG9CZSgnJDE4LDQwMCcpOwogICAgZXhwZWN0KGZvcm1hdENoYXJ0VG9vbHRpcCgyODIwLCAnc2Vzc2lvbnMnKSkudG9CZSgnMiw4MjAnKTsKICAgIGV4cGVjdChmb3JtYXRDaGFydFRvb2x0aXAoNC44LCAnY29udmVyc2lvbicpKS50b0JlKCc0LjglJyk7CiAgICBleHBlY3QoZm9ybWF0Q2hhcnRBeGlzKDE4NDAwLCAncmV2ZW51ZScpKS50b0JlKCckMTguNEsnKTsKICAgIGV4cGVjdChmb3JtYXRDaGFydEF4aXMoMjgyMCwgJ3Nlc3Npb25zJykpLnRvQmUoJzIuOEsnKTsKICAgIGV4cGVjdChmb3JtYXRDaGFydEF4aXMoNC44LCAnY29udmVyc2lvbicpKS50b0JlKCc0LjglJyk7CiAgfSk7CgogIGl0KCdrZWVwcyBoaXN0b2dyYW0gY291bnRzIGFzIGZyZXF1ZW5jaWVzIHdoaWxlIGxhYmVsaW5nIHJldmVudWUgYnVja2V0IHJhbmdlcyBhcyBVU0QnLCAoKSA9PiB7CiAgICBjb25zdCBiaW5zID0gYnVpbGRIaXN0b2dyYW0oY29tbWVyY2UsICdyZXZlbnVlJyk7CiAgICBleHBlY3QoYmlucy5tYXAoYmluID0+IGJpbi5jb3VudCkpLnRvRXF1YWwoWzQsIDMsIDMsIDJdKTsKICAgIGV4cGVjdChiaW5zWzBdPy5sYWJlbCkudG9CZSgnJDE4LjRL4oCTJDI1Ljg4SycpOwogICAgZXhwZWN0KGJ1aWxkSGlzdG9ncmFtKFt7IHJldmVudWU6IDE4NDAwIH1dLCAncmV2ZW51ZScpWzBdPy5sYWJlbCkudG9CZSgnJDE4LjRLJyk7CiAgfSk7Cn0pOwo=
+import { describe, expect, it } from 'vitest';
+import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip, selectedPieLabels } from './chartPresentation';
+import { commerce } from './demoData';
+import { buildHistogram } from './visualizationSemantics';
+
+describe('stable sample chart presentation', () => {
+  it('limits leader labels by share and value while preserving source order', () => {
+    const months = Array.from({ length: 12 }, (_, index) => ({ month: `M${index + 1}`, revenue: (index + 1) * 100 }));
+    const selected = selectedPieLabels(months, 'month', 'revenue');
+    expect(selected.size).toBe(5);
+    expect([...selected]).toEqual(['M12', 'M11', 'M10', 'M9', 'M8']);
+    expect(months[0]?.month).toBe('M1');
+    expect(selectedPieLabels(months, 'month', 'revenue', 8).size).toBe(8);
+    expect(selectedPieLabels(months, 'month', 'revenue', 12).size).toBe(11); // Tiny slices are still omitted.
+    expect(selectedPieLabels([{ channel: 'A', sessions: 0 }], 'channel', 'sessions').size).toBe(0);
+  });
+  it('names both category and measure in pie/donut tooltip labels', () => {
+    expect(categoryTooltipLabel('Referral', 'Sessions')).toBe('Referral · Sessions');
+    expect(formatChartTooltip(2820, 'sessions')).toBe('2,820');
+  });
+  it('preserves channel identity across filtered and full datasets', () => {
+    expect(colorForCategory('channels', 'Referral')).toBe('#b03057');
+    expect(colorForCategory('channels', 'Organic search')).toBe('#435bc9');
+    expect(colorForCategory('channels', 'Referral')).not.toBe(colorForCategory('channels', 'Organic search'));
+  });
+
+  it('assigns stable colors to chronological months', () => {
+    expect(colorForCategory('commerce', 'Jan')).toBe(colorForCategory('commerce', 'Jan'));
+    expect(colorForCategory('commerce', 'Jan')).not.toBe(colorForCategory('commerce', 'Feb'));
+  });
+
+  it('formats currency, numeric counts, and percentages consistently', () => {
+    expect(formatChartTooltip(18400, 'revenue')).toBe('$18,400');
+    expect(formatChartTooltip(2820, 'sessions')).toBe('2,820');
+    expect(formatChartTooltip(4.8, 'conversion')).toBe('4.8%');
+    expect(formatChartAxis(18400, 'revenue')).toBe('$18.4K');
+    expect(formatChartAxis(2820, 'sessions')).toBe('2.8K');
+    expect(formatChartAxis(4.8, 'conversion')).toBe('4.8%');
+  });
+
+  it('keeps histogram counts as frequencies while labeling revenue bucket ranges as USD', () => {
+    const bins = buildHistogram(commerce, 'revenue');
+    expect(bins.map(bin => bin.count)).toEqual([4, 3, 3, 2]);
+    expect(bins[0]?.label).toBe('$18.4K–$25.88K');
+    expect(buildHistogram([{ revenue: 18400 }], 'revenue')[0]?.label).toBe('$18.4K');
+  });
+});
