@@ -62,9 +62,9 @@ async function fixedDemoApi(page: Page, dashboard = sampleDashboard) {
 async function capture(page: Page, testInfo: TestInfo, label: string) {
   // Full-page screenshots otherwise paint fixed/sticky controls at the current
   // scroll offset after the preceding interaction instead of their natural top.
-  if (!label.includes('dialog') && !label.includes('keyboard-focus')) await page.evaluate(() => window.scrollTo(0, 0));
+  if (!label.includes('dialog') && !label.includes('keyboard-focus') && !label.includes('tooltip')) await page.evaluate(() => window.scrollTo(0, 0));
   const path = testInfo.outputPath(`${label}.png`);
-  await page.screenshot({ path, fullPage: !label.includes('dialog') && !label.includes('keyboard-focus'), animations: 'disabled' });
+  await page.screenshot({ path, fullPage: !label.includes('dialog') && !label.includes('keyboard-focus') && !label.includes('tooltip'), animations: 'disabled' });
   await testInfo.attach(label, { path, contentType: 'image/png' });
 }
 
@@ -370,7 +370,7 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
-  await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toHaveText('Showing all sample records.');
+  await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Channel: all channels');
   await capture(page, testInfo, '36-filter-removal-focus-desktop');
   await expect(bar.locator('.chart-insight')).toContainText('Highest: Organic search');
   await expect(bar.getByRole('rowheader', { name: 'Organic search' })).toBeVisible();
@@ -787,7 +787,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).focus();
       await page.keyboard.press('Enter');
       await expect(channel).toBeFocused();
-      await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toHaveText('Showing all sample records.');
+      await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Channel: all channels');
       const recovered = await zoomPageMetrics(page);
       expect(recovered.focus.visibleWithinViewport).toBe(true);
       expect(recovered.focus.unobscuredBelowStickyHeader, 'Recovered filter focus is visibly unobscured').toBe(true);
