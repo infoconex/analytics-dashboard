@@ -96,10 +96,10 @@ test('UX-16 filtered channel keeps its color and revenue hover keeps units', asy
   await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
   const donut = page.getByRole('article', { name: 'Traffic sources', exact: true });
   await expect(donut.locator('.recharts-pie-sector')).toHaveCount(5);
-  await expect(donut.locator('.recharts-pie-sector').nth(4)).toHaveAttribute('fill', '#b03057');
+  await expect(donut.locator('.recharts-pie-sector').nth(4).locator('path')).toHaveAttribute('fill', '#b03057');
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
   await expect(donut.locator('.recharts-pie-sector')).toHaveCount(1);
-  await expect(donut.locator('.recharts-pie-sector').first()).toHaveAttribute('fill', '#b03057');
+  await expect(donut.locator('.recharts-pie-sector').first().locator('path')).toHaveAttribute('fill', '#b03057');
   await expect(donut.getByRole('button', { name: 'Show all channels instead of Referral' }).locator('i'))
     .toHaveCSS('background-color', 'rgb(176, 48, 87)');
   await capture(page, testInfo, 'ux16-referral-stable-color');
