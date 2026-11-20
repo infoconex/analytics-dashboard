@@ -209,7 +209,7 @@ test('documented host example loads the real development-seeded API without writ
   await expect(frame.getByText('Northstar Commerce', { exact: false }).first()).toBeVisible();
   await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
   await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await frame.getByRole('button', { name: 'Reset filters' }).click();
+  await frame.getByRole('button', { name: 'Clear channel filter' }).click();
   await expect(frame.getByRole('article', { name: 'Channel details' }).locator('tbody tr')).toHaveCount(5);
   expect(mutations).toEqual([]);
 });
