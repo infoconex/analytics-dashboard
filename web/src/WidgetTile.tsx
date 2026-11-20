@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pencil, Trash2, TrendingUp, X } from 'lucide-react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
@@ -35,6 +35,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const [chartFocused, setChartFocused] = useState(false);
   const [showOutsideLabels, setShowOutsideLabels] = useState(false);
   const [maxOutsideLabels, setMaxOutsideLabels] = useState<5 | 8 | 12>(5);
+  const pointerFocusRef = useRef(false);
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const scatter = widget.kind === 'scatter';
@@ -157,7 +158,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </table>
         </div>
       ) : (
-        <div className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}${chartKeyboardInteraction && chartFocused && widget.kind === 'bar' ? ` keyboard-bar-${activeKeyboardIndex}` : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onFocus={chartKeyboardInteraction ? () => { setKeyboardIndex(0); setChartFocused(true); } : undefined} onBlur={chartKeyboardInteraction ? () => setChartFocused(false) : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
+        <div className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}${chartKeyboardInteraction && chartFocused && widget.kind === 'bar' ? ` keyboard-bar-${activeKeyboardIndex}` : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onPointerDownCapture={chartKeyboardInteraction ? () => { pointerFocusRef.current = true; } : undefined} onPointerUpCapture={chartKeyboardInteraction ? () => { pointerFocusRef.current = false; } : undefined} onPointerCancel={chartKeyboardInteraction ? () => { pointerFocusRef.current = false; } : undefined} onFocus={chartKeyboardInteraction ? event => { if (event.target === event.currentTarget && !pointerFocusRef.current) { setKeyboardIndex(0); setChartFocused(true); } } : undefined} onBlur={chartKeyboardInteraction ? event => { if (event.target === event.currentTarget) setChartFocused(false); } : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
               <PieChart accessibilityLayer={false}>
