@@ -7,13 +7,13 @@ describe('per-widget filter context for independent fictional datasets', () => {
   it('shows the selected channel on channel widgets, not the unrelated date range', () => {
     expect(describeWidgetFilters('channels', selected)).toEqual({
       applied: { kind: 'channel', label: 'Organic search' },
-      unaffected: 'Date range does not apply; marketing channel records have no dates.',
+      unaffected: null,
     });
   });
 
-  it('shows the selected date range on commerce widgets, not the unrelated channel', () => {
+  it('treats the reporting period as context on commerce widgets', () => {
     expect(describeWidgetFilters('commerce', selected)).toEqual({
-      applied: { kind: 'period', label: 'Final 3 sample months' },
+      applied: null,
       unaffected: 'Organic search does not apply; commerce records have no channel attribution.',
     });
   });
@@ -25,7 +25,7 @@ describe('per-widget filter context for independent fictional datasets', () => {
     });
     expect(describeWidgetFilters('channels', { period: '6m', channel: null })).toEqual({
       applied: null,
-      unaffected: 'Date range does not apply; marketing channel records have no dates.',
+      unaffected: null,
     });
   });
 

@@ -88,7 +88,7 @@ test('host integration preserves context, filtering, keyboard exit and standalon
   await capture(page, info, 'ux6-03-host-embedded-filter');
   await frame.getByRole('button', { name: 'Remove Direct filter', exact: true }).press('Enter');
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
-  await expect(frame.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('all sample records');
+  await expect(frame.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Channel: all channels');
 
   // Follow the real host-to-frame tab sequence. Calling iframe.focus() first
   // starts at the frame boundary and the next Tab may *leave* the iframe.
@@ -209,7 +209,7 @@ test('documented host example loads the real development-seeded API without writ
   await expect(frame.getByText('Northstar Commerce', { exact: false }).first()).toBeVisible();
   await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
   await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await frame.getByRole('button', { name: 'Reset filters' }).click();
+  await frame.getByRole('button', { name: 'Clear channel filter' }).click();
   await expect(frame.getByRole('article', { name: 'Channel details' }).locator('tbody tr')).toHaveCount(5);
   expect(mutations).toEqual([]);
 });

@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { CalendarDays, Filter, RotateCcw, X } from 'lucide-react';
 import { channels } from './demoData';
-import { defaultConsumerFilters } from './consumerFilters';
 import type { ConsumerFilters, ConsumerPeriod } from './consumerFilters';
 
 interface Props {
@@ -20,7 +19,7 @@ const periods: Record<ConsumerPeriod, string> = {
 export function DashboardFiltersBar({ filters, onChange, hasCommerce, hasChannels }: Props) {
   const dateActive = hasCommerce && filters.period !== '12m';
   const channelActive = hasChannels && Boolean(filters.channel);
-  const activeCount = Number(dateActive) + Number(channelActive);
+  const activeCount = Number(channelActive);
   const dateSelect = useRef<HTMLSelectElement>(null);
   const channelSelect = useRef<HTMLSelectElement>(null);
   const pendingFocus = useRef<'date' | 'channel' | null>(null);
@@ -45,8 +44,8 @@ export function DashboardFiltersBar({ filters, onChange, hasCommerce, hasChannel
 
   return <section className="consumer-filters" aria-label="Dashboard filters">
     <div className="consumer-filters-header">
-      <div className="consumer-filters-title"><Filter size={17} aria-hidden="true" /><div><strong>Explore this dashboard</strong><span>Filter the sample data. Your view changes instantly, without changing the saved dashboard.</span></div></div>
-      {activeCount > 0 && <button type="button" className="reset-filters" onClick={() => changeFromTransientAction({ ...defaultConsumerFilters }, channelActive ? 'channel' : 'date')}><RotateCcw size={14} aria-hidden="true" /> Reset filters</button>}
+      <div className="consumer-filters-title"><Filter size={17} aria-hidden="true" /><div><strong>Explore this dashboard</strong><span>Choose a reporting period and optionally filter by channel. Your view does not change the saved dashboard.</span></div></div>
+      {activeCount > 0 && <button type="button" className="reset-filters" onClick={() => changeFromTransientAction({ ...filters, channel: null }, 'channel')}><RotateCcw size={14} aria-hidden="true" /> Clear channel filter</button>}
     </div>
     {(hasCommerce || hasChannels) && <div className="consumer-controls">
       {hasCommerce && <label className="consumer-filter-field"><span><CalendarDays size={14} aria-hidden="true" /> Date range <small>Commerce only</small></span>
@@ -60,12 +59,12 @@ export function DashboardFiltersBar({ filters, onChange, hasCommerce, hasChannel
     </div>}
     <div className="consumer-filter-bottom">
       <div className="active-filters" aria-label="Active filters">
-        <span className="filter-status-label">{activeCount ? `${activeCount} active ${activeCount === 1 ? 'filter' : 'filters'}` : 'All sample records'}</span>
-        {dateActive && <button type="button" className="filter-chip" aria-label={`Remove ${periods[filters.period]} filter`} onClick={() => changeFromTransientAction({ ...filters, period: '12m' }, 'date')}>{periods[filters.period]} <X size={14} aria-hidden="true" /></button>}
+        {dateActive && <span className="filter-status-label"><CalendarDays size={14} aria-hidden="true" /> Reporting period: {periods[filters.period]}</span>}
+        <span className="filter-status-label">{activeCount ? '1 active channel filter' : filters.period === '12m' ? 'All sample records' : 'All channels'}</span>
         {channelActive && <button type="button" className="filter-chip" aria-label={`Remove ${filters.channel} filter`} onClick={() => changeFromTransientAction({ ...filters, channel: null }, 'channel')}>{filters.channel} <X size={14} aria-hidden="true" /></button>}
       </div>
-      <span className="filter-scope-note">Monthly date ranges don’t affect channel totals; channels have no dates in this sample.</span>
+      <span className="filter-scope-note">Reporting periods apply to commerce only; marketing channels have no dates in this sample.</span>
     </div>
-    <div className="sr-only" role="status" aria-label="Dashboard filter changes" aria-live="polite" aria-atomic="true">{activeCount ? `Showing ${dateActive ? periods[filters.period] : 'all months'} and ${channelActive ? filters.channel : 'all channels'}.` : 'Showing all sample records.'}</div>
+    <div className="sr-only" role="status" aria-label="Dashboard filter changes" aria-live="polite" aria-atomic="true">{`Reporting period: ${periods[filters.period]}. Channel: ${channelActive ? filters.channel : 'all channels'}.`}</div>
   </section>;
 }

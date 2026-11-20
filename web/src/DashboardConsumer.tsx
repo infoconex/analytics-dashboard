@@ -36,13 +36,12 @@ export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStar
     {!editing && <details className="consumer-guidance"><summary>How to explore this dashboard</summary>
       <ul><li>Start with a visualization's title and “At a glance” insight when available.</li>
         <li>Choose “View data table” below a chart to see exact fictional values and use keyboard-accessible controls.</li>
-        <li>Change the date range or marketing channel when available. Remove an active filter to return to the full sample view.</li>
+        <li>Choose the reporting period at the top of the dashboard. Select a marketing channel when available; remove its filter to see all channels.</li>
         <li>{canEdit ? 'For advanced composition, choose Edit dashboard above. Viewing and filtering never save changes.' : 'This is a read-only view; exploring and filtering never change the saved dashboard.'}</li></ul>
     </details>}
     {(hasCommerce || hasChannels) && <DashboardFiltersBar filters={filters} onChange={changeFilters} hasCommerce={hasCommerce} hasChannels={hasChannels} />}
     <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onEdit={onEdit} onAdd={onAdd} onChange={onChange}
       onChannelSelect={channel => changeFilters({ ...filters, channel: toggleChannel(filters.channel, channel) })}
-      onPeriodClear={() => changeFilters({ ...filters, period: '12m' })}
       onShareInsight={onShareInsight ? widget => onShareInsight(widget, filters) : undefined} />
   </>;
 }

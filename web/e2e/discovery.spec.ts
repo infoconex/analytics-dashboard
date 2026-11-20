@@ -42,10 +42,9 @@ test('first arrival reaches and understands a sample insight, filters and recove
   await chart.getByText('View data table').click(); steps.push('Inspect exact data');
   await expect(chart.getByRole('table')).toBeVisible();
   await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m'); steps.push('Apply filter');
-  await expect(page.getByRole('button', { name: 'Remove Final 3 sample months filter', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove Final 3 sample months filter', exact: true }).focus();
-  await page.keyboard.press('Enter'); steps.push('Remove filter');
-  await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toBeFocused();
+  await expect(page.getByText('Reporting period: Final 3 sample months').first()).toBeVisible();
+  await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('12m'); steps.push('Change reporting period');
+  await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
   await expect(page.getByText('All sample records', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to dashboards' }).click(); steps.push('Return to catalog');
   await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeVisible();
@@ -53,7 +52,7 @@ test('first arrival reaches and understands a sample insight, filters and recove
   await writeFile(info.outputPath('ux8-first-value-task.json'), JSON.stringify({
     environment: { runnerOS: process.platform, chrome: page.context().browser()?.version(), viewport: page.viewportSize() },
     outcome: 'completed', deliberateStepsToAnswer: 2, totalRecordedSteps: steps.length, steps,
-    scriptErrors: failures, focusAtAnswer: 'Revenue over time heading', focusAfterFilterReset: 'Date range selector',
+    scriptErrors: failures, focusAtAnswer: 'Revenue over time heading', focusAfterPeriodSelection: 'Native date range selector (focus not asserted)',
     limitations: 'Scripted measurements, not human usability or screen-reader spoken output',
   }, null, 2));
 });
