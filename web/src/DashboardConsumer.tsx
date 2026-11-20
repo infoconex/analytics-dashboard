@@ -42,6 +42,7 @@ export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStar
     {(hasCommerce || hasChannels) && <DashboardFiltersBar filters={filters} onChange={changeFilters} hasCommerce={hasCommerce} hasChannels={hasChannels} />}
     <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onEdit={onEdit} onAdd={onAdd} onChange={onChange}
       onChannelSelect={channel => changeFilters({ ...filters, channel: toggleChannel(filters.channel, channel) })}
+      onPeriodClear={() => changeFilters({ ...filters, period: '12m' })}
       onShareInsight={onShareInsight ? widget => onShareInsight(widget, filters) : undefined} />
   </>;
 }
