@@ -1,6 +1,7 @@
 import { dimensions, metrics } from './demoData';
 import { sampleMetricContext } from './sampleInterpretation';
 import type { DashboardWidget, DatasetKey, WidgetKind } from './model';
+import { formatChartAxis } from './chartPresentation';
 
 type Row = Record<string, string | number>;
 
@@ -11,10 +12,6 @@ export interface HistogramBin {
   label: string;
 }
 
-const formatBucket = (value: number) => Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 2, notation: Math.abs(value) >= 1_000 ? 'compact' : 'standard',
-}).format(value);
-
 /** An observed-value distribution; never infer timestamps or additional records. */
 export function buildHistogram(rows: readonly Row[], metric: string, bucketCount = 4): HistogramBin[] {
   const values = rows.map(row => row[metric]);
@@ -23,12 +20,12 @@ export function buildHistogram(rows: readonly Row[], metric: string, bucketCount
   const numeric = values as number[];
   const minimum = Math.min(...numeric);
   const maximum = Math.max(...numeric);
-  if (minimum === maximum) return [{ lower: minimum, upper: maximum, count: numeric.length, label: formatBucket(minimum) }];
+  if (minimum === maximum) return [{ lower: minimum, upper: maximum, count: numeric.length, label: formatChartAxis(minimum, metric) }];
   const size = (maximum - minimum) / bucketCount;
   const bins = Array.from({ length: bucketCount }, (_, index) => {
     const lower = minimum + index * size;
     const upper = index === bucketCount - 1 ? maximum : minimum + (index + 1) * size;
-    return { lower, upper, count: 0, label: `${formatBucket(lower)}–${formatBucket(upper)}` };
+    return { lower, upper, count: 0, label: `${formatChartAxis(lower, metric)}–${formatChartAxis(upper, metric)}` };
   });
   for (const value of numeric) {
     const index = Math.min(bucketCount - 1, Math.floor((value - minimum) / size));

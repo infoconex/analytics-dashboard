@@ -91,6 +91,25 @@ async function assertNoDocumentOverflow(page: Page, width: number) {
 
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
 
+test('UX-16 filtered channel keeps its color and revenue hover keeps units', async ({ page }, testInfo) => {
+  await fixedDemoApi(page);
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const donut = page.getByRole('article', { name: 'Traffic sources', exact: true });
+  await expect(donut.locator('.recharts-pie-sector')).toHaveCount(5);
+  await expect(donut.locator('.recharts-pie-sector').nth(4).locator('path')).toHaveAttribute('fill', '#b03057');
+  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
+  await expect(donut.locator('.recharts-pie-sector')).toHaveCount(1);
+  await expect(donut.locator('.recharts-pie-sector').first().locator('path')).toHaveAttribute('fill', '#b03057');
+  await expect(donut.getByRole('button', { name: 'Show all channels instead of Referral' }).locator('i'))
+    .toHaveCSS('background-color', 'rgb(176, 48, 87)');
+  await capture(page, testInfo, 'ux16-referral-stable-color');
+
+  const revenue = page.getByRole('article', { name: 'Revenue over time', exact: true });
+  await revenue.locator('.recharts-area').hover({ force: true });
+  await expect(revenue.locator('.recharts-tooltip-wrapper')).toContainText('$');
+  await capture(page, testInfo, 'ux16-revenue-tooltip-currency');
+});
+
 test('desktop UX journey captures all primary states using fixed sample data', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await fixedDemoApi(page);

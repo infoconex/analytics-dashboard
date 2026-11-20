@@ -55,6 +55,7 @@ describe('donut legend filter controls', () => {
     expect(html).toContain('aria-label="Show all channels instead of Direct"');
     expect(html).toContain('aria-pressed="true"');
     expect(html).not.toContain('aria-label="Show all channels"');
+    expect(html).toContain('background:#087b75');
   });
 });
 
