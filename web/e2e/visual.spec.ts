@@ -349,7 +349,7 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await expect(bar.getByRole('table', { name: /Orders by channel/ }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
   await capture(page, testInfo, '29-filtered-chart-insight-and-table');
   await expect(lastTable.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove Direct filter' }).focus();
+  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toHaveText('Showing all sample records.');
@@ -433,8 +433,8 @@ test('UX-5 deterministic task journey measures direct navigation and safe recove
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
   await expect(orders.locator('.chart-insight')).toContainText('Showing Direct: 1,530 orders');
   await expect(orders.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Remove Direct filter' })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await expect(page.getByRole('button', { name: 'Remove Direct filter', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(orders.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders');
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
@@ -572,7 +572,7 @@ test('UX-4g inventories rendered controls, their targets, contrast, focus and mo
   expect(selected.controls.find(item => item.name === 'Show all channels instead of Direct' && item.className.includes('donut-legend'))?.borderContrast)
     .toBeGreaterThanOrEqual(3);
   await capture(page, testInfo, '41-ux4g-selected-Direct-desktop');
-  await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   expect((await focusedControl(page)).fullyUnobscured).toBe(true);
 
@@ -766,7 +766,7 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
       await expect(bar.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
       await expect(page.getByRole('article', { name: 'Traffic sources', exact: true })
         .getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
-      await page.getByRole('button', { name: 'Remove Direct filter' }).focus();
+      await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).focus();
       await page.keyboard.press('Enter');
       await expect(channel).toBeFocused();
       await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toHaveText('Showing all sample records.');
