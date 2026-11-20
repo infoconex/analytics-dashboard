@@ -75,13 +75,28 @@ describe('contextual filter controls', () => {
       widget: { ...channelDonut, title: 'Revenue over time', datasetKey: 'commerce', kind: 'line', metricKey: 'revenue', dimensionKey: 'month' },
       period: '12m', filters: { period: '12m', channel: 'Referral' },
     }));
-    expect(html).toContain('Not affected');
+    expect(html).toContain('Filter not applied');
     expect(html).toContain('commerce records have no channel attribution');
     expect(html).not.toContain('Remove Referral filter from Revenue over time');
   });
 });
 
 describe('trustworthy interpretations', () => {
+  it('shows date coverage but never a removable date filter', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: { ...channelDonut, title: 'Revenue over time', datasetKey: 'commerce', kind: 'line', metricKey: 'revenue', dimensionKey: 'month' },
+      period: '3m', filters: { period: '3m', channel: null },
+    }));
+    expect(html).toContain('Oct–Dec');
+    expect(html).not.toContain('widget-filter-clear');
+  });
+
+  it('offers filter removal inside What this means', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: channelDonut, period: '12m', filters: { period: '12m', channel: 'Referral' }, onChannelSelect: () => {},
+    }));
+    expect(html).toContain('Remove Referral from What this means in Traffic sources');
+  });
   it('provides optional metric definitions and static-sample provenance beside exact data', () => {
     const html = renderToStaticMarkup(createElement(WidgetTile, {
       widget: channelDonut, period: '12m', filters: defaultConsumerFilters,
