@@ -32,7 +32,9 @@ interface Props {
 
 export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
   const [keyboardIndex, setKeyboardIndex] = useState(0);
+  const [chartFocused, setChartFocused] = useState(false);
   const [showOutsideLabels, setShowOutsideLabels] = useState(false);
+  const [maxOutsideLabels, setMaxOutsideLabels] = useState<5 | 8 | 12>(5);
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const scatter = widget.kind === 'scatter';
@@ -45,7 +47,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const axisValue = (value: number) => formatChartAxis(value, metric);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
   const chartKeyboardInteraction = channelInteraction && (widget.kind === 'donut' || widget.kind === 'pie' || widget.kind === 'bar');
-  const pieLabels = selectedPieLabels(data, axis, widget.metricKey);
+  const pieLabels = selectedPieLabels(data, axis, widget.metricKey, maxOutsideLabels);
   const selectedChannel = filters?.channel;
   const filterContext = filters && !editing ? describeWidgetFilters(widget.datasetKey, filters) : null;
   function clearLocalFilter() {
@@ -67,9 +69,9 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   function onChartKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (!chartKeyboardInteraction || !data.length) return;
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-      event.preventDefault(); setKeyboardIndex((activeKeyboardIndex + 1) % data.length);
+      event.preventDefault(); setKeyboardIndex(Math.min(activeKeyboardIndex + 1, data.length - 1));
     } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-      event.preventDefault(); setKeyboardIndex((activeKeyboardIndex + data.length - 1) % data.length);
+      event.preventDefault(); setKeyboardIndex(Math.max(activeKeyboardIndex - 1, 0));
     } else if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault(); setKeyboardIndex(event.key === 'Home' ? 0 : data.length - 1);
     } else if (event.key === 'Enter' || event.key === ' ') {
@@ -155,11 +157,11 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </table>
         </div>
       ) : (
-        <div className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
+        <div className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onFocus={chartKeyboardInteraction ? () => { setKeyboardIndex(0); setChartFocused(true); } : undefined} onBlur={chartKeyboardInteraction ? () => setChartFocused(false) : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
-              <PieChart>
-                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" startAngle={90} endAngle={-270} innerRadius={widget.kind === 'donut' ? '59%' : 0} outerRadius={showOutsideLabels ? '63%' : '80%'} paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} labelLine={false} label={showOutsideLabels ? (props) => {
+              <PieChart accessibilityLayer={false}>
+                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" startAngle={90} endAngle={-270} innerRadius={widget.kind === 'donut' ? (showOutsideLabels ? '51%' : '59%') : 0} outerRadius={showOutsideLabels ? '72%' : '80%'} paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} labelLine={false} label={showOutsideLabels ? (props) => {
                   const { cx, cy, midAngle, outerRadius, payload } = props;
                   const category = String(payload?.[axis] ?? '');
                   if (!pieLabels.has(category)) return null;
@@ -172,7 +174,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                   const right = Math.cos(radians) >= 0;
                   return <g className="chart-outside-label" aria-hidden="true"><path d={`M${x1},${y1} L${x2},${y2} L${x2 + (right ? 6 : -6)},${y2}`} fill="none" /><text x={x2 + (right ? 9 : -9)} y={y2} textAnchor={right ? 'start' : 'end'} dominantBaseline="central">{category}</text></g>;
                 } : false}>
-                  {data.map(row => <Cell key={String(row[axis])} fill={colorForCategory(widget.datasetKey, String(row[axis]))} />)}
+                  {data.map((row, index) => <Cell key={String(row[axis])} fill={colorForCategory(widget.datasetKey, String(row[axis]))} stroke={chartFocused && chartKeyboardInteraction && index === activeKeyboardIndex ? '#172c55' : 'none'} strokeWidth={chartFocused && index === activeKeyboardIndex ? 4 : 0} />)}
                 </Pie>
                 <Tooltip formatter={(value, name, item) => [tooltipValue(value), categoryTooltipLabel(String(item.payload?.[axis] ?? name), context.label)]} />
               </PieChart>
@@ -193,12 +195,12 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                 <Scatter name={`${xMeasure} and ${context.label}`} data={data} fill="#6179f4" isAnimationActive={false} />
               </ScatterChart>
             ) : widget.kind === 'bar' ? (
-              <BarChart data={data} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
+              <BarChart data={data} accessibilityLayer={false} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
                 <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
                 <Tooltip cursor={{ fill: '#f2f5fd' }} formatter={value => [tooltipValue(value), context.label]} />
-                <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} />
+                <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'}>{data.map((row, index) => <Cell key={String(row[axis])} stroke={chartFocused && chartKeyboardInteraction && index === activeKeyboardIndex ? '#172c55' : 'none'} strokeWidth={chartFocused && index === activeKeyboardIndex ? 4 : 0} />)}</Bar>
               </BarChart>
             ) : widget.kind === 'line' ? (
               <LineChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
@@ -221,8 +223,8 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </ResponsiveContainer>
         </div>
       )}
-      {chartKeyboardInteraction && <p className="chart-keyboard-hint" aria-live="polite">Keyboard chart selection: <strong>{keyboardCategory}</strong>. Use arrow keys to choose a category; Enter or Space to {selectedChannel === keyboardCategory ? 'clear' : 'apply'} its filter.</p>}
-      {(widget.kind === 'donut' || widget.kind === 'pie') && <div className="chart-label-options"><button type="button" className="text-link" aria-pressed={showOutsideLabels} onClick={() => setShowOutsideLabels(current => !current)}>{showOutsideLabels ? 'Hide slice labels' : 'Show slice labels'}</button><span>{showOutsideLabels ? `Showing up to ${pieLabels.size} leader-line labels; hover or open the data table for all categories.` : 'Optional leader-line labels'}</span></div>}
+      {chartKeyboardInteraction && chartFocused && <p className="chart-keyboard-hint" aria-live="polite">Keyboard chart selection: <strong>{keyboardCategory}</strong>. Use arrow keys to choose a category; Enter or Space to {selectedChannel === keyboardCategory ? 'clear' : 'apply'} its filter.</p>}
+      {(widget.kind === 'donut' || widget.kind === 'pie') && <div className="chart-label-options"><button type="button" className="text-link" aria-pressed={showOutsideLabels} onClick={() => setShowOutsideLabels(current => !current)}>{showOutsideLabels ? 'Hide slice labels' : 'Show slice labels'}</button>{showOutsideLabels ? <><label htmlFor={`slice-label-count-${widget.id}`}>Maximum labels</label><select id={`slice-label-count-${widget.id}`} value={maxOutsideLabels} onChange={event => setMaxOutsideLabels(Number(event.target.value) as 5 | 8 | 12)}><option value={5}>5</option><option value={8}>8</option><option value={12}>12</option></select><span>Showing {pieLabels.size} leader-line labels where space permits; hover or open the data table for all categories.</span></> : <span>Optional leader-line labels</span>}</div>}
       {scatter && <div className="scatter-axis-titles"><span><strong>X-axis:</strong> {xMeasure}</span><span><strong>Y-axis:</strong> {context.label} ({context.unit})</span></div>}
       {insight && <p className="chart-insight"><strong>At a glance:</strong> {insight}</p>}
       {widget.kind === 'histogram' && <p className="chart-insight"><strong>Distribution:</strong> {data.length} observed fictional {widget.datasetKey === 'commerce' ? 'months' : 'channels'} grouped into {histogram.length} value {histogram.length === 1 ? 'range' : 'ranges'}. These are counts of source records, not an additional business metric.</p>}
@@ -240,7 +242,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
       </details>
       {(widget.kind === 'donut' || widget.kind === 'pie') && <div className="donut-legend">
         {data.map(row => channelInteraction
-          ? <button type="button" className="donut-legend-button" key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}{selectedChannel === row.channel && <X size={13} aria-hidden="true" />}</button>
+          ? <button type="button" className={`donut-legend-button${chartFocused && data[activeKeyboardIndex]?.[axis] === row[axis] ? ' keyboard-current' : ''}`} key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}{selectedChannel === row.channel && <X size={13} aria-hidden="true" />}</button>
           : <span key={String(row[axis])}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}</span>)}
       </div>}
       {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut' || widget.kind === 'pie') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter, or use the keyboard-accessible channel selector or data table.</p>}
