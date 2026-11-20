@@ -200,7 +200,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
                 <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
                 <Tooltip cursor={{ fill: '#f2f5fd' }} formatter={value => [tooltipValue(value), context.label]} />
-                <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'}>{data.map((row, index) => <Cell key={String(row[axis])} onClick={() => selectCategory(index)} stroke={chartFocused && chartKeyboardInteraction && index === activeKeyboardIndex ? '#172c55' : 'none'} strokeWidth={chartFocused && index === activeKeyboardIndex ? 4 : 0} />)}</Bar>
+                <Bar dataKey={metric} radius={[6, 6, 0, 0]} maxBarSize={35} fill="#6179f4" cursor={channelInteraction ? 'pointer' : 'default'}>{data.map((row, index) => <Cell key={String(row[axis])} onClick={() => selectCategory(index)} stroke={chartFocused && chartKeyboardInteraction && index === activeKeyboardIndex ? '#172c55' : 'none'} strokeWidth={chartFocused && index === activeKeyboardIndex ? 4 : 0} />)}</Bar>
               </BarChart>
             ) : widget.kind === 'line' ? (
               <LineChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
