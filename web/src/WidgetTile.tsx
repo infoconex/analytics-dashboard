@@ -10,7 +10,7 @@ import { aggregateSampleMetric, sampleMetricContext } from './sampleInterpretati
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 import { buildHistogram, visualizationProblem } from './visualizationSemantics';
-import { colorForCategory, formatChartAxis, formatChartTooltip } from './chartPresentation';
+import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip } from './chartPresentation';
 import { describeWidgetFilters } from './widgetFilterContext';
 
 const axisTick = { fontSize: 12, fill: '#566780' };
@@ -25,12 +25,11 @@ interface Props {
   onRemove?: (id: string) => void;
   filters?: ConsumerFilters;
   onChannelSelect?: (channel: string) => void;
-  onPeriodClear?: () => void;
   onReturnToIndex?: () => void;
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onPeriodClear, onReturnToIndex, onShareInsight }: Props) {
+export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const scatter = widget.kind === 'scatter';
@@ -49,8 +48,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
     // It remains in this exact visualization at high zoom and inside iframes.
     const heading = document.getElementById(headingId);
     heading?.focus({ preventScroll: true });
-    if (filterContext?.applied?.kind === 'channel' && filters?.channel) onChannelSelect?.(filters.channel);
-    if (filterContext?.applied?.kind === 'period') onPeriodClear?.();
+    if (filterContext?.applied && filters?.channel) onChannelSelect?.(filters.channel);
   }
   const insight = context && !['table', 'metric', 'histogram', 'scatter'].includes(widget.kind)
     ? chartInsight(widget.dimensionKey, widget.metricKey, data)
@@ -105,12 +103,12 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
 
       {filterContext && (filterContext.applied || filterContext.unaffected) && <div className="widget-filter-context" aria-label={`Filter scope for ${widget.title}`}>
         {filterContext.applied && <div className="widget-filter-applied">
-          <span className="widget-filter-status">Filtered</span>
-          {((filterContext.applied.kind === 'channel' && onChannelSelect) || (filterContext.applied.kind === 'period' && onPeriodClear))
+          <span className="widget-filter-status">Filter applied</span>
+          {(onChannelSelect)
             ? <button type="button" className="widget-filter-clear" onClick={clearLocalFilter} aria-label={`Remove ${filterContext.applied.label} filter from ${widget.title}`}>{filterContext.applied.label}<X size={14} aria-hidden="true" /></button>
             : <span className="widget-filter-label">{filterContext.applied.label}</span>}
         </div>}
-        {filterContext.unaffected && <span className="widget-filter-unaffected"><strong>Not affected:</strong> {filterContext.unaffected}</span>}
+        {filterContext.unaffected && <span className="widget-filter-unaffected"><strong>Filter not applied:</strong> {filterContext.unaffected}</span>}
       </div>}
 
       {widget.kind === 'metric' ? (
@@ -145,7 +143,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                 <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" innerRadius={widget.kind === 'donut' ? '59%' : 0} outerRadius="80%" paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'}>
                   {data.map(row => <Cell key={String(row[axis])} fill={colorForCategory(widget.datasetKey, String(row[axis]))} />)}
                 </Pie>
-                <Tooltip formatter={value => [tooltipValue(value), context.label]} />
+                <Tooltip formatter={(value, name, item) => [tooltipValue(value), categoryTooltipLabel(String(item.payload?.[axis] ?? name), context.label)]} />
               </PieChart>
             ) : widget.kind === 'histogram' ? (
               <BarChart data={histogram} margin={{ top: 8, right: 8, left: 0, bottom: 5 }}>
@@ -197,6 +195,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
       {scatter && <p className="chart-insight"><strong>Relationship:</strong> Each point pairs {xMeasure} and {context.label} from one original fictional {widget.datasetKey === 'commerce' ? 'month' : 'channel'}. A visual relationship alone cannot establish causation or statistical significance.</p>}
       <details className="insight-context">
         <summary>What this means</summary>
+        {filterContext?.applied && onChannelSelect && <div className="insight-active-filter"><span>Applied channel filter:</span> <button type="button" className="widget-filter-clear" aria-label={`Remove ${filterContext.applied.label} from What this means in ${widget.title}`} onClick={clearLocalFilter}>{filterContext.applied.label}<X size={14} aria-hidden="true" /></button></div>}
         <dl>
           <div><dt>Metric</dt><dd>{context.label} · {context.unit}. {context.meaning}</dd></div>
           <div><dt>Scope</dt><dd>{context.coverage}. {context.filterScope}</dd></div>
@@ -207,7 +206,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
       </details>
       {(widget.kind === 'donut' || widget.kind === 'pie') && <div className="donut-legend">
         {data.map(row => channelInteraction
-          ? <button type="button" className="donut-legend-button" key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}</button>
+          ? <button type="button" className="donut-legend-button" key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}{selectedChannel === row.channel && <X size={13} aria-hidden="true" />}</button>
           : <span key={String(row[axis])}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}</span>)}
       </div>}
       {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut' || widget.kind === 'pie') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter, or use the keyboard-accessible channel selector or data table.</p>}
