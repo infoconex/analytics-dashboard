@@ -554,6 +554,11 @@ button:disabled { opacity:.6; }
 .chart-label-options button { min-height:36px; }
 .chart-label-options select { min-height:36px; border:1px solid var(--color-selected-border); border-radius:var(--radius-control); background:var(--color-surface); color:var(--color-heading); padding:var(--space-1) var(--space-2); }
 .donut-legend-button.keyboard-current { outline:3px solid var(--color-focus); outline-offset:2px; background:var(--color-surface-muted); }
+.widget-chart-keyboard.keyboard-bar-0 .recharts-bar-rectangle:nth-child(1) path,
+.widget-chart-keyboard.keyboard-bar-1 .recharts-bar-rectangle:nth-child(2) path,
+.widget-chart-keyboard.keyboard-bar-2 .recharts-bar-rectangle:nth-child(3) path,
+.widget-chart-keyboard.keyboard-bar-3 .recharts-bar-rectangle:nth-child(4) path,
+.widget-chart-keyboard.keyboard-bar-4 .recharts-bar-rectangle:nth-child(5) path { stroke:var(--color-focus); stroke-width:4px; }
 .scatter-axis-titles strong { color:var(--color-heading); }
 .chart-outside-label { fill:var(--color-heading); font-size:11px; }
 .chart-outside-label path { stroke:var(--color-muted); stroke-width:1.5; }
