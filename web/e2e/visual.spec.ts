@@ -91,6 +91,60 @@ async function assertNoDocumentOverflow(page: Page, width: number) {
 
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
 
+test('UX-18 chart regions filter with arrow keys and Enter, retaining focus and data isolation', async ({ page }, info) => {
+  await fixedDemoApi(page);
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const donut = page.getByRole('article', { name: 'Traffic sources', exact: true });
+  const donutPlot = donut.getByRole('group', { name: /Traffic sources donut chart/ });
+  await donutPlot.focus();
+  await expect(donutPlot).toBeFocused();
+  for (let index = 0; index < 4; index++) await page.keyboard.press('ArrowRight');
+  await expect(donut.getByText('Keyboard chart selection:')).toContainText('Referral');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Referral');
+  await expect(donutPlot).toBeFocused();
+  await expect(donut.locator('.recharts-pie-sector')).toHaveCount(1);
+  await expect(page.getByRole('article', { name: 'Revenue over time' }).locator('.recharts-area')).toBeVisible();
+  await capture(page, info, 'ux18-keyboard-donut-filter');
+
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
+  const bar = page.getByRole('article', { name: 'Orders by channel', exact: true });
+  const barPlot = bar.getByRole('group', { name: /Orders by channel bar chart/ });
+  await barPlot.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press(' ');
+  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
+});
+
+test('UX-18 optional leader-line labels are capped and scatter axes have explicit titles', async ({ page }, info) => {
+  const dashboard: Dashboard = { ...sampleDashboard, widgets: [...sampleDashboard.widgets, {
+    id: '806e3063-18e9-4ddb-887a-229198c6dd07', title: 'Monthly revenue pie',
+    kind: 'pie', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month',
+  }, {
+    id: '806e3063-18e9-4ddb-887a-229198c6dd08', title: 'Revenue and orders',
+    kind: 'scatter', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'orders',
+  }] };
+  await fixedDemoApi(page, dashboard);
+  await page.goto(`/#/organization/northstar/dashboard/${dashboard.id}`);
+  const pie = page.getByRole('article', { name: 'Monthly revenue pie', exact: true });
+  await expect(pie.locator('.recharts-pie-sector')).toHaveCount(12);
+  await expect(pie.locator('.chart-outside-label')).toHaveCount(0);
+  await pie.getByRole('button', { name: 'Show slice labels' }).click();
+  await expect(pie.getByRole('button', { name: 'Hide slice labels' })).toHaveAttribute('aria-pressed', 'true');
+  const count = await pie.locator('.chart-outside-label').count();
+  expect(count).toBeGreaterThan(0);
+  expect(count).toBeLessThanOrEqual(5);
+  await expect(pie.getByText(/leader-line labels/)).toBeVisible();
+  const scatter = page.getByRole('article', { name: 'Revenue and orders', exact: true });
+  await expect(scatter.locator('.scatter-axis-titles')).toContainText('X-axis: Orders');
+  await expect(scatter.locator('.scatter-axis-titles')).toContainText('Y-axis: Revenue (USD)');
+  await capture(page, info, 'ux18-slice-labels-scatter-axes');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertNoDocumentOverflow(page, 390);
+  await capture(page, info, 'ux18-slice-labels-mobile');
+});
+
 test('UX-17 names hovered donut categories and clears selected channels from interpretation', async ({ page }, testInfo) => {
   await fixedDemoApi(page);
   await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
