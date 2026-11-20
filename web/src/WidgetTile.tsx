@@ -1,4 +1,4 @@
-import { Pencil, Trash2, TrendingUp } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, X } from 'lucide-react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
   Pie, PieChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis,
@@ -11,6 +11,7 @@ import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 import { buildHistogram, visualizationProblem } from './visualizationSemantics';
 import { colorForCategory, formatChartAxis, formatChartTooltip } from './chartPresentation';
+import { describeWidgetFilters } from './widgetFilterContext';
 
 const axisTick = { fontSize: 12, fill: '#566780' };
 
@@ -24,11 +25,12 @@ interface Props {
   onRemove?: (id: string) => void;
   filters?: ConsumerFilters;
   onChannelSelect?: (channel: string) => void;
+  onPeriodClear?: () => void;
   onReturnToIndex?: () => void;
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
+export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onPeriodClear, onReturnToIndex, onShareInsight }: Props) {
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const scatter = widget.kind === 'scatter';
@@ -41,6 +43,15 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const axisValue = (value: number) => formatChartAxis(value, metric);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
   const selectedChannel = filters?.channel;
+  const filterContext = filters && !editing ? describeWidgetFilters(widget.datasetKey, filters) : null;
+  function clearLocalFilter() {
+    // Move focus to a persistent heading before the transient chip disappears.
+    // It remains in this exact visualization at high zoom and inside iframes.
+    const heading = document.getElementById(headingId);
+    heading?.focus({ preventScroll: true });
+    if (filterContext?.applied?.kind === 'channel' && filters?.channel) onChannelSelect?.(filters.channel);
+    if (filterContext?.applied?.kind === 'period') onPeriodClear?.();
+  }
   const insight = context && !['table', 'metric', 'histogram', 'scatter'].includes(widget.kind)
     ? chartInsight(widget.dimensionKey, widget.metricKey, data)
     : null;
@@ -91,6 +102,16 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </div>
         ) : null}
       </div>
+
+      {filterContext && (filterContext.applied || filterContext.unaffected) && <div className="widget-filter-context" aria-label={`Filter scope for ${widget.title}`}>
+        {filterContext.applied && <div className="widget-filter-applied">
+          <span className="widget-filter-status">Filtered</span>
+          {((filterContext.applied.kind === 'channel' && onChannelSelect) || (filterContext.applied.kind === 'period' && onPeriodClear))
+            ? <button type="button" className="widget-filter-clear" onClick={clearLocalFilter} aria-label={`Remove ${filterContext.applied.label} filter from ${widget.title}`}>{filterContext.applied.label}<X size={14} aria-hidden="true" /></button>
+            : <span className="widget-filter-label">{filterContext.applied.label}</span>}
+        </div>}
+        {filterContext.unaffected && <span className="widget-filter-unaffected"><strong>Not affected:</strong> {filterContext.unaffected}</span>}
+      </div>}
 
       {widget.kind === 'metric' ? (
         <div className="metric-content">
