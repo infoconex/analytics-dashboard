@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { colorForCategory, formatChartAxis, formatChartTooltip } from './chartPresentation';
+import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip } from './chartPresentation';
 import { commerce } from './demoData';
 import { buildHistogram } from './visualizationSemantics';
 
 describe('stable sample chart presentation', () => {
+  it('names both category and measure in pie/donut tooltip labels', () => {
+    expect(categoryTooltipLabel('Referral', 'Sessions')).toBe('Referral · Sessions');
+    expect(formatChartTooltip(2820, 'sessions')).toBe('2,820');
+  });
   it('preserves channel identity across filtered and full datasets', () => {
     expect(colorForCategory('channels', 'Referral')).toBe('#b03057');
     expect(colorForCategory('channels', 'Organic search')).toBe('#435bc9');
