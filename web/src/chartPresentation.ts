@@ -27,9 +27,12 @@ export function categoryTooltipLabel(category: string, measure: string): string 
 export function selectedPieLabels(rows: Record<string, string | number>[], dimension: string, measure: string, maxLabels = 5): ReadonlySet<string> {
   const total = rows.reduce((sum, row) => sum + Math.max(0, Number(row[measure]) || 0), 0);
   if (total <= 0) return new Set();
+  // Keep small slices unlabelled at the default, but permit more categories on request.
+  // The count remains a ceiling, not a promise to fit labels in every viewport.
+  const minimumShare = maxLabels <= 5 ? 0.07 : maxLabels <= 8 ? 0.04 : 0.025;
   return new Set(rows.map((row, index) => ({
     name: String(row[dimension]), value: Math.max(0, Number(row[measure]) || 0), index,
-  })).filter(row => row.value / total >= 0.07)
+  })).filter(row => row.value / total >= minimumShare)
     .sort((left, right) => right.value - left.value || left.index - right.index)
     .slice(0, Math.max(0, maxLabels)).map(row => row.name));
 }
