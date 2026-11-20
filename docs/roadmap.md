@@ -24,6 +24,8 @@ Each implementation issue owns one PR. Split an increment further when necessary
 
 ## UI/UX product experience workstream — current priority
 
+**UX-18 — [Issue #66](https://github.com/infoconex/analytics-dashboard/issues/66):** Combined owner-selected keyboard bar/pie/donut selection, clockwise pie/donut ordering, optional bounded outside labels and explicit scatter axis titles. [Manual review and deferred gates](ux18-chart-interaction-review.md). No new data/security/embedding contract.
+
 **UX-17 — [Issue #64](https://github.com/infoconex/analytics-dashboard/issues/64):** Category-aware pie/donut tooltips, reporting-period context separated from interactive channel filters, and consistent filter removal. See [owner decisions and walkthrough](ux17-visualization-interactions.md). Independent usability validation remains deferred.
 
 **Principle:** simple by default, powerful when needed. The product is designed around dashboard consumers, creators, organization administrators, and embedding developers; avoid copying Kibana's complexity. The evolved React/Vite/Recharts shell, token-based styles, dialogs, sample dashboards, role-aware CRUD and automated browser scenarios are foundations, **not** evidence of validated human usability, real assistive-technology use or WCAG conformance.
