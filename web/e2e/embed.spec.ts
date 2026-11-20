@@ -83,10 +83,10 @@ test('host integration preserves context, filtering, keyboard exit and standalon
   await capture(page, info, 'ux6-02-host-embedded-desktop');
 
   await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
-  await expect(frame.getByRole('button', { name: 'Remove Direct filter' })).toBeVisible();
+  await expect(frame.getByRole('button', { name: 'Remove Direct filter', exact: true })).toBeVisible();
   await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
   await capture(page, info, 'ux6-03-host-embedded-filter');
-  await frame.getByRole('button', { name: 'Remove Direct filter' }).press('Enter');
+  await frame.getByRole('button', { name: 'Remove Direct filter', exact: true }).press('Enter');
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(frame.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('all sample records');
 
@@ -174,7 +174,7 @@ test('host and embed survive mobile, narrow reflow and forced colors with access
     await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();
     await assertNoOverflow(page);
     await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
-    await expect(page.getByRole('button', { name: 'Remove Direct filter' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Remove Direct filter', exact: true })).toBeVisible();
     await capture(page, info, label);
   }
   await page.emulateMedia({ forcedColors: 'active' });
@@ -265,7 +265,7 @@ test('real Chromium tab zoom at 200% and 400% retains embedded navigation and fi
       await expect(page.getByRole('button', { name: '12. Channel details — regional' })).toBeFocused();
       await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
       await expect(page.getByRole('row', { name: /Direct.*1,530/ }).last()).toBeVisible();
-      await page.getByRole('button', { name: 'Remove Direct filter' }).click();
+      await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).click();
       await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
       evidence.push({ factor, actual, metrics: observed, chromium: context.browser()?.version(), os: process.platform });
     }
