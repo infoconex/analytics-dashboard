@@ -212,7 +212,8 @@ export default function App() {
         acceptedHash.current = window.location.hash;
         setView({ page: 'overview' });
       }
-      setError('');
+      // A late identity response must not erase a newer dashboard-list failure.
+      setError(previous => previous.startsWith('We could not check dashboards.') ? previous : '');
       if (items.length === 0) setLoading(false);
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : 'Unable to load your workspace.');
@@ -460,7 +461,8 @@ export default function App() {
           {loading ? <div className="loading-state" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /> Loading workspace…</div>
             : organizations.length === 0 ? <EmptyState title={error ? 'Workspace unavailable' : 'No organizations available'} message={error ? 'We could not load your organization and identity. Retry when the service is available.' : 'Your identity has no assigned organization. Ask your platform administrator for access.'} />
             : dashboardLoadFailed && (view.page === 'overview' || view.page === 'dashboards')
-              ? <EmptyState title="Dashboards temporarily unavailable" message="We could not check the dashboards in this organization. This is not an empty dashboard list. Retry to load an authorized view." />
+              ? <div><EmptyState title="Dashboards temporarily unavailable" message="We could not check the dashboards in this organization. This is not an empty dashboard list. Retry to load an authorized view." />
+                {!error && <button type="button" className="button button-light recovery-action" onClick={() => { focusOnNavigation.current = true; void loadDashboards(); }}>Retry</button>}</div>
             : view.page === 'explore' ? <ExplorePage key={organizationId} canEdit={canEdit} onCreate={createFromExplore} />
             : view.page === 'sources' ? <DataSourcesPage key={organizationId} organizationId={organizationId} organizationName={organization?.name ?? 'Workspace'} canEdit={canEdit} onNotice={setToast} />
             : view.page === 'settings' ? <SettingsPage organization={organization} />
