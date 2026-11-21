@@ -37,6 +37,9 @@ export interface DashboardWidget {
   datasetKey: DatasetKey;
   metricKey: string;
   dimensionKey: string;
+  /** Optional saved editor layout. Legacy widgets inherit sensible defaults. */
+  columns?: number | null;
+  height?: number | null;
 }
 
 export interface Dashboard {
