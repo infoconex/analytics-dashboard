@@ -572,16 +572,24 @@ test('UX-26 circular charts fit their own widget without clipping at mobile, tab
       await expect(chart.locator('.chart-outside-label')).toHaveCount(0);
       await expect(widget.getByText(/Outside labels do not fit this chart size/)).toBeVisible();
     }
-    const chartBounds = await chart.boundingBox();
-    expect(chartBounds).not.toBeNull();
-    const labels = await chart.locator('.chart-outside-label').all();
-    for (const label of labels) {
-      const box = await label.boundingBox();
-      expect(box).not.toBeNull();
-      expect(box!.x).toBeGreaterThanOrEqual(chartBounds!.x - 2);
-      expect(box!.x + box!.width).toBeLessThanOrEqual(chartBounds!.x + chartBounds!.width + 2);
-      expect(box!.y).toBeGreaterThanOrEqual(chartBounds!.y - 2);
-      expect(box!.y + box!.height).toBeLessThanOrEqual(chartBounds!.y + chartBounds!.height + 2);
+    // Read DOM geometry atomically. ResizeObserver can legitimately rebuild
+    // an SVG label between Playwright .all() and boundingBox() awaits.
+    const labelGeometry = await chart.evaluate(element => {
+      const frame = element.getBoundingClientRect();
+      return [...element.querySelectorAll('.chart-outside-label')].map(label => {
+        const box = label.getBoundingClientRect();
+        return {
+          left: box.left - frame.left, right: box.right - frame.left,
+          top: box.top - frame.top, bottom: box.bottom - frame.top,
+          width: frame.width, height: frame.height,
+        };
+      });
+    });
+    for (const box of labelGeometry) {
+      expect(box.left).toBeGreaterThanOrEqual(-2);
+      expect(box.right).toBeLessThanOrEqual(box.width + 2);
+      expect(box.top).toBeGreaterThanOrEqual(-2);
+      expect(box.bottom).toBeLessThanOrEqual(box.height + 2);
     }
     await expect(widget.locator('.chart-data summary')).toContainText('View data table');
     await widget.scrollIntoViewIfNeeded();
@@ -632,7 +640,14 @@ test('UX-26 mobile edit size controls, Undo/Redo, persisted layout and pie previ
   await expect(page.getByRole('button', { name: 'Add saved visualization' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
   const a11y = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-  expect(a11y.violations.map(item => item.id)).toEqual([]);
+  // Report the exact node and measured contrast on failure so the visual
+  // defect can be fixed, not ignored or excluded from the WCAG audit.
+  expect(a11y.violations.map(item => ({
+    id: item.id,
+    nodes: item.nodes.map(node => ({
+      html: node.html, failureSummary: node.failureSummary,
+    })),
+  }))).toEqual([]);
 });
 
 test('UX-26 nine visualization kinds retain sensible mixed-dashboard bounds at all target viewports', async ({ page }, info) => {
