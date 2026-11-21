@@ -16,6 +16,7 @@ test('dashboard creation dialog contains keyboard focus and returns it to the op
   await expect(dialog.getByRole('button', { name: 'Create dashboard' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
+  page.once('dialog', dialog => dialog.accept());
   await page.keyboard.press('Escape');
 
   await expect(dialog).toHaveCount(0);
