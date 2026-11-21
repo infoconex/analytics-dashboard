@@ -36,7 +36,8 @@ async function createEmpty(page: Page, name: string) {
   await expect(page.getByRole('heading', { name: 'Start with your first visualization' })).toBeVisible();
   await expect(page.getByText('Your empty dashboard is already saved')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-  await expect(page.getByText('No changes yet')).toBeVisible();
+  // In clean empty composition, the saved-state explanation is in the first-action panel.
+  await expect(page.getByText('Your empty dashboard is already saved')).toBeVisible();
 }
 
 test('UX-28 new dashboards enter saved, empty composition and progress through preview and explicit save at five widths', async ({ page }, info) => {
