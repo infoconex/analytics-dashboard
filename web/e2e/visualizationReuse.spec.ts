@@ -67,6 +67,8 @@ async function fixture(page: Page, role: 'owner' | 'viewer' = 'owner') {
         return route.fulfill({ json: library[index] });
       }
       if (method === 'DELETE' && role === 'owner') {
+        const expected = Number(new URL(route.request().url()).searchParams.get('expectedRevision'));
+        if (expected !== library[index]!.revision) return route.fulfill({ status: 409 });
         library = library.filter(item => item.id !== id);
         return route.fulfill({ status: 204 });
       }
@@ -221,4 +223,120 @@ test('UX-23 empty saved library is helpful and viewer cannot perform mutations',
   await expect(viewer.getByRole('button', { name: 'Add saved visualization' })).toHaveCount(0);
   await expect(viewer.getByRole('button', { name: 'Save Traffic sources to library' })).toHaveCount(0);
   await viewer.close();
+});
+
+test('UX-24 library actions do not overlap at 320px, 390px, tablet or desktop; close and focus recover', async ({ page }, info) => {
+  test.setTimeout(120_000);
+  await fixture(page);
+  await visit(page);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: 'Save Traffic sources to library' }).click();
+  await page.getByRole('dialog', { name: 'Save to visualization library' })
+    .getByRole('button', { name: 'Save to library' }).click();
+  for (const { width, height, label } of [
+    { width: 320, height: 640, label: 'reflow-400-percent-equivalent' },
+    { width: 390, height: 844, label: 'phone' },
+    { width: 720, height: 850, label: 'reflow-200-percent-equivalent' },
+    { width: 768, height: 1024, label: 'tablet' },
+    { width: 1440, height: 900, label: 'desktop' },
+  ]) {
+    await page.setViewportSize({ width, height });
+    const launcher = page.getByRole('button', { name: 'Add saved visualization' });
+    await launcher.click();
+    const picker = page.getByRole('dialog', { name: 'Add saved visualization' });
+    const closeFooter = picker.locator('.library-close-footer');
+    if (width <= 720) await expect(closeFooter).toBeHidden();
+    else await expect(closeFooter).toBeVisible();
+    for (const name of ['Add copy', 'Preview', 'Edit template', 'Delete template']) {
+      const control = picker.getByRole('button', { name });
+      await control.scrollIntoViewIfNeeded();
+      await expect(control).toBeInViewport();
+      const bounds = await control.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    await screenshot(page, info, `ux24-library-${label}`);
+    if (width === 320 || width === 390) {
+      const accessibility = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+      expect(accessibility.violations.map(item => item.id)).toEqual([]);
+    }
+    await page.keyboard.press('Escape');
+    await expect(picker).toHaveCount(0);
+    await expect(launcher).toBeFocused();
+  }
+});
+
+test('UX-24 stale dashboard save preserves draft and explicitly reloads authorized current revision', async ({ page }, info) => {
+  const api = await fixture(page);
+  await visit(page);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('textbox', { name: 'Dashboard name' }).fill('My unreconciled draft');
+  api.dashboards()[0]!.name = 'Updated in another browser';
+  api.dashboards()[0]!.revision = 2;
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  const recovery = page.getByRole('region', { name: 'Dashboard conflict recovery' });
+  await expect(recovery).toContainText('latest saved revision 2');
+  await expect(recovery).toContainText('Updated in another browser');
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('My unreconciled draft');
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await screenshot(page, info, 'ux24-dashboard-conflict');
+
+  page.once('dialog', dialog => dialog.dismiss());
+  await recovery.getByRole('button', { name: 'Reload latest (discard draft)' }).click();
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('My unreconciled draft');
+  page.once('dialog', dialog => dialog.accept());
+  await recovery.getByRole('button', { name: 'Reload latest (discard draft)' }).click();
+  await expect(page.getByRole('heading', { name: 'Updated in another browser' })).toBeVisible();
+  expect(api.dashboards()[0]!.name).toBe('Updated in another browser');
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Safe second attempt');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  expect(api.dashboards()[0]!.revision).toBe(3);
+  expect(api.dashboards()[0]!.name).toBe('Safe second attempt');
+});
+
+test('UX-24 stale template edits and deletions recover without changing dashboard copies', async ({ page }, info) => {
+  const api = await fixture(page);
+  await visit(page);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: 'Save Traffic sources to library' }).click();
+  await page.getByRole('dialog', { name: 'Save to visualization library' })
+    .getByRole('button', { name: 'Save to library' }).click();
+  const picker = page.getByRole('dialog', { name: 'Add saved visualization' });
+  await page.getByRole('button', { name: 'Add saved visualization' }).click();
+  await picker.getByRole('button', { name: 'Edit template' }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit saved visualization' });
+  await editor.getByRole('textbox', { name: 'Title' }).fill('My template draft');
+  api.library()[0]!.revision = 2;
+  api.library()[0]!.definition.title = 'Updated by second editor';
+  await editor.getByRole('button', { name: 'Save template' }).click();
+  const recovery = editor.getByRole('region', { name: 'Template conflict recovery' });
+  await expect(recovery).toContainText('latest revision 2');
+  await expect(editor.getByRole('textbox', { name: 'Title' })).toHaveValue('My template draft');
+  await expect(editor.getByRole('button', { name: 'Save template' })).toBeDisabled();
+  await screenshot(page, info, 'ux24-template-conflict');
+  page.once('dialog', dialog => dialog.accept());
+  await recovery.getByRole('button', { name: 'Reopen latest template (discard edits)' }).click();
+  await expect(editor.getByRole('textbox', { name: 'Title' })).toHaveValue('Updated by second editor');
+  await editor.getByRole('textbox', { name: 'Title' }).fill('Curated template');
+  await editor.getByRole('button', { name: 'Save template' }).click();
+  await expect(picker).toBeVisible();
+  expect(api.library()[0]!.revision).toBe(3);
+  expect(api.dashboards()[0]!.widgets[0]!.title).toBe('Traffic sources');
+  page.once('dialog', dialog => {
+    api.library()[0]!.revision = 4;
+    return dialog.accept();
+  });
+  await picker.getByRole('button', { name: 'Delete template' }).click();
+  await expect(picker.getByRole('alert')).toContainText('library was refreshed');
+  expect(api.library()).toHaveLength(1);
+  page.once('dialog', dialog => dialog.accept());
+  await picker.getByRole('button', { name: 'Delete template' }).click();
+  await expect(picker).toContainText('No saved visualizations yet');
+  expect(api.library()).toHaveLength(0);
+  expect(api.dashboards()[0]!.widgets[0]!.title).toBe('Traffic sources');
 });
