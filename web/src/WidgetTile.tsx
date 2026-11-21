@@ -155,14 +155,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           <div className="metric-number">{aggregate !== null ? formatMetric(aggregate, metric) : 'Combined rate unavailable'}</div>
           {aggregate === null && <p className="metric-limitation">A combined conversion rate cannot be calculated from these independent example percentages. Inspect the individual channels below.</p>}
           {trend !== null && <div className="metric-trend"><TrendingUp size={14} aria-hidden="true" /> {trend > 0 ? '+' : ''}{trend.toFixed(1)}% <span>last versus first sample month, not year-over-year</span></div>}
-          {aggregate !== null && <div className="metric-sparkline" aria-hidden="true">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} accessibilityLayer={false}>
-                <defs><linearGradient id={`gradient-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.22} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0} /></linearGradient></defs>
-                <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.2} fill={`url(#gradient-${widget.id})`} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>}
+
         </div>
       ) : widget.kind === 'table' ? (
         <div className="widget-table-wrap" role="region" aria-label={`Scrollable ${widget.title} table`} tabIndex={0}>
