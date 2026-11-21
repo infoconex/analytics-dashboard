@@ -1,4 +1,4 @@
-import { ApiError, type CurrentIdentity, type Dashboard, type DashboardDraft, type DataSourceDefinition, type DataSourceDraft, type Membership } from './model';
+import { ApiError, type CurrentIdentity, type Dashboard, type DashboardDraft, type DataSourceDefinition, type DataSourceDraft, type Membership, type SavedVisualization, type SavedVisualizationDraft } from './model';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
@@ -46,6 +46,25 @@ export const dashboardApi = {
   remove: (organizationId: string, id: string) => request<void>(`${prefix(organizationId)}/${id}`, {
     method: 'DELETE',
   }),
+};
+
+const visualizationPrefix = (organizationId: string) =>
+  `/organizations/${encodeURIComponent(organizationId)}/visualizations`;
+
+export const visualizationApi = {
+  list: (organizationId: string) => request<SavedVisualization[]>(visualizationPrefix(organizationId)),
+  create: (organizationId: string, draft: SavedVisualizationDraft) =>
+    request<SavedVisualization>(visualizationPrefix(organizationId), {
+      method: 'POST', body: JSON.stringify(draft),
+    }),
+  update: (organizationId: string, saved: SavedVisualization, draft: SavedVisualizationDraft) =>
+    request<SavedVisualization>(`${visualizationPrefix(organizationId)}/${saved.id}`, {
+      method: 'PUT', body: JSON.stringify({ ...draft, expectedRevision: saved.revision }),
+    }),
+  remove: (organizationId: string, saved: SavedVisualization) =>
+    request<void>(`${visualizationPrefix(organizationId)}/${saved.id}?expectedRevision=${saved.revision}`, {
+      method: 'DELETE',
+    }),
 };
 
 const sourcesPrefix = (organizationId: string) =>

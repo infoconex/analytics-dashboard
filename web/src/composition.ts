@@ -27,6 +27,23 @@ export function resizeWidget(widgets: DashboardWidget[], id: string, columns: nu
 }
 
 
+/** Every dashboard widget remains an independent snapshot of any saved template. */
+export function copySavedVisualization(definition: DashboardWidget, id: string): DashboardWidget {
+  return { ...definition, id, columns: undefined, height: undefined,
+    appearance: definition.appearance ? { ...definition.appearance } : undefined };
+}
+
+/** Duplicate directly after its source, preserving configuration, layout and order. */
+export function duplicateWidget(widgets: DashboardWidget[], sourceId: string, id: string): DashboardWidget[] {
+  if (!id || widgets.length >= 24 || widgets.some(item => item.id === id)) return widgets;
+  const index = widgets.findIndex(item => item.id === sourceId);
+  if (index < 0) return widgets;
+  const source = widgets[index]!;
+  const copy = { ...source, id, title: `${source.title} (copy)`.slice(0, 100),
+    appearance: source.appearance ? { ...source.appearance } : undefined };
+  return [...widgets.slice(0, index + 1), copy, ...widgets.slice(index + 1)];
+}
+
 /** Position-based ordering is the persisted layout contract for UX-2. */
 export function reorderWidgets(widgets: DashboardWidget[], sourceId: string, targetId: string): DashboardWidget[] {
   const source = widgets.findIndex(item => item.id === sourceId);

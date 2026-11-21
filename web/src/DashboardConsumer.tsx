@@ -15,13 +15,16 @@ interface Props {
   onChange: (widgets: DashboardWidget[]) => void;
   onEdit: (widget: DashboardWidget) => void;
   onAdd: () => void;
+  onAddSaved: () => void;
+  onDuplicate: (widget: DashboardWidget) => void;
+  onSaveToLibrary: (widget: DashboardWidget) => void;
   onFiltersChange?: (filters: ConsumerFilters) => void;
   onShareInsight?: (widget: DashboardWidget, filters: ConsumerFilters) => void;
 }
 
 // Mount with a dashboard-and-organization key to keep unsaved consumer filters
 // scoped to one open dashboard, not to a link or server-persisted draft.
-export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onFiltersChange, onShareInsight }: Props) {
+export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight }: Props) {
   const [filters, setFilters] = useState({ ...defaultConsumerFilters });
   const hasCommerce = widgets.some(widget => widget.datasetKey === 'commerce');
   const hasChannels = widgets.some(widget => widget.datasetKey === 'channels');
@@ -40,7 +43,7 @@ export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStar
         <li>{canEdit ? 'For advanced composition, choose Edit dashboard above. Viewing and filtering never save changes.' : 'This is a read-only view; exploring and filtering never change the saved dashboard.'}</li></ul>
     </details>}
     {(hasCommerce || hasChannels) && <DashboardFiltersBar filters={filters} onChange={changeFilters} hasCommerce={hasCommerce} hasChannels={hasChannels} />}
-    <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onEdit={onEdit} onAdd={onAdd} onChange={onChange}
+    <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onEdit={onEdit} onAdd={onAdd} onAddSaved={onAddSaved} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onChange={onChange}
       onChannelSelect={channel => changeFilters({ ...filters, channel: toggleChannel(filters.channel, channel) })}
       onShareInsight={onShareInsight ? widget => onShareInsight(widget, filters) : undefined} />
   </>;

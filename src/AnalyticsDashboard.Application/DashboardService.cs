@@ -131,6 +131,13 @@ public sealed class DashboardService(
 
         foreach (var widget in draft.Widgets)
         {
+            ValidateWidget(widget);
+        }
+    }
+
+    /// <summary>Shared validation for inline dashboard widgets and saved visualization templates.</summary>
+    public static void ValidateWidget(DashboardWidget widget)
+    {
             if (widget.Id == Guid.Empty || string.IsNullOrWhiteSpace(widget.Title)
                 || widget.Title.Length > 100 || !Enum.IsDefined(widget.Kind)
                 || !ValidKey(widget.DatasetKey) || !ValidKey(widget.MetricKey)
@@ -149,7 +156,6 @@ public sealed class DashboardService(
             }
 
             ValidateAppearance(widget);
-        }
     }
 
     private static void ValidateAppearance(DashboardWidget widget)

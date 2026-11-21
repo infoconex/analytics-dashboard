@@ -54,6 +54,23 @@ export interface DashboardWidget {
   appearance?: VisualizationAppearance | null;
 }
 
+/** Organization-owned template; inserting it always copies the definition. */
+export interface SavedVisualization {
+  id: string;
+  organizationId: string;
+  description: string;
+  definition: DashboardWidget;
+  revision: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavedVisualizationDraft {
+  description: string;
+  definition: DashboardWidget;
+}
+
 export interface Dashboard {
   id: string;
   organizationId: string;

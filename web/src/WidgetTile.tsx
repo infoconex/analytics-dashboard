@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pencil, Trash2, TrendingUp, X } from 'lucide-react';
+import { BookmarkPlus, CopyPlus, Pencil, Trash2, TrendingUp, X } from 'lucide-react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
   Pie, PieChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis,
@@ -26,13 +26,15 @@ interface Props {
   editing?: boolean;
   onEdit?: (widget: DashboardWidget) => void;
   onRemove?: (id: string) => void;
+  onDuplicate?: (widget: DashboardWidget) => void;
+  onSaveToLibrary?: (widget: DashboardWidget) => void;
   filters?: ConsumerFilters;
   onChannelSelect?: (channel: string) => void;
   onReturnToIndex?: () => void;
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function WidgetTile({ widget, period, preview, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
+export function WidgetTile({ widget, period, preview, position, total, editing, onEdit, onRemove, onDuplicate, onSaveToLibrary, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
   const [keyboardIndex, setKeyboardIndex] = useState(0);
   const [chartFocused, setChartFocused] = useState(false);
   const appearance = chartAppearance(widget);
@@ -124,6 +126,8 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
           : 'The saved metric or dimension is not supported by the fictional sample. Ask a dashboard editor to choose an available metric.')} No value has been inferred.</p>
         {editing && <div className="widget-actions">
           <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
+            <button aria-label={`Duplicate ${widget.title}`} title="Duplicate on dashboard" className="icon-button" onClick={() => onDuplicate?.(widget)}><CopyPlus size={15} /></button>
+            <button aria-label={`Save ${widget.title} to library`} title="Save reusable visualization" className="icon-button" onClick={() => onSaveToLibrary?.(widget)}><BookmarkPlus size={15} /></button>
           <button aria-label={`Remove ${widget.title}`} className="icon-button danger-hover" onClick={() => onRemove?.(widget.id)}><Trash2 size={15} /></button>
         </div>}
         {onReturnToIndex && <div className="widget-return"><button type="button" onClick={onReturnToIndex} aria-label={`Back to visualization list from ${widget.title}`}>Back to visualization list</button></div>}
@@ -143,6 +147,8 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
         {editing ? (
           <div className="widget-actions">
             <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
+            <button aria-label={`Duplicate ${widget.title}`} title="Duplicate on dashboard" className="icon-button" onClick={() => onDuplicate?.(widget)}><CopyPlus size={15} /></button>
+            <button aria-label={`Save ${widget.title} to library`} title="Save reusable visualization" className="icon-button" onClick={() => onSaveToLibrary?.(widget)}><BookmarkPlus size={15} /></button>
             <button aria-label={`Remove ${widget.title}`} className="icon-button danger-hover" onClick={() => onRemove?.(widget.id)}><Trash2 size={15} /></button>
           </div>
         ) : null}

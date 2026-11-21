@@ -59,6 +59,8 @@ builder.Services.AddSingleton(_ => new SqliteCatalog(
     builder.Configuration["Catalog:Path"] ?? "data/catalog.db"));
 builder.Services.AddSingleton<IDashboardRepository>(provider =>
     provider.GetRequiredService<SqliteCatalog>());
+builder.Services.AddSingleton<ISavedVisualizationRepository>(provider =>
+    provider.GetRequiredService<SqliteCatalog>());
 builder.Services.AddSingleton(_ => new SqliteDataSourceRepository(
     builder.Configuration["Catalog:Path"] ?? "data/catalog.db"));
 builder.Services.AddSingleton<IDataSourceRepository>(provider =>
@@ -95,6 +97,7 @@ builder.Services.AddSingleton<ISqliteFilePolicy>(_ => new MappedSqliteFilePolicy
     builder.Configuration["Catalog:Path"] ?? "data/catalog.db"));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<SavedVisualizationService>();
 builder.Services.AddScoped<DataSourceService>();
 builder.Services.AddScoped<QueryService>();
 builder.Services.AddScoped<ConnectionService>();
@@ -226,6 +229,44 @@ dashboardRoutes.MapDelete("/{id:guid}", async (
     await service.DeleteAsync(organizationId, id, UserId(context), token)
         ? Results.NoContent()
         : Results.NotFound());
+
+// Organization-owned templates; dashboard widgets always embed copies, never foreign references.
+var visualizationRoutes = app.MapGroup("/api/organizations/{organizationId}/visualizations")
+    .RequireAuthorization();
+
+visualizationRoutes.MapGet("", async (
+    string organizationId, HttpContext context, SavedVisualizationService service, CancellationToken token) =>
+    Results.Ok(await service.ListAsync(organizationId, UserId(context), token)));
+
+visualizationRoutes.MapGet("/{id:guid}", async (
+    string organizationId, Guid id, HttpContext context, SavedVisualizationService service, CancellationToken token) =>
+{
+    var saved = await service.FindAsync(organizationId, id, UserId(context), token);
+    return saved is null ? Results.NotFound() : Results.Ok(saved);
+});
+
+visualizationRoutes.MapPost("", async (
+    string organizationId, SavedVisualizationDraft draft, HttpContext context,
+    SavedVisualizationService service, CancellationToken token) =>
+{
+    var saved = await service.CreateAsync(organizationId, UserId(context), draft, token);
+    return Results.Created($"/api/organizations/{organizationId}/visualizations/{saved.Id}", saved);
+});
+
+visualizationRoutes.MapPut("/{id:guid}", async (
+    string organizationId, Guid id, SavedVisualizationUpdate request, HttpContext context,
+    SavedVisualizationService service, CancellationToken token) =>
+{
+    var saved = await service.UpdateAsync(organizationId, id, UserId(context),
+        new SavedVisualizationDraft(request.Description, request.Definition), request.ExpectedRevision, token);
+    return saved is null ? Results.NotFound() : Results.Ok(saved);
+});
+
+visualizationRoutes.MapDelete("/{id:guid}", async (
+    string organizationId, Guid id, int expectedRevision, HttpContext context,
+    SavedVisualizationService service, CancellationToken token) =>
+    await service.DeleteAsync(organizationId, id, UserId(context), expectedRevision, token)
+        ? Results.NoContent() : Results.NotFound());
 
 var dataSourceRoutes = app.MapGroup("/api/organizations/{organizationId}/data-sources")
     .RequireAuthorization();

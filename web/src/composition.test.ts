@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasDashboardChanges, layoutForWidget, moveWidget, reorderWidgets, resizeWidget } from './composition';
+import { copySavedVisualization, duplicateWidget, hasDashboardChanges, layoutForWidget, moveWidget, reorderWidgets, resizeWidget } from './composition';
 import type { Dashboard, DashboardWidget } from './model';
 
 const widget = (id: string): DashboardWidget => ({
@@ -13,6 +13,30 @@ const initial: Dashboard = {
 };
 
 describe('dashboard composition', () => {
+  it('duplicates with independent appearance and preserves layout/order', () => {
+    const first: DashboardWidget = { ...widget('first'), title: 'Source', columns: 9, height: 420,
+      appearance: { showLegend: false } };
+    const list = [first, widget('second')];
+    const duplicated = duplicateWidget(list, 'first', 'new');
+    expect(duplicated.map(item => item.id)).toEqual(['first', 'new', 'second']);
+    expect(duplicated[1]).toMatchObject({ title: 'Source (copy)', columns: 9, height: 420, appearance: { showLegend: false } });
+    expect(duplicated[1]!.appearance).not.toBe(first.appearance);
+    expect(list).toHaveLength(2);
+    expect(duplicateWidget(list, 'missing', 'fresh')).toBe(list);
+    expect(duplicateWidget(list, 'first', 'second')).toBe(list);
+    expect(duplicateWidget(Array.from({ length: 24 }, (_, index) => widget(String(index))), '0', 'new')).toHaveLength(24);
+  });
+
+  it('copies saved templates with new identities, independent appearance and no dashboard geometry', () => {
+    const source: DashboardWidget = { ...widget('template'), columns: 12, height: 600,
+      appearance: { histogramBins: 6 } };
+    const inserted = copySavedVisualization(source, 'dashboard-new');
+    expect(inserted).toMatchObject({ id: 'dashboard-new', appearance: { histogramBins: 6 } });
+    expect(inserted.columns).toBeUndefined();
+    expect(inserted.height).toBeUndefined();
+    expect(inserted.appearance).not.toBe(source.appearance);
+  });
+
   it('gives older dashboards compact metrics, medium charts, and wide tables', () => {
     expect(layoutForWidget({ ...widget('metric'), kind: 'metric' })).toEqual({ columns: 3, height: 220 });
     expect(layoutForWidget(widget('chart'))).toEqual({ columns: 6, height: 340 });
