@@ -27,6 +27,8 @@ describe('dashboard composition', () => {
     expect(resizeWidget(initial.widgets, 'missing', 9, 420)).toBe(initial.widgets);
     expect(layoutForWidget(resizeWidget(initial.widgets, 'second', 99, 990)[1]!))
       .toEqual({ columns: 12, height: 640 });
+    expect(layoutForWidget(resizeWidget(initial.widgets, 'second', 3, 220)[1]!))
+      .toEqual({ columns: 6, height: 320 });
     expect(hasDashboardChanges({ name: initial.name, description: initial.description, widgets: resized }, initial)).toBe(true);
   });
 
