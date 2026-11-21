@@ -256,8 +256,18 @@ test('UX-24 library actions do not overlap at 320px, 390px, tablet or desktop; c
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);
     }
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-    expect(overflow).toBeLessThanOrEqual(1);
+    const overflowDetails = await page.evaluate(() => ({
+      overflow: document.documentElement.scrollWidth - innerWidth,
+      offenders: Array.from(document.querySelectorAll<HTMLElement>('*'))
+        .map(node => ({ node, bounds: node.getBoundingClientRect() }))
+        .filter(({ node, bounds }) => bounds.right > innerWidth + 2 && bounds.width > 0
+          && getComputedStyle(node).position !== 'fixed')
+        .slice(0, 18).map(({ node, bounds }) => ({
+          tag: node.tagName, className: String(node.className).slice(0, 100),
+          right: Math.round(bounds.right), width: Math.round(bounds.width),
+        })),
+    }));
+    expect(overflowDetails.overflow, JSON.stringify(overflowDetails)).toBeLessThanOrEqual(1);
     await screenshot(page, info, `ux24-library-${label}`);
     if (width === 320 || width === 390) {
       const accessibility = await new AxeBuilder({ page })
