@@ -166,6 +166,7 @@ test('refuses a misleading conversion pie; owner can recover, viewer cannot auth
   await dialog.getByRole('combobox', { name: 'Metric' }).selectOption('sessions');
   await expect(dialog.getByRole('alert')).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: 'Add to dashboard' })).toBeEnabled();
+  page.once('dialog', dialog => dialog.accept());
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(page.locator('.canvas-item')).toHaveCount(0);
 
