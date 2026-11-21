@@ -611,7 +611,10 @@ export default function App() {
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available.</div>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
                   && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={setWidgetDraft} onAdd={() => setWidgetDraft(createWidget())} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)}
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={widget => { setLibraryEditing(null); setWidgetDraft(widget); }} onAdd={() => { setLibraryEditing(null); setWidgetDraft(createWidget()); }}
+                   onAddSaved={() => void openSavedLibrary()}
+                   onDuplicate={widget => setDraft(current => current ? { ...current, widgets: duplicateWidget(current.widgets, widget.id, crypto.randomUUID()) } : current)}
+                   onSaveToLibrary={offerSaveToLibrary} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)}
                   onFiltersChange={filters => { viewingSnapshot.current = { key: `${organizationId}:${preview.id}`, filters }; }}
                   onShareInsight={(widget, filters) => share(preview, widget, filters)} />
               </>
@@ -659,8 +662,32 @@ export default function App() {
         <div className="modal-actions"><Button variant="light" onClick={() => setCreateOpen(false)}>Cancel</Button><Button disabled={!draft.name.trim()} onClick={() => void createDashboard()}>Create dashboard <ArrowRight size={16} /></Button></div>
       </ModalDialog>}
 
-      {widgetDraft && editMode && draft && <ModalDialog title="Configure visualization" eyebrow="VISUALIZATION BUILDER · SAMPLE DATA" description="Pick a visual, then choose what it should show." className="visualization-modal" initialFocus=".gallery-card" onDismiss={() => setWidgetDraft(null)}>
+      {libraryOpen && editMode && draft && <VisualizationLibraryPicker
+        key={organizationId} items={library?.organizationId === organizationId ? library.items : []}
+        loading={libraryLoading} error={libraryError} busy={libraryBusy}
+        onRetry={() => void openSavedLibrary()} onDismiss={() => setLibraryOpen(false)}
+        onCreate={() => { setLibraryOpen(false); setLibraryEditing(null); setWidgetDraft(createWidget()); }}
+        onUse={useSavedVisualization} onEdit={editSavedVisualization} onDelete={saved => void deleteSavedVisualization(saved)} />}
+
+      {librarySource && editMode && draft && <ModalDialog title="Save to visualization library" eyebrow="REUSABLE SAMPLE CHART"
+        description="This template saves immediately and independently of dashboard Save or Cancel. Other dashboards remain unchanged."
+        className="visualization-library-modal" initialFocus="input" busy={libraryBusy}
+        onDismiss={() => { setLibrarySource(null); setLibraryError(''); }}>
+        {libraryError && <p role="alert" className="error-banner">{libraryError}</p>}
+        <label className="form-label">Visualization name<input maxLength={100} value={libraryName} onChange={event => setLibraryName(event.target.value)} /></label>
+        <label className="form-label">Description<textarea maxLength={500} rows={3} value={librarySourceDescription} onChange={event => setLibrarySourceDescription(event.target.value)} /></label>
+        <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={() => setLibrarySource(null)}>Cancel</Button><Button disabled={libraryBusy || !libraryName.trim()} onClick={() => void saveToLibrary()}>{libraryBusy ? 'Saving…' : 'Save to library'}</Button></div>
+      </ModalDialog>}
+
+      {widgetDraft && editMode && draft && <ModalDialog title={libraryEditing ? 'Edit saved visualization' : 'Configure visualization'}
+        eyebrow="VISUALIZATION BUILDER · SAMPLE DATA"
+        description={libraryEditing ? 'Edit this organization template. Existing dashboard copies remain unchanged.' : 'Pick a visual, then choose what it should show.'}
+        className="visualization-modal" initialFocus=".gallery-card" busy={libraryBusy}
+        onDismiss={() => { setWidgetDraft(null); setLibraryEditing(null); setLibraryError(''); }}>
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
+        {libraryEditing && <label className="form-label">Template description<textarea maxLength={500} rows={2}
+          value={libraryDescription} onChange={event => setLibraryDescription(event.target.value)} /></label>}
+        {libraryEditing && libraryError && <p role="alert" className="error-banner">{libraryError}</p>}
         <div className="visualization-workspace">
           <div className="visualization-settings">
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
@@ -698,7 +725,7 @@ export default function App() {
         </section>
         </div>
         {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
-        <div className="modal-actions"><Button variant="light" onClick={() => setWidgetDraft(null)}>Cancel</Button><Button disabled={!widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> {draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
+        <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={() => { setWidgetDraft(null); setLibraryEditing(null); setLibraryError(''); }}>Cancel</Button><Button disabled={libraryBusy || !widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => void finishWidgetEdit()}><Check size={16} /> {libraryEditing ? (libraryBusy ? 'Saving…' : 'Save template') : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
       </ModalDialog>}
     </div>
   );
