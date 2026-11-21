@@ -40,7 +40,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   // Recharts can expose a second tabbable SVG surface even when the chart's
   // accessibility layer is disabled. Our outer chart is the sole keyboard control.
   useEffect(() => {
-    if (!chartContainerRef.current) return;
+    if (!chartKeyboardInteraction || !chartContainerRef.current) return;
     const chart = chartContainerRef.current;
     const removeInnerTabStops = () => {
       chart.querySelectorAll<HTMLElement | SVGElement>('[tabindex]').forEach(element => {
