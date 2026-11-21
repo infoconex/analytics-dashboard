@@ -189,7 +189,8 @@ test('UX-23 organization library copies, edits, duplicates and survives reload w
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
   await page.getByRole('button', { name: 'Add saved visualization' }).click();
   await screenshot(page, info, 'mobile-library');
-  const closeButton = picker.getByRole('button', { name: 'Close library' });
+  await expect(picker.getByRole('button', { name: 'Close library' })).toBeHidden();
+  const closeButton = picker.getByRole('button', { name: 'Close', exact: true });
   const closeBounds = await closeButton.boundingBox();
   expect(closeBounds).not.toBeNull();
   expect(closeBounds!.y + closeBounds!.height).toBeLessThanOrEqual(844);
