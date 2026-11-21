@@ -63,7 +63,30 @@ New Vitest cases (`web/src/dashboardUndo.test.ts`) cover preservation of indepen
 
 New Chromium Playwright cases (`web/e2e/visualizationReuse.spec.ts`) cover duplicate/remove/reorder/resize/configure Undo/Redo, server update boundary, independent template save and Cancel-to-library returns, template copies in undo history, stale dashboard revision recovery, keyboard shortcut isolation, redo invalidation, and 320/390/720/768/1440px responsive toolbar/editor behavior. The suite attaches actual Chromium viewport screenshots of desktop undo/redo, conflict recovery, mobile toolbars and long-editor action placement, and uses axe checks at narrow widths. Existing UX-22 genuine 200%/400% Chromium tab-zoom tests and all UX-24 library/focus regression tests remain enabled.
 
-**Verification pending:** Only record individual test totals, Verify/CodeQL run links, real SQL Server/PostgreSQL result, and screenshot inspection results after the PR-head and post-merge checks actually finish. Automated geometry assertions are not a visual inspection and do not substitute for one.
+### Measured verification and CI links
+
+The first PR verification run reported **145 NUnit**, **118 Vitest** (including four new history unit cases), a passing TypeScript production build, the UX-13 fictional-data lab checks, and **14 real SQL Server/PostgreSQL conformance** tests. It executed **130 Chromium Playwright cases**; the first iteration passed 126 and exposed four targeted assertion failures (one newly ambiguous widget selector, two legacy modal-heading expectations, one legacy sticky-footer expectation). Those assertions were corrected while retaining the improved UX. The second run narrowed failures to the three pre-correction legacy expectations. Do not consider this evidence sufficient to merge: **all 130 cases must pass together at the final PR head**.
+
+- [Finalized-code PR Verify run, live status](https://github.com/infoconex/analytics-dashboard/actions/runs/44941905864)
+- [C# and JavaScript/TypeScript CodeQL, live status](https://github.com/infoconex/analytics-dashboard/actions/runs/44941905869)
+- [Initial failure diagnosis and actual Chromium evidence](https://github.com/infoconex/analytics-dashboard/actions/runs/44941069417) — retained to document regression diagnosis rather than substitute for a passing run
+
+### Screenshot inspection
+
+Downloaded and directly visually inspected the **actual Chromium PNG pixels** from [initial UX-25 browser artifact #14722086170](https://github.com/infoconex/analytics-dashboard/actions/runs/44941069417/artifacts/14722086170), including:
+
+- `ux23-ux25-desktop-redo.png`: desktop Undo active/Redo disabled after redo; the grouped controls and Save/Cancel wrap readably without overlapping.
+- `ux23-ux25-desktop-undo-ready.png`: dashboard with two visualization copies and working move handles; the chart remains legible after duplication.
+- `ux23-ux25-toolbar-320.png`: at true 320px width, Undo/Redo and Cancel/Save fit in separate readable rows with no horizontal clipping.
+- `ux23-ux25-conflict-after-undo.png`: the stale-revision recovery banner, disabled Save state, and explicit discard action remain visibly distinguishable.
+
+The final successful-run artifact must additionally be inspected for **390px, 720px, 768px, desktop, and long mobile visualization-editor scrolling**. The Playwright suite records captures at these widths, asserts unobstructed controls, absence of document overflow, and axe compliance at 320/390px. Browser geometry assertions **alone** are never considered visual signoff.
+
+### Security and engineering review
+
+PR diff review found no new HTTP endpoint, schema, template synchronization, client storage, auth grant, production data source, or embedding contract. Only bounded copied **widget descriptors** enter in-memory history, scoped to a single currently edited dashboard. Save still uses the original expected dashboard revision; the stale-save recovery path blocks Save until deliberately reloading an authorized current revision. Template writes still use independent server-authorized organization-scoped CRUD and revisions. There is no automatic conflict merging or hidden live reference. Local history is discarded on Save/Cancel/navigation/tenant change. The server remains the authority for editor/owner rights, tenant isolation and read-only viewer/embedded behavior. No material security findings or contract changes identified in code review; CodeQL completion is a separate required merge gate.
+
+**Merge gate:** review the latest PR head's passing Verify and CodeQL jobs and inspect final screenshot artifacts before squash merge; after merge, validate the fresh main-branch runs independently.
 
 ## Limitations
 
