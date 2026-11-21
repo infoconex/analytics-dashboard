@@ -6,7 +6,7 @@ using Microsoft.Data.Sqlite;
 
 namespace AnalyticsDashboard.Infrastructure;
 
-public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, IOrganizationCatalog
+public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, ISavedVisualizationRepository, IOrganizationCatalog
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -44,6 +44,19 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
             );
             CREATE INDEX IF NOT EXISTS dashboards_updated
                 ON dashboards (organization_id, updated_at DESC);
+            CREATE TABLE IF NOT EXISTS saved_visualizations (
+                id TEXT NOT NULL,
+                organization_id TEXT NOT NULL REFERENCES organizations(id),
+                description TEXT NOT NULL,
+                definition_json TEXT NOT NULL,
+                revision INTEGER NOT NULL,
+                created_by TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (organization_id, id)
+            );
+            CREATE INDEX IF NOT EXISTS saved_visualizations_updated
+                ON saved_visualizations (organization_id, updated_at DESC);
             """;
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -164,6 +177,81 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
 
+    public async Task<IReadOnlyList<SavedVisualization>> ListAsync(
+        string organizationId, CancellationToken token)
+    {
+        var results = new List<SavedVisualization>();
+        await using var connection = await OpenAsync(token);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT id, organization_id, description, definition_json, revision,
+                   created_by, created_at, updated_at
+            FROM saved_visualizations WHERE organization_id = $orgId
+            ORDER BY updated_at DESC, id
+            """;
+        command.Parameters.AddWithValue("$orgId", organizationId);
+        await using var reader = await command.ExecuteReaderAsync(token);
+        while (await reader.ReadAsync(token)) results.Add(ReadSavedVisualization(reader));
+        return results;
+    }
+
+    public async Task<SavedVisualization?> FindAsync(
+        string organizationId, Guid id, CancellationToken token)
+    {
+        await using var connection = await OpenAsync(token);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT id, organization_id, description, definition_json, revision,
+                   created_by, created_at, updated_at
+            FROM saved_visualizations WHERE organization_id = $orgId AND id = $id
+            """;
+        command.Parameters.AddWithValue("$orgId", organizationId);
+        command.Parameters.AddWithValue("$id", id.ToString("D"));
+        await using var reader = await command.ExecuteReaderAsync(token);
+        return await reader.ReadAsync(token) ? ReadSavedVisualization(reader) : null;
+    }
+
+    public async Task AddAsync(SavedVisualization saved, CancellationToken token)
+    {
+        await using var connection = await OpenAsync(token);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO saved_visualizations (id, organization_id, description, definition_json,
+                revision, created_by, created_at, updated_at)
+            VALUES ($id, $orgId, $description, $definition, $revision, $createdBy, $createdAt, $updatedAt)
+            """;
+        AddSavedParameters(command, saved);
+        await command.ExecuteNonQueryAsync(token);
+    }
+
+    public async Task<bool> ReplaceAsync(SavedVisualization saved, int expectedRevision, CancellationToken token)
+    {
+        await using var connection = await OpenAsync(token);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE saved_visualizations SET description = $description, definition_json = $definition,
+                revision = $revision, updated_at = $updatedAt
+            WHERE id = $id AND organization_id = $orgId AND revision = $expectedRevision
+            """;
+        AddSavedParameters(command, saved);
+        command.Parameters.AddWithValue("$expectedRevision", expectedRevision);
+        return await command.ExecuteNonQueryAsync(token) == 1;
+    }
+
+    public async Task<bool> DeleteAsync(string organizationId, Guid id, int expectedRevision, CancellationToken token)
+    {
+        await using var connection = await OpenAsync(token);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            DELETE FROM saved_visualizations
+            WHERE organization_id = $orgId AND id = $id AND revision = $revision
+            """;
+        command.Parameters.AddWithValue("$orgId", organizationId);
+        command.Parameters.AddWithValue("$id", id.ToString("D"));
+        command.Parameters.AddWithValue("$revision", expectedRevision);
+        return await command.ExecuteNonQueryAsync(token) == 1;
+    }
+
     public async Task SeedDevelopmentAsync(CancellationToken cancellationToken = default)
     {
         await using var connection = await OpenAsync(cancellationToken);
@@ -231,6 +319,25 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
         reader.GetInt32(5), reader.GetString(6),
         DateTimeOffset.Parse(reader.GetString(7), System.Globalization.CultureInfo.InvariantCulture),
         DateTimeOffset.Parse(reader.GetString(8), System.Globalization.CultureInfo.InvariantCulture));
+
+    private static SavedVisualization ReadSavedVisualization(SqliteDataReader reader) => new(
+        Guid.Parse(reader.GetString(0)), reader.GetString(1), reader.GetString(2),
+        JsonSerializer.Deserialize<DashboardWidget>(reader.GetString(3), JsonOptions)!,
+        reader.GetInt32(4), reader.GetString(5),
+        DateTimeOffset.Parse(reader.GetString(6), System.Globalization.CultureInfo.InvariantCulture),
+        DateTimeOffset.Parse(reader.GetString(7), System.Globalization.CultureInfo.InvariantCulture));
+
+    private static void AddSavedParameters(SqliteCommand command, SavedVisualization saved)
+    {
+        command.Parameters.AddWithValue("$id", saved.Id.ToString("D"));
+        command.Parameters.AddWithValue("$orgId", saved.OrganizationId);
+        command.Parameters.AddWithValue("$description", saved.Description);
+        command.Parameters.AddWithValue("$definition", JsonSerializer.Serialize(saved.Definition, JsonOptions));
+        command.Parameters.AddWithValue("$revision", saved.Revision);
+        command.Parameters.AddWithValue("$createdBy", saved.CreatedBy);
+        command.Parameters.AddWithValue("$createdAt", saved.CreatedAt.ToString("O"));
+        command.Parameters.AddWithValue("$updatedAt", saved.UpdatedAt.ToString("O"));
+    }
 
     private static void AddDashboardParameters(SqliteCommand command, Dashboard dashboard)
     {
