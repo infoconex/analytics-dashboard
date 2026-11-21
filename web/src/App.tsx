@@ -296,8 +296,8 @@ export default function App() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  function navigate(next: Page, id?: string, nextOrganizationId = organizationId) {
-    if (!confirmDiscard()) return;
+  function navigate(next: Page, id?: string, nextOrganizationId = organizationId, justCreated = false) {
+    if (!justCreated && !confirmDiscard()) return;
     if (!organizations.some(item => item.id === nextOrganizationId)) return;
     const nextHash = organizationHash(nextOrganizationId, next, id);
     focusOnNavigation.current = true;
@@ -360,7 +360,8 @@ export default function App() {
       setCreateOpen(false);
       setDraft(null);
       setToast('Dashboard created');
-      navigate('dashboards', created.id);
+      // The just-saved creation form is no longer unsaved authoring work.
+      navigate('dashboards', created.id, targetOrganizationId, true);
     } catch (exception) {
       setCreateError(exception instanceof Error ? exception.message : 'Unable to create dashboard.');
     }
