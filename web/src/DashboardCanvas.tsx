@@ -92,7 +92,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
 
   return (
     <section aria-label={editing ? 'Dashboard composition canvas' : 'Dashboard visualizations'}>
-      {editing && <p className="canvas-instructions" id="canvas-instructions">Drag the Move handle to reorder, or use Move earlier/later. On narrow screens, open Adjust size for touch-friendly controls. On wide screens, drag the lower-right Resize handle or use its arrow keys. Changes take effect only when you select Save changes.</p>}
+      {editing && widgets.length > 0 && <p className="canvas-instructions" id="canvas-instructions">Drag the Move handle to reorder, or use Move earlier/later. On narrow screens, open Adjust size for touch-friendly controls. On wide screens, drag the lower-right Resize handle or use its arrow keys. Changes take effect only when you select Save changes.</p>}
       {widgets.length >= 8 && <nav className="dashboard-navigator" aria-label="Find a visualization">
         <div className="dashboard-navigator-copy"><h2>Find a visualization</h2><p>{widgets.length} visualizations. Choose one to jump directly to its heading, or browse the full list below.</p></div>
         <form className="dashboard-navigator-controls" onSubmit={event => { event.preventDefault(); if (selectedTarget) focusWidget(selectedTarget); }}>
@@ -228,11 +228,19 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
               announceResize(widget, next[0]!, next[1]!);
             }}><span aria-hidden="true">↘</span><span className="sr-only">Resize widget</span></button>}
         </div>)}
-        {editing && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Create a chart and see it on your dashboard</small></button>}
-        {editing && <button type="button" className="add-widget add-saved-widget" onClick={onAddSaved}><span><Plus size={25} /></span><strong>Add saved visualization</strong><small>Reuse a chart from this organization</small></button>}
+        {editing && widgets.length > 0 && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Create a chart and see it on your dashboard</small></button>}
+        {editing && widgets.length > 0 && <button type="button" className="add-widget add-saved-widget" onClick={onAddSaved}><span><Plus size={25} /></span><strong>Add saved visualization</strong><small>Reuse a chart from this organization</small></button>}
       </div>
-      {widgets.length === 0 && !editing && <div className="canvas-empty"><strong>No visualizations yet</strong><p>{canEdit ? 'Start with a sample chart, then arrange your dashboard.' : 'An editor can add the first visualization to this dashboard.'}</p>{canEdit && <Button onClick={onStartEdit}><Plus size={17} aria-hidden="true" /> Add first visualization</Button>}</div>}
-      {widgets.length === 0 && editing && <p className="canvas-empty-hint">Your canvas is ready. Select Add visualization to start with a sample chart.</p>}
+      {widgets.length === 0 && !editing && <div className="canvas-empty"><strong>No visualizations yet</strong><p>{canEdit ? 'This empty dashboard is saved. Add a chart whenever you are ready.' : 'An editor can add the first visualization to this saved dashboard.'}</p>{canEdit && <Button onClick={onStartEdit}><Plus size={17} aria-hidden="true" /> Add first visualization</Button>}</div>}
+      {widgets.length === 0 && editing && <section className="canvas-empty-start" aria-labelledby="first-visualization-heading">
+        <h2 id="first-visualization-heading">Start with your first visualization</h2>
+        <p>Your empty dashboard is already saved. Build a new visualization or add an independent copy from this organization's library. After adding, choose Save changes to keep it.</p>
+        <div className="canvas-empty-actions">
+          <Button onClick={onAdd}><Plus size={17} aria-hidden="true" /> Create visualization</Button>
+          <Button variant="light" onClick={onAddSaved}>Add saved visualization</Button>
+        </div>
+        <p className="canvas-empty-footnote">Cancel editing to view the empty dashboard without adding anything.</p>
+      </section>}
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
     </section>
   );
