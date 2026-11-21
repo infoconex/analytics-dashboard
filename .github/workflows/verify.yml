@@ -42,6 +42,9 @@ jobs:
             web/test-results/visualizationReuse-*/**/*.png
             web/test-results/visualizationReuse-*/**/*.json
             web/test-results/visualizationReuse-*/**/trace.zip
+            web/test-results/dashboardActivation-*/**/*.png
+            web/test-results/dashboardActivation-*/**/*.json
+            web/test-results/dashboardActivation-*/**/trace.zip
             web/test-results/embed-*/**/*.png
             web/test-results/embed-*/**/*.webm
             web/test-results/embed-*/**/*.json

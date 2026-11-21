@@ -358,7 +358,8 @@ test('desktop UX journey captures all primary states using fixed sample data', a
   await page.getByRole('button', { name: 'New dashboard', exact: true }).click();
   await page.getByRole('textbox', { name: 'Dashboard name' }).fill('New sample workspace');
   await page.getByRole('button', { name: 'Create dashboard' }).click();
-  await expect(page.getByText('No visualizations yet')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Start with your first visualization' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   await capture(page, testInfo, '08-empty-dashboard-desktop');
 
   await page.route('**/api/organizations', route => route.fulfill({ status: 503, body: '' }));
