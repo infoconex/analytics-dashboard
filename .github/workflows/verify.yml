@@ -39,6 +39,9 @@ jobs:
             web/test-results/visualizationAuthoring-*/**/*.png
             web/test-results/visualizationAuthoring-*/**/*.json
             web/test-results/visualizationAuthoring-*/**/trace.zip
+            web/test-results/visualizationReuse-*/**/*.png
+            web/test-results/visualizationReuse-*/**/*.json
+            web/test-results/visualizationReuse-*/**/trace.zip
             web/test-results/embed-*/**/*.png
             web/test-results/embed-*/**/*.webm
             web/test-results/embed-*/**/*.json
