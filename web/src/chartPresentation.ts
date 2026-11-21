@@ -59,7 +59,7 @@ export function fitOutsidePieLabels(
   const total = rows.reduce((sum, row) => sum + Math.max(0, Number(row[measure]) || 0), 0);
   if (!total) return new Set();
   const radius = Math.min(width, height) * 0.42;
-  const horizontalRoom = width / 2 - radius - 32;
+  const horizontalRoom = width / 2 - radius - 40;
   const used: { side: number; y: number }[] = [];
   const positions = new Map<string, { side: number; y: number }>();
   let angle = 90;
@@ -77,7 +77,7 @@ export function fitOutsidePieLabels(
   // avoiding near-identical Y positions on the same side of the chart.
   for (const category of selected) {
     const position = positions.get(category);
-    if (!position || [...category].length * 8 > horizontalRoom ||
+    if (!position || [...category].length * 10 > horizontalRoom ||
       position.y < 15 || position.y > height - 15 ||
       used.some(prior => prior.side === position.side && Math.abs(prior.y - position.y) < 20)) continue;
     used.push(position);
