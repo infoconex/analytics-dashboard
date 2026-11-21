@@ -221,7 +221,7 @@ test('genuine Chromium 200% and 400% tab zoom preserves the creator dialog and i
     await page.goto(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${dashboardId}`);
     await expect(page.getByRole('heading', { name: 'Fictional analytics' })).toBeVisible();
     await page.getByRole('button', { name: 'Edit dashboard' }).click();
-    await page.getByRole('button', { name: /Add visualization/ }).click();
+    await page.getByRole('button', { name: 'Create visualization' }).click();
     const dialog = page.getByRole('dialog', { name: /^(Configure visualization|Edit dashboard visualization)$/ });
     await dialog.getByRole('button', { name: /Scatter plot/ }).click();
     await expect(dialog.locator('.recharts-scatter-symbol')).toHaveCount(12);
