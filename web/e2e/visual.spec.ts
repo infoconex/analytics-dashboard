@@ -91,6 +91,63 @@ async function assertNoDocumentOverflow(page: Page, width: number) {
 
 test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
 
+test('UX-20 chart has one sequential Tab stop and Space applies selected category', async ({ page }, info) => {
+  await fixedDemoApi(page);
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const channel = page.getByRole('combobox', { name: 'Marketing channel' });
+  for (const [title, type] of [['Traffic sources', 'donut'], ['Orders by channel', 'bar']] as const) {
+    const card = page.getByRole('article', { name: title, exact: true });
+    const chart = card.getByRole('group', { name: new RegExp(`${title} ${type} chart`) });
+    await chart.focus();
+    await expect(chart).toBeFocused();
+    await expect(card.getByText('Keyboard chart selection:')).toContainText('Organic search');
+    // Real browser Tab must leave the chart; there must not be a second SVG focus target.
+    await page.keyboard.press('Tab');
+    await expect(chart).not.toBeFocused();
+    await expect(card.getByText('Keyboard chart selection:')).toHaveCount(0);
+    const innerTabStops = await chart.locator('[tabindex="0"]').count();
+    expect(innerTabStops, `${type} should have no second tabbable SVG or path`).toBe(0);
+    await page.keyboard.press('Shift+Tab');
+    await expect(chart).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(card.getByText('Keyboard chart selection:')).toContainText('Direct');
+    await page.keyboard.press('Space');
+    await expect(channel).toHaveValue('Direct');
+    await expect(card.getByText('Keyboard chart selection:')).toContainText('Direct');
+    await page.keyboard.press('Enter');
+    await expect(channel).toHaveValue('');
+    await capture(page, info, `ux20-${type}-space-tab-regression`);
+  }
+});
+
+test('UX-20 twelve-category pie validates bounded 5, 8 and 12 labels', async ({ page }, info) => {
+  const dashboard: Dashboard = { ...sampleDashboard, widgets: [...sampleDashboard.widgets, {
+    id: '806e3063-18e9-4ddb-887a-229198c6dd09', title: 'Monthly revenue pie',
+    kind: 'pie', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month',
+  }] };
+  await fixedDemoApi(page, dashboard);
+  await page.goto(`/#/organization/northstar/dashboard/${dashboard.id}`);
+  const pie = page.getByRole('article', { name: 'Monthly revenue pie', exact: true });
+  await expect(pie.locator('.recharts-pie-sector')).toHaveCount(12);
+  await pie.getByRole('button', { name: 'Show slice labels' }).click();
+  const counts: number[] = [];
+  for (const limit of ['5', '8', '12']) {
+    await pie.getByLabel('Maximum labels').selectOption(limit);
+    const labels = pie.locator('.chart-outside-label text');
+    const count = await labels.count();
+    expect(count).toBeLessThanOrEqual(Number(limit));
+    expect(count).toBeGreaterThan(0);
+    counts.push(count);
+  }
+  expect(counts[1]).toBeGreaterThanOrEqual(counts[0]);
+  expect(counts[2]).toBeGreaterThanOrEqual(counts[1]);
+  expect(counts[2]).toBeGreaterThan(counts[0]);
+  await capture(page, info, 'ux20-12-category-pie-desktop');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertNoDocumentOverflow(page, 390);
+  await capture(page, info, 'ux20-12-category-pie-mobile');
+});
+
 test('UX-18 chart regions filter with arrow keys and Enter, retaining focus and data isolation', async ({ page }, info) => {
   await fixedDemoApi(page);
   await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pencil, Trash2, TrendingUp, X } from 'lucide-react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
@@ -36,6 +36,8 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const [showOutsideLabels, setShowOutsideLabels] = useState(false);
   const [maxOutsideLabels, setMaxOutsideLabels] = useState<5 | 8 | 12>(5);
   const pointerFocusRef = useRef(false);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
   const headingId = `widget-heading-${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const scatter = widget.kind === 'scatter';
@@ -48,6 +50,21 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const axisValue = (value: number) => formatChartAxis(value, metric);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
   const chartKeyboardInteraction = channelInteraction && (widget.kind === 'donut' || widget.kind === 'pie' || widget.kind === 'bar');
+  // Recharts can expose a second tabbable SVG surface even when the chart's
+  // accessibility layer is disabled. Our outer chart is the sole keyboard control.
+  useEffect(() => {
+    if (!chartKeyboardInteraction || !chartContainerRef.current) return;
+    const chart = chartContainerRef.current;
+    const removeInnerTabStops = () => {
+      chart.querySelectorAll<HTMLElement | SVGElement>('[tabindex]').forEach(element => {
+        if (element !== chart && element.getAttribute('tabindex') !== '-1') element.setAttribute('tabindex', '-1');
+      });
+    };
+    removeInnerTabStops();
+    const observer = new MutationObserver(removeInnerTabStops);
+    observer.observe(chart, { subtree: true, childList: true, attributes: true, attributeFilter: ['tabindex'] });
+    return () => observer.disconnect();
+  }, [chartKeyboardInteraction, data.length]);
   const pieLabels = selectedPieLabels(data, axis, widget.metricKey, maxOutsideLabels);
   const selectedChannel = filters?.channel;
   const filterContext = filters && !editing ? describeWidgetFilters(widget.datasetKey, filters) : null;
@@ -68,15 +85,15 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const activeKeyboardIndex = Math.min(keyboardIndex, Math.max(0, data.length - 1));
   const keyboardCategory = String(data[activeKeyboardIndex]?.[axis] ?? '');
   function onChartKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (!chartKeyboardInteraction || !data.length) return;
+    if (!chartKeyboardInteraction || !data.length || event.target !== event.currentTarget) return;
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
       event.preventDefault(); setKeyboardIndex(Math.min(activeKeyboardIndex + 1, data.length - 1));
     } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
       event.preventDefault(); setKeyboardIndex(Math.max(activeKeyboardIndex - 1, 0));
     } else if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault(); setKeyboardIndex(event.key === 'Home' ? 0 : data.length - 1);
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault(); selectCategory(activeKeyboardIndex);
+    } else if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault(); event.stopPropagation(); selectCategory(activeKeyboardIndex);
     }
   }
   const aggregate = aggregateSampleMetric(widget.datasetKey, widget.metricKey, data);
@@ -138,14 +155,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           <div className="metric-number">{aggregate !== null ? formatMetric(aggregate, metric) : 'Combined rate unavailable'}</div>
           {aggregate === null && <p className="metric-limitation">A combined conversion rate cannot be calculated from these independent example percentages. Inspect the individual channels below.</p>}
           {trend !== null && <div className="metric-trend"><TrendingUp size={14} aria-hidden="true" /> {trend > 0 ? '+' : ''}{trend.toFixed(1)}% <span>last versus first sample month, not year-over-year</span></div>}
-          {aggregate !== null && <div className="metric-sparkline" aria-hidden="true">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} accessibilityLayer={false}>
-                <defs><linearGradient id={`gradient-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.22} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0} /></linearGradient></defs>
-                <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.2} fill={`url(#gradient-${widget.id})`} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>}
+
         </div>
       ) : widget.kind === 'table' ? (
         <div className="widget-table-wrap" role="region" aria-label={`Scrollable ${widget.title} table`} tabIndex={0}>
@@ -158,7 +168,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           </table>
         </div>
       ) : (
-        <div className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}${chartKeyboardInteraction && chartFocused && widget.kind === 'bar' ? ` keyboard-bar-${activeKeyboardIndex}` : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onPointerDownCapture={chartKeyboardInteraction ? () => { pointerFocusRef.current = true; } : undefined} onPointerUpCapture={chartKeyboardInteraction ? () => { pointerFocusRef.current = false; } : undefined} onPointerCancel={chartKeyboardInteraction ? () => { pointerFocusRef.current = false; } : undefined} onFocus={chartKeyboardInteraction ? event => { if (event.target === event.currentTarget && !pointerFocusRef.current) { setKeyboardIndex(0); setChartFocused(true); } } : undefined} onBlur={chartKeyboardInteraction ? event => { if (event.target === event.currentTarget) setChartFocused(false); } : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
+        <div ref={chartContainerRef} className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}${chartKeyboardInteraction && chartFocused && widget.kind === 'bar' ? ` keyboard-bar-${activeKeyboardIndex}` : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onPointerDownCapture={chartKeyboardInteraction ? () => { pointerFocusRef.current = true; } : undefined} onPointerUpCapture={chartKeyboardInteraction ? () => { pointerFocusRef.current = false; } : undefined} onPointerCancel={chartKeyboardInteraction ? () => { pointerFocusRef.current = false; } : undefined} onFocus={chartKeyboardInteraction ? event => { if (event.target === event.currentTarget && !pointerFocusRef.current) { setKeyboardIndex(0); setChartFocused(true); } } : undefined} onBlur={chartKeyboardInteraction ? event => { if (event.target === event.currentTarget) setChartFocused(false); } : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
               <PieChart accessibilityLayer={false}>
