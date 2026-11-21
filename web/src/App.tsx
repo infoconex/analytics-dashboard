@@ -105,6 +105,19 @@ export default function App() {
   const hasPendingWork = Boolean(hasChanges || widgetDraft || librarySource
     || (createOpen && draft && (draft.name.trim() || draft.description.trim())));
 
+  // In a long visualization editor, the recovery banner may sit above the
+  // current scroll position. Bring the actionable conflict into view and focus
+  // after the server response; the unsaved editor fields remain untouched.
+  useEffect(() => {
+    if (!templateConflict) return;
+    const frame = window.requestAnimationFrame(() => {
+      const region = document.querySelector<HTMLElement>('[aria-label="Template conflict recovery"]');
+      region?.scrollIntoView({ block: 'nearest' });
+      region?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [templateConflict]);
+
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
 
   // Discovery is ephemeral consumer context, never persisted across tenants.
@@ -806,7 +819,7 @@ export default function App() {
         {libraryEditing && <label className="form-label">Template description<textarea maxLength={500} rows={2}
           value={libraryDescription} onChange={event => setLibraryDescription(event.target.value)} /></label>}
         {libraryEditing && libraryError && <p role="alert" className="error-banner">{libraryError}</p>}
-        {libraryEditing && templateConflict && <section className="conflict-recovery" aria-label="Template conflict recovery">
+        {libraryEditing && templateConflict && <section className="conflict-recovery" aria-label="Template conflict recovery" tabIndex={-1}>
           {typeof templateConflict === 'string'
             ? <p>{templateConflict === 'deleted' ? 'This template no longer exists.' : 'The latest template could not be checked with your current access.'} Your unsaved editor fields are still visible.</p>
             : <p>Opened at revision {libraryEditing.revision}; latest revision {templateConflict.revision}: <strong>{templateConflict.definition.title}</strong>. Existing dashboard copies are unaffected.</p>}
