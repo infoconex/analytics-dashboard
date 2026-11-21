@@ -179,8 +179,10 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
               if (!current || current.id !== widget.id) return;
               const columnStep = Math.round((event.clientX - current.x) / Math.max(80, current.gridWidth / 4));
               const heightStep = Math.round((event.clientY - current.y) / 20);
-              const columns = Math.max(3, Math.min(12, current.columns + columnStep * 3)) as WidgetLayout['columns'];
-              const height = Math.max(220, Math.min(640, current.height + heightStep * 20));
+              const minimumColumns = widget.kind === 'metric' ? 3 : 6;
+              const minimumHeight = widget.kind === 'metric' || widget.kind === 'table' ? 220 : 320;
+              const columns = Math.max(minimumColumns, Math.min(12, current.columns + columnStep * 3)) as WidgetLayout['columns'];
+              const height = Math.max(minimumHeight, Math.min(640, current.height + heightStep * 20));
               current.next = { columns, height };
               setResizePreview({ id: widget.id, columns, height });
             }}
