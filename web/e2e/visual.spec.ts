@@ -489,6 +489,10 @@ test('UX-21 editor resizes and reorders widgets, persists saved layout, and disc
 
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
   const grip = metric.getByRole('button', { name: /Resize Total revenue/ });
+  // capture() previously scrolled the page to its top. Pointer coordinates must
+  // refer to an on-screen handle, not a bounding box below the browser viewport.
+  await grip.scrollIntoViewIfNeeded();
+  await expect(grip).toBeInViewport();
   const box = await grip.boundingBox();
   expect(box).not.toBeNull();
   const startX = box!.x + box!.width / 2;
