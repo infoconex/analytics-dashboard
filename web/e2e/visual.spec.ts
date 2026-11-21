@@ -469,6 +469,8 @@ test('UX-21 editor resizes and reorders widgets, persists saved layout, and disc
   expect((await metric.boundingBox())!.width).toBeLessThan((await chart.boundingBox())!.width);
 
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  const addWidget = page.getByRole('button', { name: /Add visualization/ });
+  expect((await addWidget.boundingBox())!.width).toBeGreaterThanOrEqual(160);
   const resize = metric.getByRole('button', { name: /Resize Total revenue/ });
   await resize.focus();
   await page.keyboard.press('ArrowRight');
