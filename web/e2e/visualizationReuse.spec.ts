@@ -528,3 +528,31 @@ test('UX-25 mobile Undo controls and in-flow visualization editor actions fit 32
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   }
 });
+
+test('UX-25 keyboard shortcuts respect input focus and divergent history branches', async ({ page }) => {
+  await fixture(page);
+  await visit(page);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: 'Duplicate Traffic sources' }).click();
+  const undo = page.getByRole('button', { name: 'Undo widget change' });
+  const redo = page.getByRole('button', { name: 'Redo widget change' });
+  await undo.focus();
+  await page.keyboard.press('Control+z');
+  await expect(page.getByRole('article', { name: 'Traffic sources (copy)' })).toHaveCount(0);
+  await redo.focus();
+  await page.keyboard.press('Control+Shift+z');
+  await expect(page.getByRole('article', { name: 'Traffic sources (copy)' })).toBeVisible();
+
+  const name = page.getByRole('textbox', { name: 'Dashboard name' });
+  await name.focus();
+  await page.keyboard.press('Control+z');
+  // Dashboard history is not consumed by input-field native undo.
+  await expect(undo).toBeEnabled();
+  await expect(page.getByRole('article', { name: 'Traffic sources (copy)' })).toBeVisible();
+
+  await undo.click();
+  await expect(redo).toBeEnabled();
+  await page.getByRole('button', { name: 'Duplicate Traffic sources' }).click();
+  await expect(redo).toBeDisabled();
+  await expect(page.getByRole('article', { name: 'Traffic sources (copy)' })).toBeVisible();
+});
