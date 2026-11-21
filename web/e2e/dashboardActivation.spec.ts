@@ -54,6 +54,13 @@ test('UX-28 new dashboards enter saved, empty composition and progress through p
     await createEmpty(page, name);
     await expect(page.getByRole('button', { name: 'Create visualization' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Add saved visualization' })).toBeVisible();
+    if (width <= 390) {
+      // First-action activation must fit without a scroll, not just exist off-screen.
+      const firstAction = await page.getByRole('button', { name: 'Create visualization' }).boundingBox();
+      expect(firstAction).not.toBeNull();
+      expect(firstAction!.y).toBeGreaterThanOrEqual(0);
+      expect(firstAction!.y + firstAction!.height).toBeLessThanOrEqual(height);
+    }
     await capture(page, info, `empty-${width}`);
     if (width <= 390) {
       const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
