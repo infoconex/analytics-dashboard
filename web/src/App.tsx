@@ -112,7 +112,7 @@ export default function App() {
     if (!templateConflict) return;
     const frame = window.requestAnimationFrame(() => {
       const region = document.querySelector<HTMLElement>('[aria-label="Template conflict recovery"]');
-      region?.scrollIntoView({ block: 'nearest' });
+      region?.scrollIntoView({ block: 'center' });
       region?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
