@@ -152,6 +152,7 @@ export default function App() {
     setSearch(''); setQuestionFilter(''); setSelectedTask(null);
     setLibrary(null); setLibraryOpen(false); setLibraryEditing(null); setLibrarySource(null);
     setLibraryError(''); setLibraryLoading(false);
+    widgetBaseline.current = null;
     resetWidgetUndo(); setReturnToLibrary(false);
   }, [organizationId]);
 
@@ -235,6 +236,7 @@ export default function App() {
 
   function stopEditing() {
     if (!confirmDiscard()) return;
+    widgetBaseline.current = null;
     setEditMode(false);
     setDraft(null);
     resetWidgetUndo();
@@ -295,6 +297,7 @@ export default function App() {
           setView({ page: 'overview' });
         }
       }
+      widgetBaseline.current = null;
       setEditMode(false);
       setDraft(null);
       resetWidgetUndo();
@@ -419,6 +422,7 @@ export default function App() {
     if (nextOrganizationId !== organizationId) setOrganizationId(nextOrganizationId);
     setOrganizationNotice('');
     setView({ page: next, id });
+    widgetBaseline.current = null;
     setEditMode(false);
     setDraft(null);
     resetWidgetUndo();
