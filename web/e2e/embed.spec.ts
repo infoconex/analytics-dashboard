@@ -293,7 +293,12 @@ test('UX-22 saved appearance renders consistently in the read-only sample embed'
 
   const donut = page.getByRole('article', { name: 'Traffic sources' });
   await expect(donut.locator('.recharts-pie-sector')).toHaveCount(5);
-  await expect(donut.locator('.chart-outside-label')).toHaveCount(5);
+  // Fitted SVG labels are supplemental and their visible count depends on
+  // embed width; hidden-legend records remain available in the exact table.
+  const visibleLabels = await donut.locator('.chart-outside-label').count();
+  expect(visibleLabels).toBeGreaterThan(0);
+  expect(visibleLabels).toBeLessThanOrEqual(5);
+  await expect(donut.locator('.chart-data summary')).toContainText('(5 records)');
   await expect(donut.locator('.donut-legend')).toHaveCount(0);
   await expect(donut.locator('.chart-order-note')).toContainText('smallest first');
   await expect(page.getByRole('article', { name: 'Saved revenue distribution' })
