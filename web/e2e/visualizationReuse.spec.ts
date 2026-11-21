@@ -20,8 +20,9 @@ const initial: Dashboard[] = [first, second].map((id, index) => ({
   updatedAt: '2026-01-01T00:00:00Z',
 }));
 
-async function fixture(page: Page, role: 'owner' | 'viewer' = 'owner') {
+async function fixture(page: Page, role: 'owner' | 'viewer' = 'owner', seed?: DashboardWidget[]) {
   let dashboards = structuredClone(initial);
+  if (seed) dashboards[0]!.widgets = structuredClone(seed);
   let library: SavedVisualization[] = [];
   const calls: string[] = [];
   await page.route('**/api/**', route => {
@@ -632,4 +633,45 @@ test('UX-26 mobile edit size controls, Undo/Redo, persisted layout and pie previ
   await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
   const a11y = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(a11y.violations.map(item => item.id)).toEqual([]);
+});
+
+test('UX-26 nine visualization kinds retain sensible mixed-dashboard bounds at all target viewports', async ({ page }, info) => {
+  test.setTimeout(180_000);
+  const kinds: DashboardWidget['kind'][] = ['metric', 'line', 'area', 'bar', 'donut', 'pie', 'histogram', 'scatter', 'table'];
+  const widgets: DashboardWidget[] = kinds.map(kind => {
+    const commerce = ['metric', 'line', 'area', 'histogram'].includes(kind);
+    return {
+      ...source, id: randomUUID(), title: `UX26 ${kind}`, kind,
+      datasetKey: commerce ? 'commerce' : 'channels',
+      metricKey: kind === 'scatter' ? 'orders' : commerce ? 'revenue' : 'sessions',
+      dimensionKey: kind === 'scatter' ? 'sessions' : commerce ? 'month' : 'channel',
+      columns: kind === 'metric' ? 3 : kind === 'table' ? 12 : 6,
+      height: kind === 'metric' ? 220 : 420,
+      appearance: kind === 'donut' || kind === 'pie'
+        ? { showLegend: true, showSliceLabels: true, maxSliceLabels: 8 } : undefined,
+    };
+  });
+  await fixture(page, 'owner', widgets);
+  for (const width of [320, 390, 720, 768, 1440]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+    await visit(page);
+    for (const widget of widgets) {
+      const tile = page.getByRole('article', { name: widget.title, exact: true });
+      await expect(tile).toBeVisible();
+      const rect = await tile.boundingBox();
+      expect(rect).not.toBeNull();
+      expect(rect!.width).toBeGreaterThan(190);
+      expect(rect!.x).toBeGreaterThanOrEqual(-1);
+      expect(rect!.x + rect!.width).toBeLessThanOrEqual(width + 1);
+    }
+    const firstTile = page.locator(`[data-widget-id="${widgets[0]!.id}"]`);
+    await firstTile.scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux26-mixed-start-${width}`);
+    const circular = page.locator(`[data-widget-id="${widgets[5]!.id}"]`);
+    await circular.scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux26-mixed-circular-${width}`);
+    const lastTile = page.locator(`[data-widget-id="${widgets[8]!.id}"]`);
+    await lastTile.scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux26-mixed-table-${width}`);
+  }
 });
