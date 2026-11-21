@@ -15,7 +15,7 @@ export interface HistogramBin {
 /** An observed-value distribution; never infer timestamps or additional records. */
 export function buildHistogram(rows: readonly Row[], metric: string, bucketCount = 4): HistogramBin[] {
   const values = rows.map(row => row[metric]);
-  if (!values.length || !Number.isInteger(bucketCount) || bucketCount < 1 || bucketCount > 12 ||
+  if (!values.length || !Number.isInteger(bucketCount) || bucketCount < 2 || bucketCount > 12 ||
     values.some(value => typeof value !== 'number' || !Number.isFinite(value) || value < 0)) return [];
   const numeric = values as number[];
   const minimum = Math.min(...numeric);

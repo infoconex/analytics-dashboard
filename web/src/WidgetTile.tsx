@@ -45,7 +45,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
   const pointerFocusRef = useRef(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  const headingId = `widget-heading-${widget.id}`;
+  const headingId = `widget-heading-${preview ? 'preview-' : ''}${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
   const chartRows = chartCategoryRows(data, widget);
   const scatter = widget.kind === 'scatter';
@@ -231,12 +231,12 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
               </LineChart>
             ) : (
               <AreaChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
-                <defs><linearGradient id={`area-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.27} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0.01} /></linearGradient></defs>
+                <defs><linearGradient id={`area-${preview ? 'preview-' : ''}${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.27} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0.01} /></linearGradient></defs>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
                 <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
                 <Tooltip formatter={value => [tooltipValue(value), context.label]} />
-                <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.7} fill={`url(#area-${widget.id})`} />
+                <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.7} fill={`url(#area-${preview ? 'preview-' : ''}${widget.id})`} />
               </AreaChart>
             )}
           </ResponsiveContainer>

@@ -47,3 +47,12 @@ export function chartCategoryRows(rows: readonly Row[], widget: DashboardWidget)
     return order === 'valueAsc' ? diff : -diff;
   });
 }
+
+/** Prevent a resized compact metric/table from becoming an invalid chart layout. */
+export function layoutForChangedKind(widget: DashboardWidget, next: WidgetKind): Pick<DashboardWidget, 'columns' | 'height'> {
+  const minimumHeight = next === 'metric' || next === 'table' ? 220 : 320;
+  return {
+    columns: widget.columns === 3 && next !== 'metric' ? 6 : widget.columns,
+    height: widget.height != null && widget.height < minimumHeight ? minimumHeight : widget.height,
+  };
+}

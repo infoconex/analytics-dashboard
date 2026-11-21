@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildHistogram } from './visualizationSemantics';
 import { channels, commerce } from './demoData';
-import { chartAppearance, chartCategoryRows, compatibleAppearance, withAppearance } from './visualizationAppearance';
+import { chartAppearance, chartCategoryRows, compatibleAppearance, layoutForChangedKind, withAppearance } from './visualizationAppearance';
 import type { DashboardWidget } from './model';
 
 const pie: DashboardWidget = { id: 'pie', title: 'Channel values', kind: 'pie',
@@ -39,6 +39,15 @@ describe('UX-22 chart appearance', () => {
     expect(channels[0]?.channel).toBe('Organic search');
     expect(chartCategoryRows(commerce, { ...ascending, datasetKey: 'commerce', kind: 'bar', metricKey: 'revenue' }))
       .toEqual(commerce); // chronological sample order is never sorted
+  });
+
+  it('adjusts compact saved layout on kind changes without discarding valid sizes', () => {
+    const compact = { ...pie, kind: 'metric' as const, columns: 3, height: 220 };
+    expect(layoutForChangedKind(compact, 'donut')).toEqual({ columns: 6, height: 320 });
+    expect(layoutForChangedKind({ ...pie, columns: 9, height: 420 }, 'donut'))
+      .toEqual({ columns: 9, height: 420 });
+    expect(layoutForChangedKind({ ...pie, columns: null, height: null }, 'bar'))
+      .toEqual({ columns: null, height: null });
   });
 
   it('uses only original finite observations for configurable histogram bins', () => {

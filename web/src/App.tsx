@@ -27,7 +27,7 @@ import { ShareContextDialog } from './ShareContextDialog';
 import { defaultConsumerFilters } from './consumerFilters';
 import type { ConsumerFilters } from './consumerFilters';
 import { suggestedDimension, visualizationProblem } from './visualizationSemantics';
-import { chartAppearance, compatibleAppearance, withAppearance } from './visualizationAppearance';
+import { chartAppearance, compatibleAppearance, layoutForChangedKind, withAppearance } from './visualizationAppearance';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
@@ -394,7 +394,7 @@ export default function App() {
 
   function selectVisualizationKind(kind: WidgetKind) {
     if (!widgetDraft) return;
-    setWidgetDraft({ ...widgetDraft, kind, dimensionKey: suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey),
+    setWidgetDraft({ ...widgetDraft, kind, ...layoutForChangedKind(widgetDraft, kind), dimensionKey: suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey),
       appearance: compatibleAppearance(widgetDraft.appearance, kind, widgetDraft.datasetKey) });
   }
 
