@@ -583,7 +583,7 @@ test('UX-26 circular charts fit their own widget without clipping at mobile, tab
       expect(box!.y).toBeGreaterThanOrEqual(chartBounds!.y - 2);
       expect(box!.y + box!.height).toBeLessThanOrEqual(chartBounds!.y + chartBounds!.height + 2);
     }
-    await expect(widget.getByText('View data table')).toBeVisible();
+    await expect(widget.locator('.chart-data summary')).toContainText('View data table');
     await widget.scrollIntoViewIfNeeded();
     await screenshot(page, info, `ux26-circular-${width}`);
   }
@@ -617,7 +617,7 @@ test('UX-26 mobile edit size controls, Undo/Redo, persisted layout and pie previ
   await item.getByRole('button', { name: 'Edit Traffic sources' }).click();
   const editor = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
   await expect(editor).toBeVisible();
-  await editor.getByRole('button', { name: /Pie Show parts of a total/ }).click();
+  await editor.getByRole('button', { name: /Pie chart/ }).click();
   await expect(editor.getByRole('region', { name: 'Live visualization preview' }).locator('.recharts-pie-sector')).toHaveCount(5);
   await screenshot(page, info, 'ux26-mobile-pie-editor');
   await editor.getByRole('button', { name: 'Update visualization' }).click();
