@@ -42,7 +42,7 @@ async function openEditor(page: Page) {
   await page.goto(`/#/organization/northstar/dashboard/${dashboardId}`);
   await expect(page.getByRole('heading', { name: 'Fictional analytics' })).toBeVisible();
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await page.getByRole('button', { name: /Add visualization/ }).click();
+  await page.getByRole('button', { name: 'Create visualization' }).click();
   await expect(page.getByRole('dialog', { name: 'Configure visualization' })).toBeVisible();
 }
 
