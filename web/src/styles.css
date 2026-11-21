@@ -745,3 +745,22 @@ button:disabled { opacity:.6; }
   .resize-handle { border: 1px solid ButtonText; color: ButtonText; background: Canvas; }
   .resize-handle:focus-visible { outline: 3px solid Highlight; }
 }
+
+/* UX-23: lightweight organization-scoped saved visualization catalog. */
+.widgets-grid-editing > .add-saved-widget { grid-column: span 3; }
+.visualization-library-modal { width: min(940px, calc(100vw - 24px)); max-height: min(93vh, 900px); }
+.library-topline { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:12px 0; }
+.library-topline p { margin:0; font-size:13px; color:var(--color-text-muted, #53647b); }
+.library-filters { display:grid; grid-template-columns: minmax(0, 2fr) minmax(150px, 1fr); gap:12px; }
+.library-items { display:grid; gap:10px; margin:14px 0; max-height:300px; overflow-y:auto; }
+.library-item { border:1px solid var(--color-border); border-radius:12px; padding:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.library-item h3 { margin:0 0 5px; font-size:16px; }
+.library-item p { margin:4px 0; font-size:13px; }
+.library-item-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.library-item-actions > button:not(.button) { border:1px solid var(--color-border); border-radius:7px; background:transparent; color:var(--color-text); padding:8px; cursor:pointer; }
+.library-item-actions > button:focus-visible { outline:3px solid var(--color-focus); outline-offset:2px; }
+.library-empty { padding:20px; border:1px dashed var(--color-border); border-radius:10px; margin:14px 0; }
+.library-preview { border-top:1px solid var(--color-border); padding-top:12px; }
+.library-preview .widget-tile { max-width:680px; }
+@media(max-width:720px) { .library-filters { grid-template-columns:1fr; } .library-item { align-items:stretch; flex-direction:column; } .library-item-actions > button { flex:1 1 auto; } .widgets-grid-editing > .add-saved-widget { grid-column:1/-1; } }
+@media(forced-colors:active) { .library-item,.library-empty,.library-item-actions > button:not(.button) { border:1px solid ButtonText; background:Canvas; color:CanvasText; } }
