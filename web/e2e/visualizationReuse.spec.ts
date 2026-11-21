@@ -443,6 +443,7 @@ test('UX-25 library saves remain independent of widget history; Cancel returns t
   await picker.getByRole('button', { name: 'Edit template' }).click();
   const editor = page.getByRole('dialog', { name: 'Edit saved visualization' });
   await editor.getByRole('textbox', { name: 'Title' }).fill('Uncommitted template title');
+  page.once('dialog', dialog => dialog.accept());
   await editor.getByRole('button', { name: 'Cancel' }).click();
   await expect(picker).toBeVisible();
   expect(api.library()[0]!.definition.title).toBe('Traffic sources');
