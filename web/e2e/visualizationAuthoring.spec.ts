@@ -373,7 +373,7 @@ test('UX-22 saves bounded appearance, live preview, category keyboard order, typ
   await expect(page.getByRole('button', { name: 'Remove Referral filter', exact: true })).toBeVisible();
   await pie.getByText('View data table').click();
   await expect(pie.getByRole('table')).toContainText('615');
-  await page.getByRole('button', { name: 'Remove Referral filter' }).click();
+  await page.getByRole('button', { name: 'Remove Referral filter', exact: true }).click();
   await image(page, info, 'ux22-03-saved-and-reopened-configured-charts');
 
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
