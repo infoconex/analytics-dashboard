@@ -78,9 +78,10 @@ test('an empty dashboard gives an editor a direct visual first step', async ({ p
   await page.getByRole('textbox', { name: 'Dashboard name' }).fill('First chart journey');
   await page.getByRole('button', { name: 'Create dashboard' }).click();
 
-  await expect(page.getByText('No visualizations yet')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Start with your first visualization' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   await expect(page.getByRole('region', { name: 'Dashboard filters' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Add first visualization' }).click();
+  await page.getByRole('button', { name: 'Create visualization' }).click();
   await expect(page.getByRole('dialog', { name: 'Configure visualization' })).toBeVisible();
   await page.getByRole('button', { name: 'Add to dashboard' }).click();
   await expect(page.getByText('Unsaved changes')).toBeVisible();
