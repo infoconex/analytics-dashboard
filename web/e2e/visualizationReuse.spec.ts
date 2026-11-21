@@ -269,6 +269,14 @@ test('UX-24 library actions do not overlap at 320px, 390px, tablet or desktop; c
     }));
     expect(overflowDetails.overflow, JSON.stringify(overflowDetails)).toBeLessThanOrEqual(1);
     await screenshot(page, info, `ux24-library-${label}`);
+    if (width <= 720) {
+      const lastAction = picker.getByRole('button', { name: 'Delete template' });
+      await lastAction.focus();
+      await page.keyboard.press('Tab');
+      await expect(picker.getByRole('button', { name: 'Close', exact: true })).toBeFocused();
+      await page.keyboard.press('Shift+Tab');
+      await expect(lastAction).toBeFocused();
+    }
     if (width === 320 || width === 390) {
       const accessibility = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
