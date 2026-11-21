@@ -138,6 +138,12 @@ public sealed class DashboardService(
             {
                 throw new InvalidDashboardException("A widget contains invalid fields.");
             }
+            // Bounded, optional visual layout metadata; old saved widgets remain valid.
+            if (widget.Columns is { } columns && columns is not (3 or 6 or 9 or 12)
+                || widget.Height is { } height && (height < 220 || height > 640 || (height - 220) % 20 != 0))
+            {
+                throw new InvalidDashboardException("Widget layout size is invalid.");
+            }
         }
     }
 
