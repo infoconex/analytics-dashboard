@@ -54,7 +54,7 @@ export function visualizationProblem(widget: DashboardWidget, rows: readonly Row
   } else if (widget.dimensionKey !== dimensions[widget.datasetKey]) {
     return 'The selected dimension does not match the fictional dataset.';
   }
-  if (widget.kind === 'histogram' && !buildHistogram(rows, widget.metricKey).length)
+  if (widget.kind === 'histogram' && !buildHistogram(rows, widget.metricKey, widget.appearance?.histogramBins ?? 4).length)
     return 'No usable numeric observations exist for this distribution.';
   return null;
 }

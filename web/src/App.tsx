@@ -27,6 +27,7 @@ import { ShareContextDialog } from './ShareContextDialog';
 import { defaultConsumerFilters } from './consumerFilters';
 import type { ConsumerFilters } from './consumerFilters';
 import { suggestedDimension, visualizationProblem } from './visualizationSemantics';
+import { chartAppearance, compatibleAppearance, withAppearance } from './visualizationAppearance';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
 type View = { page: Page; id?: string; organizationId?: string };
@@ -393,7 +394,8 @@ export default function App() {
 
   function selectVisualizationKind(kind: WidgetKind) {
     if (!widgetDraft) return;
-    setWidgetDraft({ ...widgetDraft, kind, dimensionKey: suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey) });
+    setWidgetDraft({ ...widgetDraft, kind, dimensionKey: suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey),
+      appearance: compatibleAppearance(widgetDraft.appearance, kind, widgetDraft.datasetKey) });
   }
 
   return (
@@ -534,12 +536,36 @@ export default function App() {
       {widgetDraft && editMode && draft && <ModalDialog title="Configure visualization" eyebrow="VISUALIZATION BUILDER · SAMPLE DATA" description="Pick a visual, then choose what it should show." className="visualization-modal" initialFocus=".gallery-card" onDismiss={() => setWidgetDraft(null)}>
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
-        <label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; const metricKey = metrics[datasetKey][0]?.key ?? 'orders'; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey, dimensionKey: suggestedDimension(widgetDraft.kind, datasetKey, metricKey) }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        <section className="visualization-data-fields" aria-label="Data and measures">
+          <h2>Data and measures</h2>
+          <p>Choose an existing fictional sample dataset and measure. Only supported field combinations are available.</p>
+        <label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; const metricKey = metrics[datasetKey][0]?.key ?? 'orders'; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey, dimensionKey: suggestedDimension(widgetDraft.kind, datasetKey, metricKey), appearance: compatibleAppearance(widgetDraft.appearance, widgetDraft.kind, datasetKey) }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
         <label className="form-label">{widgetDraft.kind === 'scatter' ? 'Vertical measure' : 'Metric'}<select value={widgetDraft.metricKey} onChange={event => { const metricKey = event.target.value; setWidgetDraft({ ...widgetDraft, metricKey, dimensionKey: widgetDraft.kind === 'scatter' && widgetDraft.dimensionKey === metricKey ? suggestedDimension('scatter', widgetDraft.datasetKey, metricKey) : widgetDraft.dimensionKey }); }}>{(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
         {widgetDraft.kind === 'scatter' && <label className="form-label">Horizontal measure<select value={widgetDraft.dimensionKey} onChange={event => setWidgetDraft({ ...widgetDraft, dimensionKey: event.target.value })}>{metrics[widgetDraft.datasetKey].filter(item => item.key !== widgetDraft.metricKey).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>}
+        </section>
+        <details className="visualization-appearance">
+          <summary>Appearance (optional)</summary>
+          <div className="appearance-fields">
+            {(widgetDraft.kind === 'donut' || widgetDraft.kind === 'pie') && <>
+              <label className="appearance-check"><input type="checkbox" checked={chartAppearance(widgetDraft).showLegend} onChange={event => setWidgetDraft(withAppearance(widgetDraft, { showLegend: event.target.checked }))} /> Show category legend</label>
+              <label className="appearance-check"><input type="checkbox" checked={chartAppearance(widgetDraft).showSliceLabels} onChange={event => setWidgetDraft(withAppearance(widgetDraft, { showSliceLabels: event.target.checked }))} /> Show slice labels</label>
+              {chartAppearance(widgetDraft).showSliceLabels && <label className="form-label">Maximum slice labels<select value={chartAppearance(widgetDraft).maxSliceLabels} onChange={event => setWidgetDraft(withAppearance(widgetDraft, { maxSliceLabels: Number(event.target.value) as 5 | 8 | 12 }))}><option value={5}>5</option><option value={8}>8</option><option value={12}>12</option></select></label>}
+              <p>Labels are limited by value share and available space; the maximum is a ceiling, not a guarantee.</p>
+            </>}
+            {widgetDraft.kind === 'histogram' && <>
+              <label className="form-label">Histogram bins<select value={chartAppearance(widgetDraft).histogramBins} onChange={event => setWidgetDraft(withAppearance(widgetDraft, { histogramBins: Number(event.target.value) }))}>{Array.from({ length: 11 }, (_, index) => index + 2).map(count => <option key={count} value={count}>{count}</option>)}</select></label>
+              <p>Counts original sample records in value ranges, not transactions or customers. Identical values produce one bin.</p>
+            </>}
+            {widgetDraft.datasetKey === 'channels' && ['bar', 'pie', 'donut'].includes(widgetDraft.kind) && <>
+              <label className="form-label">Category order<select value={chartAppearance(widgetDraft).categorySort} onChange={event => setWidgetDraft(withAppearance(widgetDraft, { categorySort: event.target.value as 'source' | 'valueAsc' | 'valueDesc' }))}><option value="source">Original source order</option><option value="valueAsc">Smallest measure first</option><option value="valueDesc">Largest measure first</option></select></label>
+              <p>Sorting reorders displayed categories only; source values, totals and colors remain unchanged.</p>
+            </>}
+            {widgetDraft.kind !== 'histogram' && widgetDraft.kind !== 'pie' && widgetDraft.kind !== 'donut' && !(widgetDraft.datasetKey === 'channels' && widgetDraft.kind === 'bar') && <p>This chart uses source-order observations and descriptive axes. No additional appearance settings are needed.</p>}
+          </div>
+        </details>
         <section className="visualization-preview" aria-label="Live visualization preview">
           <h2>Live preview</h2><p>Original fictional sample records only. This preview does not save changes or query a customer data source.</p>
-          <WidgetTile widget={widgetDraft} period="12m" />
+          <WidgetTile widget={widgetDraft} period="12m" preview />
         </section>
         {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
         <div className="modal-actions"><Button variant="light" onClick={() => setWidgetDraft(null)}>Cancel</Button><Button disabled={!widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> {draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
