@@ -121,7 +121,7 @@ test('UX-28 existing library template becomes an unsaved independent first dashb
   await createEmpty(page, 'UX28 library first');
   await page.getByRole('button', { name: 'Add saved visualization' }).click();
   const library = page.getByRole('dialog', { name: 'Add saved visualization' });
-  const choice = library.locator('.library-item').filter({ has: library.getByRole('heading', { name: templateTitle }) });
+  const choice = library.locator('.library-item').filter({ hasText: templateTitle });
   await expect(choice).toBeVisible();
   await choice.getByRole('button', { name: 'Preview' }).click();
   await expect(library.getByRole('region', { name: 'Saved visualization preview' })).toBeVisible();
