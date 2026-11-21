@@ -695,3 +695,31 @@ button:disabled { opacity:.6; }
   .consumer-guidance summary { color:LinkText; }
   .task-guide h2:focus,.question-card button:focus-visible,.question-filter button:focus-visible,.consumer-guidance summary:focus-visible { outline:3px solid Highlight; }
 }
+
+/* UX-21: saved, bounded widget size replaces kind-forced full-width cards. */
+.widgets-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.canvas-item { grid-column: span var(--widget-columns, 6); min-height: var(--widget-height, 340px); position: relative; }
+.canvas-item-metric,.canvas-item-table { grid-column: span var(--widget-columns, 6); }
+.canvas-item-metric .widget-tile { display: block; }
+.canvas-item .widget-chart,.canvas-item.widget-donut .widget-chart {
+  height: clamp(220px, calc(var(--widget-height, 340px) - 110px), 520px);
+}
+.canvas-item-table .widget-table-wrap { max-height: clamp(160px, calc(var(--widget-height, 340px) - 130px), 490px); }
+.widgets-grid-editing .canvas-item { padding-bottom: 38px; }
+.resize-handle {
+  position: absolute; bottom: 6px; right: 9px; width: 32px; height: 32px;
+  display: grid; place-items: center; color: var(--color-text);
+  border: 1px solid var(--color-border); border-radius: 7px;
+  background: var(--color-surface); cursor: nwse-resize; touch-action: none;
+  font-weight: 800; font-size: 18px;
+}
+.resize-handle:hover { border-color: var(--color-focus); background: #f1f5ff; }
+.resize-handle:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+@media (max-width: 950px) {
+  .widgets-grid { grid-template-columns: minmax(0, 1fr); }
+  .canvas-item,.canvas-item-metric,.canvas-item-table { grid-column: 1 / -1; }
+}
+@media (forced-colors: active) {
+  .resize-handle { border: 1px solid ButtonText; color: ButtonText; background: Canvas; }
+  .resize-handle:focus-visible { outline: 3px solid Highlight; }
+}
