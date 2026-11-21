@@ -35,7 +35,7 @@ const denseDashboard: Dashboard = {
 };
 
 async function fixedDemoApi(page: Page, dashboard = sampleDashboard) {
-  const dashboards = [dashboard];
+  const dashboards = [structuredClone(dashboard)];
   await page.route('**/api/identity', route => route.fulfill({ json: { userId: 'demo-owner', displayName: 'Demo Analyst' } }));
   await page.route('**/api/organizations', route => route.fulfill({ json: [{ id: 'northstar', name: 'Northstar Commerce', role: 'owner' }] }));
   await page.route('**/api/organizations/northstar/dashboards', async route => {
@@ -454,7 +454,59 @@ test('compact metrics do not stretch to match chart cards and short dashboards a
   const sizes = await page.locator('.canvas-item').evaluateAll(items => items.slice(0, 2).map(item => item.getBoundingClientRect().height));
   expect(sizes[0]).toBeLessThan(sizes[1] - 45);
   const widths = await page.locator('.canvas-item').evaluateAll(items => items.slice(0, 2).map(item => item.getBoundingClientRect().width));
-  expect(widths[0]).toBeGreaterThan(widths[1] * 1.8);
+  expect(widths[0]).toBeLessThan(widths[1] * 0.75);
+});
+
+test('UX-21 editor resizes and reorders widgets, persists saved layout, and discards cancelled sizing', async ({ page }, info) => {
+  await fixedDemoApi(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
+  const metricId = sampleDashboard.widgets[0]!.id;
+  const barId = sampleDashboard.widgets[2]!.id;
+  const metric = page.locator(`[data-widget-id="${metricId}"]`);
+  await expect(metric).toHaveAttribute('style', /--widget-columns: 3/);
+  const chart = page.getByRole('article', { name: 'Revenue over time', exact: true });
+  expect((await metric.boundingBox())!.width).toBeLessThan((await chart.boundingBox())!.width);
+
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  const resize = metric.getByRole('button', { name: /Resize Total revenue/ });
+  await resize.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
+  await expect(metric).toHaveAttribute('style', /--widget-columns: 6/);
+  await expect(metric).toHaveAttribute('style', /--widget-height: 260px/);
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  await capture(page, info, 'ux21-unsaved-keyboard-resize');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(metric).toHaveAttribute('style', /--widget-columns: 3/);
+  await expect(metric).toHaveAttribute('style', /--widget-height: 220px/);
+
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  const grip = metric.getByRole('button', { name: /Resize Total revenue/ });
+  const box = await grip.boundingBox();
+  expect(box).not.toBeNull();
+  const startX = box!.x + box!.width / 2;
+  const startY = box!.y + box!.height / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 260, startY + 40, { steps: 6 });
+  await page.mouse.up();
+  await expect(metric).toHaveAttribute('style', /--widget-columns: 6/);
+  await expect(metric).toHaveAttribute('style', /--widget-height: 260px/);
+
+  const source = page.locator(`[data-widget-id="${barId}"]`).getByRole('button', { name: 'Drag to move Orders by channel' });
+  await source.dragTo(metric, { targetPosition: { x: 35, y: 35 } });
+  await expect(page.locator('.canvas-item').first()).toHaveAttribute('data-widget-id', barId);
+  await capture(page, info, 'ux21-drag-reorder-resize-desktop');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.canvas-item').first()).toHaveAttribute('data-widget-id', barId);
+  await expect(metric).toHaveAttribute('style', /--widget-columns: 6/);
+  await expect(metric).toHaveAttribute('style', /--widget-height: 260px/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertNoDocumentOverflow(page, 390);
+  await capture(page, info, 'ux21-saved-layout-mobile');
 });
 
 test('chart data alternative exposes an announced keyboard channel selection', async ({ page }) => {
