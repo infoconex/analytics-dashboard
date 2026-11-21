@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AnalyticsDashboard.Application;
 using AnalyticsDashboard.Domain;
 using AnalyticsDashboard.Infrastructure;
@@ -16,6 +17,10 @@ public sealed class SavedVisualizationTests
     private SqliteCatalog catalog = null!;
     private SavedVisualizationService service = null!;
     private static readonly CancellationToken Token = CancellationToken.None;
+    private static readonly JsonSerializerOptions ApiJson = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+    };
 
     [SetUp]
     public async Task SetUp()
@@ -146,7 +151,7 @@ public sealed class SavedVisualizationTests
                 }));
         });
         using var client = factory.CreateClient();
-        var created = await client.PostAsJsonAsync("/api/organizations/northstar/visualizations", Draft());
+        var created = await client.PostAsJsonAsync("/api/organizations/northstar/visualizations", Draft(), ApiJson);
         Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));
         var document = await created.Content.ReadFromJsonAsync<JsonElement>();
         var id = document.GetProperty("id").GetString();
@@ -154,7 +159,7 @@ public sealed class SavedVisualizationTests
         var fetched = await client.GetAsync($"/api/organizations/northstar/visualizations/{id}");
         var unauthorized = await client.GetAsync($"/api/organizations/isolated/visualizations/{id}");
         var unauthorizedList = await client.GetAsync("/api/organizations/isolated/visualizations");
-        var unauthorizedCreate = await client.PostAsJsonAsync("/api/organizations/isolated/visualizations", Draft());
+        var unauthorizedCreate = await client.PostAsJsonAsync("/api/organizations/isolated/visualizations", Draft(), ApiJson);
         var saved = await client.GetAsync("/api/organizations/northstar/visualizations");
         Assert.Multiple(() =>
         {
@@ -165,9 +170,9 @@ public sealed class SavedVisualizationTests
             Assert.That(unauthorizedCreate.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
         });
         var update = await client.PutAsJsonAsync($"/api/organizations/northstar/visualizations/{id}",
-            new SavedVisualizationUpdate("Updated description", Draft().Definition, 1));
+            new SavedVisualizationUpdate("Updated description", Draft().Definition, 1), ApiJson);
         var stale = await client.PutAsJsonAsync($"/api/organizations/northstar/visualizations/{id}",
-            new SavedVisualizationUpdate("Stale", Draft().Definition, 1));
+            new SavedVisualizationUpdate("Stale", Draft().Definition, 1), ApiJson);
         Assert.That(update.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         Assert.That(stale.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
         var delete = await client.DeleteAsync($"/api/organizations/northstar/visualizations/{id}?expectedRevision=2");
