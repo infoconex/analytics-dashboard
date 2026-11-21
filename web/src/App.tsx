@@ -806,11 +806,16 @@ export default function App() {
                       {editMode && draft ? <input className="description-edit" aria-label="Dashboard description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /> : <p>{preview.description}</p>}</div>
                   </div>
                   <div className="heading-actions">
-                    {editMode ? <><button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving || Boolean(dashboardConflict)} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
+                    {editMode ? <>
+                       <div className="dashboard-undo-controls" role="group" aria-label="Dashboard widget history">
+                         <button type="button" className="button button-light" aria-label="Undo widget change" title="Undo widget change (Ctrl/Cmd+Z)" disabled={!undoHistory.past.length || saving} onClick={undoDashboardWidgets}><Undo2 size={16} /> Undo</button>
+                         <button type="button" className="button button-light" aria-label="Redo widget change" title="Redo widget change (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled={!undoHistory.future.length || saving} onClick={redoDashboardWidgets}><Redo2 size={16} /> Redo</button>
+                       </div>
+                       <button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving || Boolean(dashboardConflict)} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
                       : <><button className="button button-light" onClick={() => share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => startEditing()}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
                   </div>
                 </div>
-                {editMode && <div className="composition-status" role="status" aria-live="polite"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Arrange and configure your dashboard before publishing changes to your team.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}
+                {editMode && <><div className="composition-status"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Undo and Redo reverse widget edits in this tab. Save changes to keep your dashboard draft; library templates save separately.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div><span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{undoFeedback}</span></>}
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available in this tab.</div>}
                 {dashboardConflict && editMode && <section className="conflict-recovery" aria-label="Dashboard conflict recovery">
                   {dashboardConflict === 'unavailable'
@@ -824,10 +829,10 @@ export default function App() {
                 </section>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
                   && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={widget => { setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(widget); }} onAdd={() => { setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(createWidget()); }}
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={widget => { setReturnToLibrary(false); setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(widget); }} onAdd={() => { setReturnToLibrary(false); setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(createWidget()); }}
                    onAddSaved={() => void openSavedLibrary()}
-                   onDuplicate={widget => setDraft(current => current ? { ...current, widgets: duplicateWidget(current.widgets, widget.id, crypto.randomUUID()) } : current)}
-                   onSaveToLibrary={offerSaveToLibrary} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)}
+                   onDuplicate={widget => { if (draft) commitWidgets(duplicateWidget(draft.widgets, widget.id, crypto.randomUUID())); }}
+                   onSaveToLibrary={offerSaveToLibrary} onChange={commitWidgets}
                   onFiltersChange={filters => { viewingSnapshot.current = { key: `${organizationId}:${preview.id}`, filters }; }}
                   onShareInsight={(widget, filters) => share(preview, widget, filters)} />
               </>
@@ -879,7 +884,7 @@ export default function App() {
         key={organizationId} items={library?.organizationId === organizationId ? library.items : []}
         loading={libraryLoading} error={libraryError} busy={libraryBusy}
         onRetry={() => void openSavedLibrary()} onDismiss={() => setLibraryOpen(false)}
-        onCreate={() => { setLibraryOpen(false); setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(createWidget()); }}
+        onCreate={() => { setLibraryOpen(false); setReturnToLibrary(true); setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(createWidget()); }}
         onUse={useSavedVisualization} onEdit={editSavedVisualization} onDelete={saved => void deleteSavedVisualization(saved)} />}
 
       {librarySource && editMode && draft && <ModalDialog title="Save to visualization library" eyebrow="REUSABLE SAMPLE CHART"
@@ -892,11 +897,11 @@ export default function App() {
         <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={() => setLibrarySource(null)}>Cancel</Button><Button disabled={libraryBusy || !libraryName.trim()} onClick={() => void saveToLibrary()}>{libraryBusy ? 'Saving…' : 'Save to library'}</Button></div>
       </ModalDialog>}
 
-      {widgetDraft && editMode && draft && <ModalDialog title={libraryEditing ? 'Edit saved visualization' : 'Configure visualization'}
+      {widgetDraft && editMode && draft && <ModalDialog title={libraryEditing ? 'Edit saved visualization' : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Edit dashboard visualization' : 'Configure visualization'}
         eyebrow="VISUALIZATION BUILDER · SAMPLE DATA"
-        description={libraryEditing ? 'Edit this organization template. Existing dashboard copies remain unchanged.' : 'Pick a visual, then choose what it should show.'}
+        description={libraryEditing ? 'Saving updates this organization template immediately, not your dashboard. Existing copies remain unchanged. Cancel returns to the library.' : returnToLibrary ? 'Configure a new dashboard widget. Cancel returns to the library; Save changes persists the dashboard draft.' : 'Configure this dashboard widget with a live preview. Save changes on the dashboard to keep your edits.'}
         className="visualization-modal" initialFocus=".gallery-card" busy={libraryBusy}
-        onDismiss={() => { setWidgetDraft(null); setLibraryEditing(null); setTemplateConflict(null); setLibraryError(''); }}>
+        onDismiss={dismissVisualizationEditor}>
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
         {libraryEditing && <label className="form-label">Template description<textarea maxLength={500} rows={2}
           value={libraryDescription} onChange={event => setLibraryDescription(event.target.value)} /></label>}
@@ -946,7 +951,7 @@ export default function App() {
         </section>
         </div>
         {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
-        <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={() => { setWidgetDraft(null); setLibraryEditing(null); setTemplateConflict(null); setLibraryError(''); }}>Cancel</Button><Button disabled={libraryBusy || Boolean(templateConflict) || !widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => void finishWidgetEdit()}><Check size={16} /> {libraryEditing ? (libraryBusy ? 'Saving…' : 'Save template') : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
+        <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={dismissVisualizationEditor}>Cancel</Button><Button disabled={libraryBusy || Boolean(templateConflict) || !widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => void finishWidgetEdit()}><Check size={16} /> {libraryEditing ? (libraryBusy ? 'Saving…' : 'Save template') : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
       </ModalDialog>}
     </div>
   );
