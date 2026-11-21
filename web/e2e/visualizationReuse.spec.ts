@@ -336,6 +336,10 @@ test('UX-24 stale template edits and deletions recover without changing dashboar
   await expect(recovery).toContainText('latest revision 2');
   await expect(editor.getByRole('textbox', { name: 'Title' })).toHaveValue('My template draft');
   await expect(editor.getByRole('button', { name: 'Save template' })).toBeDisabled();
+  // Conflict recovery must be visible without the user hunting above their
+  // current scroll position in the long visual editor.
+  await expect(recovery).toBeInViewport();
+  await expect(recovery).toBeFocused();
   await screenshot(page, info, 'ux24-template-conflict');
   page.once('dialog', dialog => dialog.accept());
   await recovery.getByRole('button', { name: 'Reopen latest template (discard edits)' }).click();
