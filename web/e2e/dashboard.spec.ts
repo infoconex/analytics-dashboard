@@ -10,9 +10,10 @@ test('a tenant editor creates, edits and reloads a saved dashboard', async ({ pa
   await page.getByRole('textbox', { name: 'Description' }).fill('Customer engagement signals');
   await page.getByRole('button', { name: 'Create dashboard' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Customer health' })).toBeVisible();
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await page.getByRole('button', { name: /Add visualization/ }).click();
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Customer health');
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await expect(page.getByRole('heading', { name: 'Start with your first visualization' })).toBeVisible();
+  await page.getByRole('button', { name: 'Create visualization' }).click();
 
   await page.getByRole('textbox', { name: 'Title' }).fill('Monthly revenue');
   await page.getByRole('button', { name: /Area chart/ }).click();
@@ -79,9 +80,9 @@ test('empty dashboard offers chart gallery and responsive keyboard movement', as
   await page.getByRole('button', { name: 'New dashboard' }).click();
   await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Mobile composition');
   await page.getByRole('button', { name: 'Create dashboard' }).click();
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await expect(page.getByText('Your canvas is ready')).toBeVisible();
-  await page.getByRole('button', { name: /Add visualization/ }).click();
+  await expect(page.getByRole('heading', { name: 'Start with your first visualization' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Create visualization' }).click();
   await expect(page.getByRole('button', { name: /Data table/ })).toBeVisible();
   await page.getByRole('button', { name: /Bar chart/ }).click();
   await page.getByRole('textbox', { name: 'Title' }).fill('Mobile orders');
