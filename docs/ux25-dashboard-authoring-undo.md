@@ -65,34 +65,31 @@ New Chromium Playwright cases (`web/e2e/visualizationReuse.spec.ts`) cover dupli
 
 ### Measured verification and CI links
 
-**Implementation-code PR verification passed:** **145 NUnit**, **118 Vitest** (including four new history unit cases), **20 UX-13/14 sample evaluation lab tests**, a passing TypeScript production build, **14 real SQL Server/PostgreSQL conformance tests**, and **130/130 Chromium Playwright cases**. C# and JavaScript/TypeScript CodeQL analyses both passed. All outcomes were checked from the completed GitHub Actions job records, not inferred from tests being present.
+The verified **implementation commit** `00d9df7` passed all required checks in [Verify #44941905864](https://github.com/infoconex/analytics-dashboard/actions/runs/44941905864) and [CodeQL #44941905869](https://github.com/infoconex/analytics-dashboard/actions/runs/44941905869):
 
-The first browser run passed 126/130 and exposed four targeted assertion failures (one ambiguous duplicate-widget selector, two outdated modal-heading expectations, one legacy sticky-footer expectation). These were corrected without reverting the intended UX; the next implementation-code run passed **all 130**. The documentation-only PR-head revisions must also complete their own Verify and CodeQL gates before merge.
+- **145 NUnit**, **118 Vitest**, **130 Chromium Playwright**, **20 UX-13/UX-14 evaluation lab** and **14 real SQL Server/PostgreSQL conformance tests** passed.
+- TypeScript production build succeeded.
+- C# and JavaScript/TypeScript CodeQL passed.
+- Initial Chromium regression failures involved legacy dialog-title/sticky-footer expectations and an ambiguous duplicate-widget selector. These were corrected and the complete 130-test browser suite subsequently passed.
 
-- [Passing implementation-code Verify (130 Chromium tests)](https://github.com/infoconex/analytics-dashboard/actions/runs/44941905864)
-- [Passing implementation-code CodeQL](https://github.com/infoconex/analytics-dashboard/actions/runs/44941905869)
-- [Initial regression diagnosis](https://github.com/infoconex/analytics-dashboard/actions/runs/44941069417) — historical evidence, not a substitute for a passing run
+The documentation-only update has a later PR-head SHA and must independently finish its GitHub Actions checks before merging.
 
-### Screenshot inspection
+### Actual screenshot inspection
 
-Downloaded and directly visually inspected the **actual Chromium PNG pixels** from [initial UX-25 browser artifact #14722086170](https://github.com/infoconex/analytics-dashboard/actions/runs/44941069417/artifacts/14722086170), including:
+Downloaded the successful Chromium artifact [#14721499563](https://github.com/infoconex/analytics-dashboard/actions/runs/44941905864/artifacts/14721499563) and directly inspected **13 PNG screenshots** (not merely test assertions):
 
-- `ux23-ux25-desktop-redo.png`: desktop Undo active/Redo disabled after redo; the grouped controls and Save/Cancel wrap readably without overlapping.
-- `ux23-ux25-desktop-undo-ready.png`: dashboard with two visualization copies and working move handles; the chart remains legible after duplication.
-- `ux23-ux25-toolbar-320.png`: at true 320px width, Undo/Redo and Cancel/Save fit in separate readable rows with no horizontal clipping.
-- `ux23-ux25-conflict-after-undo.png`: the stale-revision recovery banner, disabled Save state, and explicit discard action remain visibly distinguishable.
+- Desktop Undo-ready and Redo states: widget copies, chart controls, Save/Cancel and the history group are readable and do not overlap.
+- Stale-revision conflict after Undo: explicit recovery controls and disabled Save remain understandable.
+- Dashboard toolbar and visualization editor at **320px, 390px, 720px, 768px and 1440px**: controls remain in flow, dialog actions can be reached by scrolling, and no document-wide horizontal overflow is visible.
+- **Known visual limitation:** at 390px, the donut preview's external category labels can clip at the horizontal edges. The chart remains readable and a data-table alternative is available. Carry label-fitting/presentation refinement into UX-26 rather than broadening this undo/workflow increment.
 
-Downloaded the **passing** browser artifact [#14721499563](https://github.com/infoconex/analytics-dashboard/actions/runs/44941905864/artifacts/14721499563) and directly inspected **all 13 UX-25 Chromium screenshot images**: desktop Undo/Redo, stale-save conflict, and separate toolbar/editor captures at **320, 390, 720, 768 and 1440px**. The 320/390 mobile editor actions are ordinary scrollable controls, not obscuring sticky overlays; at 720/768/1440 the chart preview and in-flow actions are visible when scrolled into view. The 320/390 and tablet toolbars wrap without covering Save/Cancel or overflowing the viewport. Responsive assertions, genuine Chromium zoom tests and axe remain enabled.
-
-**Observed limitation (defer to UX-26):** At 390px, some external category labels on the existing donut chart are clipped at the preview edges, although the underlying fictional records, chart, and accessible data-table alternative are still available. This is distinct from the UX-25 footer/toolbar fix; do not claim that all narrow-screen chart labels are perfect. Future UX-26 mobile chart presentation should preserve accurate labels or offer a compact legend rather than hiding meaning.
-
-Browser geometry assertions alone are **not** visual signoff; the screenshot pixels above were actually reviewed.
+Browser viewport/axe assertions complement but do not replace the direct image inspection. High-zoom and narrow-screen regression coverage remains enabled.
 
 ### Security and engineering review
 
 PR diff review found no new HTTP endpoint, schema, template synchronization, client storage, auth grant, production data source, or embedding contract. Only bounded copied **widget descriptors** enter in-memory history, scoped to a single currently edited dashboard. Save still uses the original expected dashboard revision; the stale-save recovery path blocks Save until deliberately reloading an authorized current revision. Template writes still use independent server-authorized organization-scoped CRUD and revisions. There is no automatic conflict merging or hidden live reference. Local history is discarded on Save/Cancel/navigation/tenant change. The server remains the authority for editor/owner rights, tenant isolation and read-only viewer/embedded behavior. No material security findings or contract changes identified in code review; CodeQL completion is a separate required merge gate.
 
-**Merge gate:** review the latest PR head's passing Verify and CodeQL jobs and inspect final screenshot artifacts before squash merge; after merge, validate the fresh main-branch runs independently.
+**Merge gate:** latest PR-head Verify and CodeQL must complete successfully before squash merge. The successful implementation-run screenshots have been inspected directly. After merge, verify fresh main-branch Verify and CodeQL results.
 
 ## Limitations
 
