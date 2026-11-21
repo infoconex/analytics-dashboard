@@ -12,14 +12,14 @@ public sealed class SavedVisualizationService(
         string organizationId, string userId, CancellationToken token)
     {
         await RequireRoleAsync(organizationId, userId, false, token);
-        return await repository.ListAsync(organizationId, token);
+        return await repository.ListVisualizationsAsync(organizationId, token);
     }
 
     public async Task<SavedVisualization?> FindAsync(
         string organizationId, Guid id, string userId, CancellationToken token)
     {
         await RequireRoleAsync(organizationId, userId, false, token);
-        return await repository.FindAsync(organizationId, id, token);
+        return await repository.FindVisualizationAsync(organizationId, id, token);
     }
 
     public async Task<SavedVisualization> CreateAsync(
@@ -32,7 +32,7 @@ public sealed class SavedVisualizationService(
         var definition = draft.Definition with { Id = Guid.NewGuid(), Columns = null, Height = null };
         var saved = new SavedVisualization(Guid.NewGuid(), organizationId, draft.Description.Trim(),
             definition, 1, userId, now, now);
-        await repository.AddAsync(saved, token);
+        await repository.AddVisualizationAsync(saved, token);
         return saved;
     }
 
@@ -42,7 +42,7 @@ public sealed class SavedVisualizationService(
     {
         await RequireRoleAsync(organizationId, userId, true, token);
         Validate(draft);
-        var previous = await repository.FindAsync(organizationId, id, token);
+        var previous = await repository.FindVisualizationAsync(organizationId, id, token);
         if (previous is null) return null;
         if (previous.Revision != expectedRevision) throw new ConflictException();
 
@@ -53,7 +53,7 @@ public sealed class SavedVisualizationService(
             Revision = previous.Revision + 1,
             UpdatedAt = clock.GetUtcNow()
         };
-        if (!await repository.ReplaceAsync(changed, expectedRevision, token))
+        if (!await repository.ReplaceVisualizationAsync(changed, expectedRevision, token))
             throw new ConflictException();
         return changed;
     }
@@ -63,10 +63,10 @@ public sealed class SavedVisualizationService(
     {
         await RequireRoleAsync(organizationId, userId, true, token);
         if (expectedRevision < 1) throw new InvalidDashboardException("Expected revision is invalid.");
-        if (!await repository.DeleteAsync(organizationId, id, expectedRevision, token))
+        if (!await repository.DeleteVisualizationAsync(organizationId, id, expectedRevision, token))
         {
             // Scoped read prevents leaking whether another organization's ID exists.
-            if (await repository.FindAsync(organizationId, id, token) is null) return false;
+            if (await repository.FindVisualizationAsync(organizationId, id, token) is null) return false;
             throw new ConflictException();
         }
         return true;

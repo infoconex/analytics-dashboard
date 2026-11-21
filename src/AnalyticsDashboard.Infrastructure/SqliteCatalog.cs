@@ -177,7 +177,7 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
 
-    public async Task<IReadOnlyList<SavedVisualization>> ListAsync(
+    public async Task<IReadOnlyList<SavedVisualization>> ListVisualizationsAsync(
         string organizationId, CancellationToken token)
     {
         var results = new List<SavedVisualization>();
@@ -195,7 +195,7 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
         return results;
     }
 
-    public async Task<SavedVisualization?> FindAsync(
+    public async Task<SavedVisualization?> FindVisualizationAsync(
         string organizationId, Guid id, CancellationToken token)
     {
         await using var connection = await OpenAsync(token);
@@ -211,7 +211,7 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
         return await reader.ReadAsync(token) ? ReadSavedVisualization(reader) : null;
     }
 
-    public async Task AddAsync(SavedVisualization saved, CancellationToken token)
+    public async Task AddVisualizationAsync(SavedVisualization saved, CancellationToken token)
     {
         await using var connection = await OpenAsync(token);
         await using var command = connection.CreateCommand();
@@ -224,7 +224,7 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
         await command.ExecuteNonQueryAsync(token);
     }
 
-    public async Task<bool> ReplaceAsync(SavedVisualization saved, int expectedRevision, CancellationToken token)
+    public async Task<bool> ReplaceVisualizationAsync(SavedVisualization saved, int expectedRevision, CancellationToken token)
     {
         await using var connection = await OpenAsync(token);
         await using var command = connection.CreateCommand();
@@ -238,7 +238,7 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
         return await command.ExecuteNonQueryAsync(token) == 1;
     }
 
-    public async Task<bool> DeleteAsync(string organizationId, Guid id, int expectedRevision, CancellationToken token)
+    public async Task<bool> DeleteVisualizationAsync(string organizationId, Guid id, int expectedRevision, CancellationToken token)
     {
         await using var connection = await OpenAsync(token);
         await using var command = connection.CreateCommand();
