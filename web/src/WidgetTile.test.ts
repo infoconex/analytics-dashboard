@@ -16,6 +16,23 @@ const channelDonut: DashboardWidget = {
   title: 'Traffic sources', kind: 'donut', metricKey: 'sessions',
 };
 
+describe('metric card presentation', () => {
+  it('shows the aggregate and clearly qualified comparison without an unlabeled sparkline', () => {
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: { ...channelTable, id: 'b3333333-3333-4333-8333-333333333333',
+        title: 'Total revenue', kind: 'metric', datasetKey: 'commerce',
+        metricKey: 'revenue', dimensionKey: 'month' },
+      period: '12m', filters: defaultConsumerFilters,
+    }));
+    expect(html).toContain('metric-number');
+    expect(html).toContain('last versus first sample month, not year-over-year');
+    expect(html).toContain('View data table');
+    expect(html).toContain('What this means');
+    expect(html).not.toContain('metric-sparkline');
+    expect(html).not.toContain('gradient-b3333333');
+  });
+});
+
 describe('native dashboard data tables', () => {
   it('presents exact sample values under native row and column headers', () => {
     const html = renderToStaticMarkup(createElement(WidgetTile, {
