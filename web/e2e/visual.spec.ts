@@ -477,7 +477,11 @@ test('UX-21 editor resizes and reorders widgets, persists saved layout, and disc
   await expect(metric).toHaveAttribute('style', /--widget-height: 260px/);
   await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   await capture(page, info, 'ux21-unsaved-keyboard-resize');
+  // An unsaved resize must prompt. Accepting the discard confirmation is part of the scenario;
+  // Playwright would otherwise dismiss it automatically and correctly leave Edit mode open.
+  page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
   await expect(metric).toHaveAttribute('style', /--widget-columns: 3/);
   await expect(metric).toHaveAttribute('style', /--widget-height: 220px/);
 
