@@ -797,3 +797,48 @@ button:disabled { opacity:.6; }
   .dashboard-undo-controls > button { flex:1 1 0; }
   .dashboard-heading .heading-actions > button { flex:1 1 auto; }
 }
+
+
+/* UX-26: honest, full-width touch editing instead of relying on a tiny drag
+   corner. Desktop column sizes remain persisted even while mobile uses one
+   column. No overlay hides widget actions, charts or the Save/Cancel toolbar. */
+.canvas-size-tools { display: none; }
+@media (max-width:950px) {
+  .canvas-size-tools {
+    display:block; margin:8px 6px 0; padding:4px 0 8px;
+    border-top:1px solid var(--color-border); min-width:0;
+  }
+  .canvas-size-tools > summary {
+    display:list-item; min-height:44px; padding:12px 8px;
+    color:var(--color-primary); font-size:var(--type-label); font-weight:700;
+    cursor:pointer; overflow-wrap:anywhere;
+  }
+  .canvas-size-tools > summary span { color:var(--color-muted); font-weight:400; }
+  .canvas-size-tools > summary:focus-visible,
+  .canvas-size-buttons button:focus-visible { outline:3px solid var(--color-focus); outline-offset:2px; }
+  .canvas-size-buttons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .canvas-size-buttons button {
+    min-width:0; min-height:44px; border:1px solid var(--color-control-border);
+    background:var(--color-surface); color:var(--color-primary);
+    border-radius:var(--radius-control); font:inherit; font-size:var(--type-label);
+    cursor:pointer;
+  }
+  .canvas-size-buttons button:disabled { opacity:.55; cursor:not-allowed; }
+  .canvas-size-tools p { margin:8px 0 0; font-size:var(--type-caption); line-height:1.5; color:var(--color-muted); }
+  .widgets-grid-editing .canvas-item { padding-bottom:8px; }
+  .widgets-grid-editing .resize-handle { display:none; }
+}
+@media (max-width:480px) {
+  /* Titles and four independently operable actions must not compete for a
+     single 260px row. Give each touch control a predictable hit target. */
+  .widgets-grid-editing .widget-heading { flex-wrap:wrap; }
+  .widgets-grid-editing .widget-actions { width:100%; gap:8px; flex-wrap:wrap; }
+  .widgets-grid-editing .widget-actions .icon-button { min-width:44px; min-height:44px; }
+  .canvas-move-controls .icon-button,.drag-handle { min-width:44px; min-height:44px; }
+  .canvas-move-controls { flex-wrap:wrap; }
+}
+@media (forced-colors:active) {
+  .canvas-size-tools { border-color:CanvasText; }
+  .canvas-size-buttons button { border-color:ButtonText; background:ButtonFace; color:ButtonText; }
+  .canvas-size-tools > summary:focus-visible,.canvas-size-buttons button:focus-visible { outline-color:Highlight; }
+}
