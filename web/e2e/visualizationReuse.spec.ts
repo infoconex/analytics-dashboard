@@ -398,7 +398,7 @@ test('UX-25 bounded widget Undo/Redo reverses duplication, removal, reorder, res
   await undo.click();
   await expect.poll(ids).toEqual(initialOrder);
 
-  const resize = page.getByRole('button', { name: /Resize Traffic sources \\(copy\\):/ });
+  const resize = page.getByRole('button', { name: /Resize Traffic sources \(copy\):/ });
   await resize.focus();
   await page.keyboard.press('ArrowRight');
   const copy = page.locator('.canvas-item[data-widget-id]').nth(1);
