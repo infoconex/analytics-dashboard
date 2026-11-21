@@ -100,6 +100,10 @@ export default function App() {
   const dashboards = dashboardList?.organizationId === organizationId ? dashboardList.items : [];
   const activeDashboard = dashboards.find(item => item.id === view.id);
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
+  // Configuration edits and a named new dashboard can be lost on refresh even before
+  // they are committed to a dashboard draft. Never persist them into browser storage.
+  const hasPendingWork = Boolean(hasChanges || widgetDraft || librarySource
+    || (createOpen && draft && (draft.name.trim() || draft.description.trim())));
 
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
 
@@ -120,7 +124,7 @@ export default function App() {
   }
 
   function confirmDiscard(): boolean {
-    return !hasChanges || window.confirm('Discard your unsaved dashboard changes?');
+    return !hasPendingWork || window.confirm('Discard your unsaved authoring changes?');
   }
 
   function stopEditing() {
@@ -190,7 +194,7 @@ export default function App() {
     };
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
-  }, [organizations, hasChanges]);
+  }, [organizations, hasPendingWork]);
 
   // Navigation replaces the previous control; place keyboard focus on the new
   // page heading instead of leaving it on a detached element. The question
@@ -210,11 +214,11 @@ export default function App() {
   }, [view, loading, selectedTask, organizationId, dashboardLoadFailed]);
 
   useEffect(() => {
-    if (!hasChanges) return;
+    if (!hasPendingWork) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [hasChanges]);
+  }, [hasPendingWork]);
 
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
