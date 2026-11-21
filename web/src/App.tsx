@@ -494,7 +494,10 @@ export default function App() {
       setDraft({ name: created.name, description: created.description,
         widgets: created.widgets.map(widget => ({ ...widget })) });
       setEditMode(true);
-      setToast('Dashboard created and saved. Add a visualization to get started.');
+      // An inline first-action panel communicates the persisted state without
+      // a toast covering its mobile buttons.
+      setToast('');
+      window.requestAnimationFrame(() => window.scrollTo(0, 0));
     } catch (exception) {
       if (activeOrganization.current === targetOrganizationId) {
         setCreateError(exception instanceof Error ? exception.message : 'Unable to create dashboard.');
@@ -863,15 +866,15 @@ export default function App() {
                   </div>
                   <div className="heading-actions">
                     {editMode ? <>
-                       <div className="dashboard-undo-controls" role="group" aria-label="Dashboard widget history">
+                       {(Boolean(draft?.widgets.length) || undoHistory.past.length > 0 || undoHistory.future.length > 0) && <div className="dashboard-undo-controls" role="group" aria-label="Dashboard widget history">
                          <button type="button" className="button button-light" aria-label="Undo widget change" title="Undo widget change (Ctrl/Cmd+Z)" disabled={!undoHistory.past.length || saving} onClick={undoDashboardWidgets}><Undo2 size={16} /> Undo</button>
                          <button type="button" className="button button-light" aria-label="Redo widget change" title="Redo widget change (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled={!undoHistory.future.length || saving} onClick={redoDashboardWidgets}><Redo2 size={16} /> Redo</button>
-                       </div>
+                       </div>}
                        <button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button ref={saveChangesButton} className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving || Boolean(dashboardConflict)} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
                       : <><button className="button button-light" onClick={() => share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => startEditing()}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
                   </div>
                 </div>
-                {editMode && <><div className="composition-status"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Undo and Redo reverse widget edits in this tab. Save changes to keep your dashboard draft; library templates save separately.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div><span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{undoFeedback}</span></>}
+                {editMode && <>{(Boolean(draft?.widgets.length) || hasChanges) && <div className="composition-status"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Undo and Redo reverse widget edits in this tab. Save changes to keep your dashboard draft; library templates save separately.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}<span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{undoFeedback}</span></>}
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available in this tab.</div>}
                 {dashboardConflict && editMode && <section className="conflict-recovery" aria-label="Dashboard conflict recovery">
                   {dashboardConflict === 'unavailable'
