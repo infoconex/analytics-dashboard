@@ -127,6 +127,7 @@ public sealed class DashboardServiceTests
 
         foreach (var bad in new[] {
             original.Widgets[0] with { Columns = 7 },
+            original.Widgets[0] with { Columns = 3 },
             original.Widgets[0] with { Height = 900 },
             original.Widgets[0] with { Height = 231 },
         })
