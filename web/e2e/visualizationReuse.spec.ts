@@ -443,6 +443,7 @@ test('UX-25 library saves remain independent of widget history; Cancel returns t
   await picker.getByRole('button', { name: 'Edit template' }).click();
   const editor = page.getByRole('dialog', { name: 'Edit saved visualization' });
   await editor.getByRole('textbox', { name: 'Title' }).fill('Uncommitted template title');
+  page.once('dialog', dialog => dialog.accept());
   await editor.getByRole('button', { name: 'Cancel' }).click();
   await expect(picker).toBeVisible();
   expect(api.library()[0]!.definition.title).toBe('Traffic sources');
@@ -572,6 +573,19 @@ test('UX-26 circular charts fit their own widget without clipping at mobile, tab
       await expect(chart.locator('.chart-outside-label')).toHaveCount(0);
       await expect(widget.getByText(/Outside labels do not fit this chart size/)).toBeVisible();
     }
+    // The chart may initially paint labels using its previous width while
+    // ResizeObserver reacts to a viewport change. Wait for the actual chart
+    // frame to settle; never relax or suppress the final bounding-box checks.
+    await expect.poll(async () => chart.evaluate(element => {
+      const frame = element.getBoundingClientRect();
+      const labels = [...element.querySelectorAll('.chart-outside-label')];
+      if (frame.width < 480 && labels.length > 0) return false;
+      return labels.every(label => {
+        const bounds = label.getBoundingClientRect();
+        return bounds.left >= frame.left - 2 && bounds.right <= frame.right + 2
+          && bounds.top >= frame.top - 2 && bounds.bottom <= frame.bottom + 2;
+      });
+    }), { timeout: 10000, message: 'Circular labels must fit the settled chart frame after resize' }).toBe(true);
     // Read DOM geometry atomically. ResizeObserver can legitimately rebuild
     // an SVG label between Playwright .all() and boundingBox() awaits.
     const labelGeometry = await chart.evaluate(element => {
@@ -689,4 +703,128 @@ test('UX-26 nine visualization kinds retain sensible mixed-dashboard bounds at a
     await lastTile.scrollIntoViewIfNeeded();
     await screenshot(page, info, `ux26-mixed-table-${width}`);
   }
+});
+
+
+test('UX-27 guarded editor Cancel, Escape and Close preserve modified dashboard and library drafts', async ({ page }, info) => {
+  test.setTimeout(120_000);
+  const api = await fixture(page);
+  await visit(page);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: 'Edit Traffic sources' }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
+  await expect(editor.getByRole('navigation', { name: 'Authoring location' })).toContainText('Edit dashboard copy');
+  await expect(editor).toContainText('Dashboard Save changes is still required');
+  await editor.getByRole('textbox', { name: 'Title' }).fill('Locally changed dashboard widget');
+
+  page.once('dialog', dialog => dialog.dismiss());
+  await editor.getByRole('button', { name: 'Cancel' }).click();
+  await expect(editor.getByRole('textbox', { name: 'Title' })).toHaveValue('Locally changed dashboard widget');
+  await screenshot(page, info, 'ux27-edit-discard-declined');
+
+  page.once('dialog', dialog => dialog.dismiss());
+  await page.keyboard.press('Escape');
+  await expect(editor).toBeVisible();
+
+  page.once('dialog', dialog => dialog.accept());
+  await editor.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(editor).toHaveCount(0);
+  await expect(page.getByRole('article', { name: 'Traffic sources' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+
+  // No dialog is necessary when the editor is pristine.
+  await page.getByRole('button', { name: 'Edit Traffic sources' }).click();
+  await editor.getByRole('button', { name: 'Cancel' }).click();
+  await expect(editor).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Save Traffic sources to library' }).click();
+  await page.getByRole('dialog', { name: 'Save to visualization library' }).getByRole('button', { name: 'Save to library' }).click();
+  await page.getByRole('button', { name: 'Add saved visualization' }).click();
+  const picker = page.getByRole('dialog', { name: 'Add saved visualization' });
+  await picker.getByRole('button', { name: 'Edit template' }).click();
+  const template = page.getByRole('dialog', { name: 'Edit saved visualization' });
+  await expect(template.getByRole('navigation', { name: 'Authoring location' })).toContainText('Reusable template');
+  await expect(template).toContainText('existing dashboard copies are not modified');
+  await template.getByRole('textbox', { name: 'Template description' }).fill('Uncommitted library description');
+  page.once('dialog', dialog => dialog.dismiss());
+  await template.getByRole('button', { name: 'Cancel' }).click();
+  await expect(template.getByRole('textbox', { name: 'Template description' })).toHaveValue('Uncommitted library description');
+  expect(api.library()[0]?.description).toBe('');
+  await screenshot(page, info, 'ux27-template-discard-declined');
+
+  page.once('dialog', dialog => dialog.accept());
+  await template.getByRole('button', { name: 'Cancel' }).click();
+  await expect(picker).toBeVisible();
+  expect(api.library()[0]?.description).toBe('');
+  await picker.getByRole('button', { name: 'Add copy' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Added an independent copy' })).toBeVisible();
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  expect(api.dashboards()[0]?.widgets).toHaveLength(2);
+  expect(api.dashboards()[0]?.widgets[1]?.id).not.toBe(source.id);
+  expect(api.library()).toHaveLength(1);
+});
+
+test('UX-27 partially completed dashboard creation asks before discarding, with no phantom dashboard', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/#/organization/northstar/dashboards');
+  await page.getByRole('button', { name: 'New dashboard', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Create dashboard' });
+  await dialog.getByRole('textbox', { name: 'Dashboard name' }).fill('Unfinished dashboard');
+  page.once('dialog', confirmation => confirmation.dismiss());
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Unfinished dashboard');
+  page.once('dialog', confirmation => confirmation.accept());
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Unfinished dashboard' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'New dashboard', exact: true }).click();
+  await expect(dialog.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+});
+
+test('UX-27 complete mobile-to-desktop authoring context, preview, discard and saved round trip', async ({ page }, info) => {
+  test.setTimeout(180_000);
+  const api = await fixture(page);
+  await visit(page);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  for (const { width, height } of [
+    { width: 320, height: 640 }, { width: 390, height: 844 },
+    { width: 720, height: 850 }, { width: 768, height: 1024 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize({ width, height });
+    await page.getByRole('button', { name: /Add visualization/ }).click();
+    const editor = page.getByRole('dialog', { name: 'Configure visualization' });
+    await expect(editor.getByRole('navigation', { name: 'Authoring location' })).toContainText('New dashboard visualization');
+    await expect(editor).toContainText('Dashboard Save changes is still required');
+    await editor.getByRole('button', { name: /Pie chart/ }).click();
+    await expect(editor.getByRole('region', { name: 'Live visualization preview' })).toBeVisible();
+    await editor.getByRole('button', { name: 'Add to dashboard' }).scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux27-editor-${width}`);
+    if (width <= 390) {
+      const a11y = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+      expect(a11y.violations.map(item => item.id)).toEqual([]);
+    }
+    page.once('dialog', dialog => dialog.accept());
+    await editor.getByRole('button', { name: 'Cancel' }).click();
+    await expect(editor).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    await screenshot(page, info, `ux27-composition-${width}`);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: /Add visualization/ }).click();
+  const builder = page.getByRole('dialog', { name: 'Configure visualization' });
+  await builder.getByRole('button', { name: /Pie chart/ }).click();
+  await builder.getByRole('textbox', { name: 'Title' }).fill('UX27 saved channel breakdown');
+  await builder.getByRole('button', { name: 'Add to dashboard' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Visualization added to dashboard draft' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  await screenshot(page, info, 'ux27-mobile-unsaved-draft');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  expect(api.dashboards()[0]?.revision).toBe(2);
+  await page.reload();
+  await expect(page.getByRole('article', { name: 'UX27 saved channel breakdown' })).toBeVisible();
+  await screenshot(page, info, 'ux27-mobile-saved-dashboard');
 });

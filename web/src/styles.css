@@ -856,3 +856,13 @@ button:disabled { opacity:.6; }
   color:var(--color-muted);
 }
 .widgets-grid-editing > .add-widget small { font-size:var(--type-caption); }
+
+
+/* UX-27: preserve editing context and the two independent persistence boundaries. */
+.authoring-context { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin:-9px 0 11px; color:#536783; font-size:11px; line-height:1.5; }
+.authoring-context strong { color:#314b78; font-weight:800; }
+.authoring-persistence-note { margin:0 0 16px; padding:10px 13px; border:1px solid #dbe5f7; border-radius:9px; background:#f6f8ff; color:#405577; font-size:11.5px; line-height:1.5; }
+@media (max-width:480px) {
+  .authoring-context { gap:5px; }
+  .authoring-persistence-note { padding:10px; }
+}
