@@ -510,7 +510,7 @@ test('UX-25 mobile Undo controls and in-flow visualization editor actions fit 32
       expect(rect!.x + rect!.width).toBeLessThanOrEqual(width + 1);
     }
     await screenshot(page, info, `ux25-toolbar-${width}`);
-    await page.getByRole('button', { name: 'Edit Traffic sources' }).click();
+    await page.getByRole('button', { name: 'Edit Traffic sources', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
     const actions = dialog.locator('.modal-actions');
     if (width <= 480) await expect(actions).toHaveCSS('position', 'static');
