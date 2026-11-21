@@ -193,12 +193,13 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
             onPointerCancel={stopResizing}
             onKeyDown={event => {
               const current = layoutForWidget(widget);
-              const next = {
+              const shortcuts: Record<string, [number, number]> = {
                 ArrowLeft: [current.columns - 3, current.height],
                 ArrowRight: [current.columns + 3, current.height],
                 ArrowUp: [current.columns, current.height - 40],
                 ArrowDown: [current.columns, current.height + 40],
-              }[event.key];
+              };
+              const next = shortcuts[event.key];
               if (!next) return;
               event.preventDefault();
               announceResize(widget, next[0]!, next[1]!);
