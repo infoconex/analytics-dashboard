@@ -500,7 +500,7 @@ export default function App() {
         ? { ...current, items: current.items.filter(item => item.id !== saved.id) } : current);
     } catch (exception) {
       if (activeOrganization.current !== org) return;
-      if (exception instanceof ApiError && exception.status === 409) {
+      if (exception instanceof ApiError && (exception.status === 409 || exception.status === 404)) {
         try {
           const latest = await visualizationApi.list(org);
           if (activeOrganization.current !== org) return;
@@ -567,8 +567,8 @@ export default function App() {
         setToast('Template updated independently. Your dashboard draft was not saved or changed.');
       } catch (exception) {
         if (activeOrganization.current !== org) return;
-        if (exception instanceof ApiError && exception.status === 409) {
-          setLibraryError('A newer template revision was saved elsewhere. Your template edits remain here, unsaved.');
+        if (exception instanceof ApiError && (exception.status === 409 || exception.status === 404)) {
+          setLibraryError('The template was changed or deleted in another session. Your template edits remain here, unsaved.');
           try {
             const latest = await visualizationApi.list(org);
             if (activeOrganization.current !== org) return;
@@ -715,7 +715,7 @@ export default function App() {
                 {dashboardConflict && editMode && <section className="conflict-recovery" aria-label="Dashboard conflict recovery">
                   {dashboardConflict === 'unavailable'
                     ? <p>The latest dashboard could not be read with your current access. Keep this draft open and check access or try again.</p>
-                    : <p>Opened at revision {activeDashboard.revision}; latest saved revision {dashboardConflict.revision}: <strong>{dashboardConflict.name}</strong> ({dashboardConflict.widgets.length} visualizations). Your draft remains unchanged.</p>}
+                    : <p>Opened at revision {activeDashboard?.revision}; latest saved revision {dashboardConflict.revision}: <strong>{dashboardConflict.name}</strong> ({dashboardConflict.widgets.length} visualizations). Your draft remains unchanged.</p>}
                   <div className="conflict-recovery-actions">
                     {dashboardConflict === 'unavailable'
                       ? <button type="button" className="button button-light" disabled={saving} onClick={() => void inspectCurrentDashboard()}>Check latest version</button>
@@ -724,7 +724,7 @@ export default function App() {
                 </section>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
                   && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={widget => { setLibraryEditing(null); setWidgetDraft(widget); }} onAdd={() => { setLibraryEditing(null); setWidgetDraft(createWidget()); }}
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={widget => { setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(widget); }} onAdd={() => { setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(createWidget()); }}
                    onAddSaved={() => void openSavedLibrary()}
                    onDuplicate={widget => setDraft(current => current ? { ...current, widgets: duplicateWidget(current.widgets, widget.id, crypto.randomUUID()) } : current)}
                    onSaveToLibrary={offerSaveToLibrary} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)}
@@ -779,7 +779,7 @@ export default function App() {
         key={organizationId} items={library?.organizationId === organizationId ? library.items : []}
         loading={libraryLoading} error={libraryError} busy={libraryBusy}
         onRetry={() => void openSavedLibrary()} onDismiss={() => setLibraryOpen(false)}
-        onCreate={() => { setLibraryOpen(false); setLibraryEditing(null); setWidgetDraft(createWidget()); }}
+        onCreate={() => { setLibraryOpen(false); setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(createWidget()); }}
         onUse={useSavedVisualization} onEdit={editSavedVisualization} onDelete={saved => void deleteSavedVisualization(saved)} />}
 
       {librarySource && editMode && draft && <ModalDialog title="Save to visualization library" eyebrow="REUSABLE SAMPLE CHART"
@@ -796,7 +796,7 @@ export default function App() {
         eyebrow="VISUALIZATION BUILDER · SAMPLE DATA"
         description={libraryEditing ? 'Edit this organization template. Existing dashboard copies remain unchanged.' : 'Pick a visual, then choose what it should show.'}
         className="visualization-modal" initialFocus=".gallery-card" busy={libraryBusy}
-        onDismiss={() => { setWidgetDraft(null); setLibraryEditing(null); setLibraryError(''); }}>
+        onDismiss={() => { setWidgetDraft(null); setLibraryEditing(null); setTemplateConflict(null); setLibraryError(''); }}>
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
         {libraryEditing && <label className="form-label">Template description<textarea maxLength={500} rows={2}
           value={libraryDescription} onChange={event => setLibraryDescription(event.target.value)} /></label>}
@@ -846,7 +846,7 @@ export default function App() {
         </section>
         </div>
         {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
-        <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={() => { setWidgetDraft(null); setLibraryEditing(null); setLibraryError(''); }}>Cancel</Button><Button disabled={libraryBusy || Boolean(templateConflict) || !widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => void finishWidgetEdit()}><Check size={16} /> {libraryEditing ? (libraryBusy ? 'Saving…' : 'Save template') : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
+        <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={() => { setWidgetDraft(null); setLibraryEditing(null); setTemplateConflict(null); setLibraryError(''); }}>Cancel</Button><Button disabled={libraryBusy || Boolean(templateConflict) || !widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => void finishWidgetEdit()}><Check size={16} /> {libraryEditing ? (libraryBusy ? 'Saving…' : 'Save template') : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
       </ModalDialog>}
     </div>
   );
