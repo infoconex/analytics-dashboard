@@ -189,7 +189,14 @@ test('UX-23 organization library copies, edits, duplicates and survives reload w
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
   await page.getByRole('button', { name: 'Add saved visualization' }).click();
   await screenshot(page, info, 'mobile-library');
-  await picker.getByRole('button', { name: 'Close library' }).click();
+  const closeButton = picker.getByRole('button', { name: 'Close library' });
+  const closeBounds = await closeButton.boundingBox();
+  expect(closeBounds).not.toBeNull();
+  expect(closeBounds!.y + closeBounds!.height).toBeLessThanOrEqual(844);
+  const mobileAccessibility = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(mobileAccessibility.violations.map(item => item.id)).toEqual([]);
+  await closeButton.click();
   await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
 });
 

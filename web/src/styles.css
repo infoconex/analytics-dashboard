@@ -764,3 +764,14 @@ button:disabled { opacity:.6; }
 .library-preview .widget-tile { max-width:680px; }
 @media(max-width:720px) { .library-filters { grid-template-columns:1fr; } .library-item { align-items:stretch; flex-direction:column; } .library-item-actions > button { flex:1 1 auto; } .widgets-grid-editing > .add-saved-widget { grid-column:1/-1; } }
 @media(forced-colors:active) { .library-item,.library-empty,.library-item-actions > button:not(.button) { border:1px solid ButtonText; background:Canvas; color:CanvasText; } }
+
+/* Keep the library dismissal action visible inside the mobile dialog scrollport. */
+@media(max-width:720px) {
+  .visualization-library-modal .modal-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 0 -4px 12px #18263b12;
+  }
+}
