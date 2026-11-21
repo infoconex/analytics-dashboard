@@ -37,6 +37,19 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
   const [maxOutsideLabels, setMaxOutsideLabels] = useState<5 | 8 | 12>(5);
   const pointerFocusRef = useRef(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  const headingId = `widget-heading-${widget.id}`;
+  const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
+  const scatter = widget.kind === 'scatter';
+  const axis = scatter ? dimensions[widget.datasetKey] : widget.dimensionKey;
+  const context = sampleMetricContext(widget.datasetKey, widget.metricKey, axis, data, filters);
+  const problem = visualizationProblem(widget, data);
+  const histogram = widget.kind === 'histogram' ? buildHistogram(data, widget.metricKey) : [];
+  const xMeasure = metrics[widget.datasetKey]?.find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
+  const tooltipValue = (value: unknown) => formatChartTooltip(Number(value), metric);
+  const axisValue = (value: number) => formatChartAxis(value, metric);
+  const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
+  const chartKeyboardInteraction = channelInteraction && (widget.kind === 'donut' || widget.kind === 'pie' || widget.kind === 'bar');
   // Recharts can expose a second tabbable SVG surface even when the chart's
   // accessibility layer is disabled. Our outer chart is the sole keyboard control.
   useEffect(() => {
@@ -52,18 +65,6 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
     observer.observe(chart, { subtree: true, childList: true, attributes: true, attributeFilter: ['tabindex'] });
     return () => observer.disconnect();
   }, [chartKeyboardInteraction, data.length]);
-  const headingId = `widget-heading-${widget.id}`;
-  const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
-  const scatter = widget.kind === 'scatter';
-  const axis = scatter ? dimensions[widget.datasetKey] : widget.dimensionKey;
-  const context = sampleMetricContext(widget.datasetKey, widget.metricKey, axis, data, filters);
-  const problem = visualizationProblem(widget, data);
-  const histogram = widget.kind === 'histogram' ? buildHistogram(data, widget.metricKey) : [];
-  const xMeasure = metrics[widget.datasetKey]?.find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
-  const tooltipValue = (value: unknown) => formatChartTooltip(Number(value), metric);
-  const axisValue = (value: number) => formatChartAxis(value, metric);
-  const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
-  const chartKeyboardInteraction = channelInteraction && (widget.kind === 'donut' || widget.kind === 'pie' || widget.kind === 'bar');
   const pieLabels = selectedPieLabels(data, axis, widget.metricKey, maxOutsideLabels);
   const selectedChannel = filters?.channel;
   const filterContext = filters && !editing ? describeWidgetFilters(widget.datasetKey, filters) : null;
