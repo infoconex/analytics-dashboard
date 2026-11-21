@@ -11,7 +11,7 @@ import { aggregateSampleMetric, sampleMetricContext } from './sampleInterpretati
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
 import { buildHistogram, visualizationProblem } from './visualizationSemantics';
-import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip, selectedPieLabels } from './chartPresentation';
+import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip, selectedPieLabels, fitOutsidePieLabels } from './chartPresentation';
 import { describeWidgetFilters } from './widgetFilterContext';
 import { chartAppearance, chartCategoryRows } from './visualizationAppearance';
 
@@ -46,6 +46,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
   useEffect(() => { setMaxOutsideLabels(appearance.maxSliceLabels); }, [widget.id, appearance.maxSliceLabels]);
   const pointerFocusRef = useRef(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
 
   const headingId = `widget-heading-${preview ? 'preview-' : ''}${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
@@ -75,7 +76,26 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
     observer.observe(chart, { subtree: true, childList: true, attributes: true, attributeFilter: ['tabindex'] });
     return () => observer.disconnect();
   }, [chartKeyboardInteraction, data.length]);
+  // Measure the chart itself, not the viewport. A narrow desktop widget is
+  // subject to the same label constraints as a phone or embedded preview.
+  useEffect(() => {
+    const element = chartContainerRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    const update = () => {
+      const bounds = element.getBoundingClientRect();
+      const width = Math.floor(bounds.width);
+      const height = Math.floor(bounds.height);
+      setChartSize(current => current.width === width && current.height === height
+        ? current : { width, height });
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [widget.id, widget.kind, problem]);
   const pieLabels = selectedPieLabels(chartRows, axis, widget.metricKey, maxOutsideLabels);
+  const fittedPieLabels = fitOutsidePieLabels(pieLabels, chartRows, axis, widget.metricKey, chartSize.width, chartSize.height);
+  const outsideLabelsVisible = showOutsideLabels && fittedPieLabels.size > 0;
   const selectedChannel = filters?.channel;
   const filterContext = filters && !editing ? describeWidgetFilters(widget.datasetKey, filters) : null;
   function clearLocalFilter() {
@@ -186,10 +206,10 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
               <PieChart accessibilityLayer={false}>
-                <Pie data={chartRows} dataKey={metric} nameKey={axis} cx="50%" cy="50%" startAngle={90} endAngle={-270} innerRadius={widget.kind === 'donut' ? (showOutsideLabels ? '51%' : '59%') : 0} outerRadius={showOutsideLabels ? '72%' : '80%'} paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} labelLine={false} label={showOutsideLabels ? (props) => {
+                <Pie data={chartRows} dataKey={metric} nameKey={axis} cx="50%" cy="50%" startAngle={90} endAngle={-270} innerRadius={widget.kind === 'donut' ? (outsideLabelsVisible ? '51%' : '59%') : 0} outerRadius={outsideLabelsVisible ? '72%' : '80%'} paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} labelLine={false} label={outsideLabelsVisible ? (props) => {
                   const { cx, cy, midAngle, outerRadius, payload } = props;
                   const category = String(payload?.[axis] ?? '');
-                  if (!pieLabels.has(category)) return null;
+                  if (!fittedPieLabels.has(category)) return null;
                   const radians = -Number(midAngle) * Math.PI / 180;
                   const radius = Number(outerRadius);
                   const x1 = Number(cx) + (radius + 3) * Math.cos(radians);
@@ -249,7 +269,8 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
         </div>
       )}
       {chartKeyboardInteraction && chartFocused && <p className="chart-keyboard-hint" aria-live="polite">Keyboard chart selection: <strong>{keyboardCategory}</strong>. Use arrow keys to choose a category; Enter or Space to {selectedChannel === keyboardCategory ? 'clear' : 'apply'} its filter.</p>}
-      {!preview && (widget.kind === 'donut' || widget.kind === 'pie') && <div className="chart-label-options"><button type="button" className="text-link" aria-pressed={showOutsideLabels} onClick={() => setShowOutsideLabels(current => !current)}>{showOutsideLabels ? 'Hide slice labels' : 'Show slice labels'}</button>{showOutsideLabels ? <><label htmlFor={`slice-label-count-${widget.id}`}>Maximum labels</label><select id={`slice-label-count-${widget.id}`} value={maxOutsideLabels} onChange={event => setMaxOutsideLabels(Number(event.target.value) as 5 | 8 | 12)}><option value={5}>5</option><option value={8}>8</option><option value={12}>12</option></select><span>Showing {pieLabels.size} leader-line labels where space permits; hover or open the data table for all categories.</span></> : <span>Optional leader-line labels</span>}</div>}
+      {preview && (widget.kind === 'donut' || widget.kind === 'pie') && showOutsideLabels && !outsideLabelsVisible && <p className="chart-label-notice">Outside slice labels are hidden at this preview size. All categories remain available in the data table.</p>}
+      {!preview && (widget.kind === 'donut' || widget.kind === 'pie') && <div className="chart-label-options"><button type="button" className="text-link" aria-pressed={showOutsideLabels} onClick={() => setShowOutsideLabels(current => !current)}>{showOutsideLabels ? 'Hide slice labels' : 'Show slice labels'}</button>{showOutsideLabels ? <><label htmlFor={`slice-label-count-${widget.id}`}>Maximum labels</label><select id={`slice-label-count-${widget.id}`} value={maxOutsideLabels} onChange={event => setMaxOutsideLabels(Number(event.target.value) as 5 | 8 | 12)}><option value={5}>5</option><option value={8}>8</option><option value={12}>12</option></select><span aria-live="polite">{fittedPieLabels.size ? `Showing ${fittedPieLabels.size} of ${pieLabels.size} selected leader-line labels where they fit; legend and data table retain all categories.` : 'Outside labels do not fit this chart size. Use the legend or exact data table for every category.'}</span></> : <span>Optional leader-line labels</span>}</div>}
       {widget.kind === 'histogram' && <p className="scatter-axis-titles"><strong>X-axis:</strong> {context.label} ({context.unit}) · <strong>Y-axis:</strong> Source-record frequency (count)</p>}
       {(widget.kind === 'bar' || widget.kind === 'line' || widget.kind === 'area') && <p className="scatter-axis-titles"><strong>X-axis:</strong> {widget.datasetKey === 'commerce' ? 'Sample month (Jan–Dec, year unspecified)' : 'Channel'} · <strong>Y-axis:</strong> {context.label} ({context.unit})</p>}
       {widget.datasetKey === 'channels' && appearance.categorySort !== 'source' && ['bar', 'pie', 'donut'].includes(widget.kind) && <p className="chart-order-note">Categories ordered by {context.label.toLowerCase()}, {appearance.categorySort === 'valueAsc' ? 'smallest' : 'largest'} first. The source table retains its original order.</p>}

@@ -124,6 +124,7 @@ test('UX-20 twelve-category pie validates bounded 5, 8 and 12 labels', async ({ 
   const dashboard: Dashboard = { ...sampleDashboard, widgets: [...sampleDashboard.widgets, {
     id: '806e3063-18e9-4ddb-887a-229198c6dd09', title: 'Monthly revenue pie',
     kind: 'pie', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month',
+    columns: 12, height: 520,
   }] };
   await fixedDemoApi(page, dashboard);
   await page.goto(`/#/organization/northstar/dashboard/${dashboard.id}`);
@@ -205,12 +206,19 @@ test('UX-19 keyboard category is visible only during focus, highlights and stops
 });
 
 test('UX-19 labeled donut keeps a usable ring and permits bounded label counts', async ({ page }, info) => {
-  await fixedDemoApi(page);
+  // Give this explicit leader-label test a sufficiently wide widget. Narrow
+  // widgets deliberately omit labels and preserve their exact data tables.
+  const wide = { ...sampleDashboard, widgets: sampleDashboard.widgets.map(widget =>
+    widget.kind === 'donut' ? { ...widget, columns: 12, height: 520 } : widget) };
+  await fixedDemoApi(page, wide);
   await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
   const donut = page.getByRole('article', { name: 'Traffic sources', exact: true });
   await donut.getByRole('button', { name: 'Show slice labels' }).click();
   await donut.getByLabel('Maximum labels').selectOption('8');
-  await expect(donut.locator('.chart-outside-label')).toHaveCount(5);
+  const count = await donut.locator('.chart-outside-label').count();
+  expect(count).toBeGreaterThan(0);
+  expect(count).toBeLessThanOrEqual(5);
+  await expect(donut.locator('.chart-data summary')).toContainText('(5 records)');
   const pie = donut.locator('.recharts-pie-sector').first().locator('path');
   await expect(pie).toBeVisible();
   await capture(page, info, 'ux19-labeled-donut');
@@ -223,6 +231,7 @@ test('UX-18 optional leader-line labels are capped and scatter axes have explici
   const dashboard: Dashboard = { ...sampleDashboard, widgets: [...sampleDashboard.widgets, {
     id: '806e3063-18e9-4ddb-887a-229198c6dd07', title: 'Monthly revenue pie',
     kind: 'pie', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month',
+    columns: 12, height: 520,
   }, {
     id: '806e3063-18e9-4ddb-887a-229198c6dd08', title: 'Revenue and orders',
     kind: 'scatter', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'orders',

@@ -37,6 +37,55 @@ export function selectedPieLabels(rows: Record<string, string | number>[], dimen
     .slice(0, Math.max(0, maxLabels)).map(row => row.name));
 }
 
+
+/**
+ * Outside pie/donut labels are supplementary: never clip or overlap them to
+ * satisfy a label-count preference. Legends and exact data tables retain every
+ * category at every viewport width, including when this returns fewer labels.
+ *
+ * Approximate the *maximum* label footprint conservatively (11px SVG font).
+ * Use measured chart dimensions rather than the browser viewport so a small
+ * widget on a wide dashboard gets the same protection as a phone.
+ */
+export function fitOutsidePieLabels(
+  selected: ReadonlySet<string>,
+  rows: ReadonlyArray<Record<string, string | number>>,
+  dimension: string,
+  measure: string,
+  width: number,
+  height: number,
+): ReadonlySet<string> {
+  if (!selected.size || width < 480 || height < 210) return new Set();
+  const total = rows.reduce((sum, row) => sum + Math.max(0, Number(row[measure]) || 0), 0);
+  if (!total) return new Set();
+  const radius = Math.min(width, height) * 0.42;
+  const horizontalRoom = width / 2 - radius - 40;
+  const used: { side: number; y: number }[] = [];
+  const positions = new Map<string, { side: number; y: number }>();
+  let angle = 90;
+  for (const row of rows) {
+    const share = Math.max(0, Number(row[measure]) || 0) / total;
+    const middle = (angle - share * 180) * Math.PI / 180;
+    positions.set(String(row[dimension]), {
+      side: Math.cos(middle) >= 0 ? 1 : -1,
+      y: height / 2 - Math.sin(middle) * (radius + 13),
+    });
+    angle -= share * 360;
+  }
+  const fitted = new Set<string>();
+  // Selection already prioritizes large slices. Preserve that priority while
+  // avoiding near-identical Y positions on the same side of the chart.
+  for (const category of selected) {
+    const position = positions.get(category);
+    if (!position || [...category].length * 10 > horizontalRoom ||
+      position.y < 15 || position.y > height - 15 ||
+      used.some(prior => prior.side === position.side && Math.abs(prior.y - position.y) < 20)) continue;
+    used.push(position);
+    fitted.add(category);
+  }
+  return fitted;
+}
+
 export function formatChartAxis(value: number, metric: string): string {
   if (!Number.isFinite(value)) return '—';
   if (metric === 'conversion') return `${value.toFixed(1)}%`;

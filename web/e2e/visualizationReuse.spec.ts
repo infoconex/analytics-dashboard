@@ -20,8 +20,9 @@ const initial: Dashboard[] = [first, second].map((id, index) => ({
   updatedAt: '2026-01-01T00:00:00Z',
 }));
 
-async function fixture(page: Page, role: 'owner' | 'viewer' = 'owner') {
+async function fixture(page: Page, role: 'owner' | 'viewer' = 'owner', seed?: DashboardWidget[]) {
   let dashboards = structuredClone(initial);
+  if (seed) dashboards[0]!.widgets = structuredClone(seed);
   let library: SavedVisualization[] = [];
   const calls: string[] = [];
   await page.route('**/api/**', route => {
@@ -555,4 +556,137 @@ test('UX-25 keyboard shortcuts respect input focus and divergent history branche
   await page.getByRole('button', { name: 'Duplicate Traffic sources' }).click();
   await expect(redo).toBeDisabled();
   await expect(page.getByRole('article', { name: 'Traffic sources (copy)' })).toBeVisible();
+});
+
+
+test('UX-26 circular charts fit their own widget without clipping at mobile, tablet and desktop widths', async ({ page }, info) => {
+  test.setTimeout(180_000);
+  await fixture(page);
+  for (const width of [320, 390, 720, 768, 1440]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+    await visit(page);
+    const widget = page.locator(`[data-widget-id="${source.id}"]`);
+    const chart = widget.locator('.widget-chart');
+    await expect(chart.locator('.recharts-pie-sector')).toHaveCount(5);
+    if (width <= 390) {
+      await expect(chart.locator('.chart-outside-label')).toHaveCount(0);
+      await expect(widget.getByText(/Outside labels do not fit this chart size/)).toBeVisible();
+    }
+    // Read DOM geometry atomically. ResizeObserver can legitimately rebuild
+    // an SVG label between Playwright .all() and boundingBox() awaits.
+    const labelGeometry = await chart.evaluate(element => {
+      const frame = element.getBoundingClientRect();
+      return [...element.querySelectorAll('.chart-outside-label')].map(label => {
+        const box = label.getBoundingClientRect();
+        return {
+          left: box.left - frame.left, right: box.right - frame.left,
+          top: box.top - frame.top, bottom: box.bottom - frame.top,
+          width: frame.width, height: frame.height,
+        };
+      });
+    });
+    for (const box of labelGeometry) {
+      expect(box.left).toBeGreaterThanOrEqual(-2);
+      expect(box.right).toBeLessThanOrEqual(box.width + 2);
+      expect(box.top).toBeGreaterThanOrEqual(-2);
+      expect(box.bottom).toBeLessThanOrEqual(box.height + 2);
+    }
+    await expect(widget.locator('.chart-data summary')).toContainText('View data table');
+    await widget.scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux26-circular-${width}`);
+  }
+});
+
+test('UX-26 mobile edit size controls, Undo/Redo, persisted layout and pie preview remain usable', async ({ page }, info) => {
+  test.setTimeout(180_000);
+  const api = await fixture(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await visit(page);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  const item = page.locator(`[data-widget-id="${source.id}"]`);
+  const size = item.locator('.canvas-size-tools');
+  await expect(size.locator('summary')).toBeVisible();
+  await size.locator('summary').click();
+  const taller = size.getByRole('button', { name: 'Taller Traffic sources' });
+  await expect(taller).toBeVisible();
+  const bounds = await taller.boundingBox();
+  expect(bounds!.height).toBeGreaterThanOrEqual(44);
+  await taller.click();
+  await expect(item).toHaveAttribute('style', /--widget-height: 460px/);
+  await page.getByRole('button', { name: 'Undo widget change' }).click();
+  await expect(item).toHaveAttribute('style', /--widget-height: 420px/);
+  await page.getByRole('button', { name: 'Redo widget change' }).click();
+  await expect(item).toHaveAttribute('style', /--widget-height: 460px/);
+  await size.getByRole('button', { name: 'Narrower Traffic sources on desktop' }).click();
+  await expect(item).toHaveAttribute('style', /--widget-columns: 6/);
+  await item.scrollIntoViewIfNeeded();
+  await screenshot(page, info, 'ux26-mobile-touch-sizing');
+
+  await item.getByRole('button', { name: 'Edit Traffic sources' }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
+  await expect(editor).toBeVisible();
+  await editor.getByRole('button', { name: /Pie chart/ }).click();
+  await expect(editor.getByRole('region', { name: 'Live visualization preview' }).locator('.recharts-pie-sector')).toHaveCount(5);
+  await screenshot(page, info, 'ux26-mobile-pie-editor');
+  await editor.getByRole('button', { name: 'Update visualization' }).click();
+  await expect(item.getByRole('article', { name: 'Traffic sources' })).toHaveClass(/widget-pie/);
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  expect(api.dashboards()[0]!.widgets[0]).toMatchObject({ columns: 6, height: 460, kind: 'pie' });
+  await page.reload();
+  await expect(item).toHaveAttribute('style', /--widget-height: 460px/);
+  await expect(item.getByRole('article', { name: 'Traffic sources' })).toHaveClass(/widget-pie/);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(size.locator('summary')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add saved visualization' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+  const a11y = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  // Report the exact node and measured contrast on failure so the visual
+  // defect can be fixed, not ignored or excluded from the WCAG audit.
+  expect(a11y.violations.map(item => ({
+    id: item.id,
+    nodes: item.nodes.map(node => ({
+      html: node.html, failureSummary: node.failureSummary,
+    })),
+  }))).toEqual([]);
+});
+
+test('UX-26 nine visualization kinds retain sensible mixed-dashboard bounds at all target viewports', async ({ page }, info) => {
+  test.setTimeout(180_000);
+  const kinds: DashboardWidget['kind'][] = ['metric', 'line', 'area', 'bar', 'donut', 'pie', 'histogram', 'scatter', 'table'];
+  const widgets: DashboardWidget[] = kinds.map(kind => {
+    const commerce = ['metric', 'line', 'area', 'histogram'].includes(kind);
+    return {
+      ...source, id: randomUUID(), title: `UX26 ${kind}`, kind,
+      datasetKey: commerce ? 'commerce' : 'channels',
+      metricKey: kind === 'scatter' ? 'orders' : commerce ? 'revenue' : 'sessions',
+      dimensionKey: kind === 'scatter' ? 'sessions' : commerce ? 'month' : 'channel',
+      columns: kind === 'metric' ? 3 : kind === 'table' ? 12 : 6,
+      height: kind === 'metric' ? 220 : 420,
+      appearance: kind === 'donut' || kind === 'pie'
+        ? { showLegend: true, showSliceLabels: true, maxSliceLabels: 8 } : undefined,
+    };
+  });
+  await fixture(page, 'owner', widgets);
+  for (const width of [320, 390, 720, 768, 1440]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+    await visit(page);
+    for (const widget of widgets) {
+      const tile = page.getByRole('article', { name: widget.title, exact: true });
+      await expect(tile).toBeVisible();
+      const rect = await tile.boundingBox();
+      expect(rect).not.toBeNull();
+      expect(rect!.width).toBeGreaterThan(190);
+      expect(rect!.x).toBeGreaterThanOrEqual(-1);
+      expect(rect!.x + rect!.width).toBeLessThanOrEqual(width + 1);
+    }
+    const firstTile = page.locator(`[data-widget-id="${widgets[0]!.id}"]`);
+    await firstTile.scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux26-mixed-start-${width}`);
+    const circular = page.locator(`[data-widget-id="${widgets[5]!.id}"]`);
+    await circular.scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux26-mixed-circular-${width}`);
+    const lastTile = page.locator(`[data-widget-id="${widgets[8]!.id}"]`);
+    await lastTile.scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux26-mixed-table-${width}`);
+  }
 });

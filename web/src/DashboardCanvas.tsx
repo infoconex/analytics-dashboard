@@ -92,7 +92,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
 
   return (
     <section aria-label={editing ? 'Dashboard composition canvas' : 'Dashboard visualizations'}>
-      {editing && <p className="canvas-instructions" id="canvas-instructions">Drag the Move handle to reorder, or use Move earlier/later. Drag the lower-right Resize handle to adjust width and height, or use its arrow keys. Changes take effect only when you select Save changes.</p>}
+      {editing && <p className="canvas-instructions" id="canvas-instructions">Drag the Move handle to reorder, or use Move earlier/later. On narrow screens, open Adjust size for touch-friendly controls. On wide screens, drag the lower-right Resize handle or use its arrow keys. Changes take effect only when you select Save changes.</p>}
       {widgets.length >= 8 && <nav className="dashboard-navigator" aria-label="Find a visualization">
         <div className="dashboard-navigator-copy"><h2>Find a visualization</h2><p>{widgets.length} visualizations. Choose one to jump directly to its heading, or browse the full list below.</p></div>
         <form className="dashboard-navigator-controls" onSubmit={event => { event.preventDefault(); if (selectedTarget) focusWidget(selectedTarget); }}>
@@ -165,6 +165,24 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
           <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined}
             onReturnToIndex={!editing && widgets.length >= 8 ? () => returnToIndex(widget.id) : undefined}
             onShareInsight={!editing ? onShareInsight : undefined} />
+          {editing && <details className="canvas-size-tools">
+            <summary>Adjust size <span>({layoutForWidget(widget).columns}/12 desktop columns · {layoutForWidget(widget).height}px tall)</span></summary>
+            <div className="canvas-size-buttons" role="group" aria-label={`Adjust size of ${widget.title}`}>
+              <button type="button" disabled={layoutForWidget(widget).columns === (widget.kind === 'metric' ? 3 : 6)}
+                aria-label={`Narrower ${widget.title} on desktop`}
+                onClick={() => announceResize(widget, layoutForWidget(widget).columns - 3, layoutForWidget(widget).height)}>Narrower</button>
+              <button type="button" disabled={layoutForWidget(widget).columns === 12}
+                aria-label={`Wider ${widget.title} on desktop`}
+                onClick={() => announceResize(widget, layoutForWidget(widget).columns + 3, layoutForWidget(widget).height)}>Wider</button>
+              <button type="button" disabled={layoutForWidget(widget).height === (widget.kind === 'metric' || widget.kind === 'table' ? 220 : 320)}
+                aria-label={`Shorter ${widget.title}`}
+                onClick={() => announceResize(widget, layoutForWidget(widget).columns, layoutForWidget(widget).height - 40)}>Shorter</button>
+              <button type="button" disabled={layoutForWidget(widget).height === 640}
+                aria-label={`Taller ${widget.title}`}
+                onClick={() => announceResize(widget, layoutForWidget(widget).columns, layoutForWidget(widget).height + 40)}>Taller</button>
+            </div>
+            <p>On narrow screens, visualizations use one column. Width changes affect the saved desktop layout; height changes apply here too. Undo can reverse each change.</p>
+          </details>}
           {editing && <button type="button" className="resize-handle"
             aria-label={`Resize ${widget.title}: ${resizePreview?.id === widget.id ? resizePreview.columns : layoutForWidget(widget).columns} of 12 columns, ${resizePreview?.id === widget.id ? resizePreview.height : layoutForWidget(widget).height} pixels tall. Arrow keys adjust size`}
             aria-describedby="canvas-instructions" title="Drag to resize; arrow keys adjust width and height"

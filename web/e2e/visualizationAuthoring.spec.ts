@@ -340,7 +340,11 @@ test('UX-22 saves bounded appearance, live preview, category keyboard order, typ
   await dialog.getByRole('combobox', { name: 'Maximum slice labels' }).selectOption('8');
   await dialog.getByRole('combobox', { name: 'Category order' }).selectOption('valueAsc');
   await expect(dialog.locator('.donut-legend')).toHaveCount(0);
-  await expect(dialog.locator('.chart-outside-label')).toHaveCount(5);
+  // The two-column editor preview is narrow even on desktop: verify the
+  // explanation and full record count instead of requiring clipped labels.
+  await expect(dialog.locator('.chart-outside-label')).toHaveCount(0);
+  await expect(dialog.getByText('Outside slice labels are hidden at this preview size.')).toBeVisible();
+  await expect(dialog.locator('.chart-data summary')).toContainText('(5 records)');
   await expect(dialog.locator('.chart-order-note')).toContainText('smallest first');
   await image(page, info, 'ux22-01-configured-pie-live-preview-desktop');
   await dialog.locator('.visualization-preview').scrollIntoViewIfNeeded();
@@ -368,7 +372,11 @@ test('UX-22 saves bounded appearance, live preview, category keyboard order, typ
 
   await page.reload();
   const pie = page.getByRole('article', { name: 'Configurable channel orders' });
-  await expect(pie.locator('.chart-outside-label')).toHaveCount(5);
+  // Saved appearance survives reload even if the fitted widget omits
+  // supplementary outside labels. All five sectors/records are preserved.
+  await expect(pie.locator('.recharts-pie-sector')).toHaveCount(5);
+  expect(await pie.locator('.chart-outside-label').count()).toBeLessThanOrEqual(5);
+  await expect(pie.locator('.chart-data summary')).toContainText('(5 records)');
   await expect(pie.locator('.donut-legend')).toHaveCount(0);
   await expect(pie.locator('.chart-order-note')).toContainText('smallest first');
   await expect(page.getByRole('article', { name: 'Configurable revenue bins' })
