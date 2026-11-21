@@ -138,6 +138,15 @@ public sealed class DashboardService(
             {
                 throw new InvalidDashboardException("A widget contains invalid fields.");
             }
+            // Bounded, optional visual layout metadata; old saved widgets remain valid.
+            var minimumHeight = widget.Kind is VisualizationKind.Metric or VisualizationKind.Table ? 220 : 320;
+            if ((widget.Columns is { } columns && (columns is not (3 or 6 or 9 or 12)
+                    || (columns == 3 && widget.Kind != VisualizationKind.Metric)))
+                || (widget.Height is { } height && (height < minimumHeight || height > 640
+                    || (height - 220) % 20 != 0)))
+            {
+                throw new InvalidDashboardException("Widget layout size is invalid.");
+            }
         }
     }
 

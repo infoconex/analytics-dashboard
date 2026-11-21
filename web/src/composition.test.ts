@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasDashboardChanges, moveWidget, reorderWidgets } from './composition';
+import { hasDashboardChanges, layoutForWidget, moveWidget, reorderWidgets, resizeWidget } from './composition';
 import type { Dashboard, DashboardWidget } from './model';
 
 const widget = (id: string): DashboardWidget => ({
@@ -13,6 +13,25 @@ const initial: Dashboard = {
 };
 
 describe('dashboard composition', () => {
+  it('gives older dashboards compact metrics, medium charts, and wide tables', () => {
+    expect(layoutForWidget({ ...widget('metric'), kind: 'metric' })).toEqual({ columns: 3, height: 220 });
+    expect(layoutForWidget(widget('chart'))).toEqual({ columns: 6, height: 340 });
+    expect(layoutForWidget({ ...widget('table'), kind: 'table' })).toEqual({ columns: 12, height: 340 });
+  });
+
+  it('resizes immutably, clamps dimensions and marks a saved layout as changed', () => {
+    const resized = resizeWidget(initial.widgets, 'second', 9, 420);
+    expect(resized[1]).toMatchObject({ columns: 9, height: 420 });
+    expect(initial.widgets[1]).not.toHaveProperty('columns');
+    expect(resizeWidget(initial.widgets, 'second', 6, 340)).toBe(initial.widgets);
+    expect(resizeWidget(initial.widgets, 'missing', 9, 420)).toBe(initial.widgets);
+    expect(layoutForWidget(resizeWidget(initial.widgets, 'second', 99, 990)[1]!))
+      .toEqual({ columns: 12, height: 640 });
+    expect(layoutForWidget(resizeWidget(initial.widgets, 'second', 3, 220)[1]!))
+      .toEqual({ columns: 6, height: 320 });
+    expect(hasDashboardChanges({ name: initial.name, description: initial.description, widgets: resized }, initial)).toBe(true);
+  });
+
   it('moves a dragged widget to its target position without mutating the original list', () => {
     const updated = reorderWidgets(initial.widgets, 'first', 'third');
     expect(updated.map(item => item.id)).toEqual(['second', 'third', 'first']);

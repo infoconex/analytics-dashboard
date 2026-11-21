@@ -110,6 +110,40 @@ public sealed class DashboardServiceTests
     }
 
     [Test]
+    public async Task OptionalWidgetLayoutSurvivesPersistenceAndRejectsInvalidSizes()
+    {
+        var original = Draft();
+        var laidOut = original with { Widgets = [original.Widgets[0] with { Columns = 9, Height = 420 }] };
+        var saved = await service.CreateAsync("northstar", "demo-owner", laidOut, CancellationToken.None);
+        var reopened = new SqliteCatalog(databasePath);
+        await reopened.InitializeAsync();
+        var persisted = await reopened.FindAsync("northstar", saved.Id, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(persisted?.Widgets[0].Columns, Is.EqualTo(9));
+            Assert.That(persisted?.Widgets[0].Height, Is.EqualTo(420));
+        });
+
+        foreach (var bad in new[] {
+            original.Widgets[0] with { Columns = 7 },
+            original.Widgets[0] with { Columns = 3 },
+            original.Widgets[0] with { Height = 900 },
+            original.Widgets[0] with { Height = 231 },
+        })
+        {
+            var invalid = original with { Widgets = [bad] };
+            await Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+                await service.CreateAsync("northstar", "demo-owner", invalid, CancellationToken.None));
+        }
+
+        // A viewer is never authorized to apply a valid resize.
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await service.UpdateAsync("northstar", saved.Id, "demo-viewer",
+                laidOut, saved.Revision, CancellationToken.None));
+    }
+
+    [Test]
     public async Task DuplicateWidgetIdsAreRejected()
     {
         var widget = Draft().Widgets[0];

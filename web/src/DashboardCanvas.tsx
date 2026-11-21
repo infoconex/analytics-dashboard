@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { ArrowDown, ArrowUp, GripVertical, Plus } from 'lucide-react';
-import { moveWidget, reorderWidgets } from './composition';
+import { layoutForWidget, moveWidget, reorderWidgets, resizeWidget, type WidgetLayout } from './composition';
 import type { DashboardWidget } from './model';
 import { WidgetTile } from './WidgetTile';
 import type { ConsumerFilters } from './consumerFilters';
@@ -27,11 +27,21 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
   const [navigationSelection, setNavigationSelection] = useState('');
   const selectedTarget = resolveNavigationSelection(widgets, navigationSelection);
   const activePointer = useRef<string | null>(null);
+  const resizingPointer = useRef<{ id: string; x: number; y: number; columns: WidgetLayout['columns']; height: number; gridWidth: number; next: WidgetLayout } | null>(null);
+  const [resizePreview, setResizePreview] = useState<({ id: string } & WidgetLayout) | null>(null);
   const indexRef = useRef<HTMLDetailsElement>(null);
   const indexButtons = useRef(new Map<string, HTMLButtonElement>());
 
   function widgetAtPoint(x: number, y: number): string | null {
-    return document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-widget-id]')?.dataset.widgetId ?? null;
+    const exact = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-widget-id]')?.dataset.widgetId;
+    if (exact) return exact;
+    // Dragging across grid gaps should still yield a predictable drop target.
+    const cards = [...document.querySelectorAll<HTMLElement>('.widgets-grid [data-widget-id]')];
+    return cards.reduce<{ id: string; distance: number } | null>((nearest, element) => {
+      const bounds = element.getBoundingClientRect();
+      const distance = (x - (bounds.left + bounds.right) / 2) ** 2 + (y - (bounds.top + bounds.bottom) / 2) ** 2;
+      return !nearest || distance < nearest.distance ? { id: element.dataset.widgetId!, distance } : nearest;
+    }, null)?.id ?? null;
   }
 
   function clearPointer() {
@@ -46,6 +56,19 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
     const position = next.findIndex(item => item.id === id) + 1;
     const moved = next[position - 1];
     if (moved) setAnnouncement(`${moved.title} moved to position ${position} of ${next.length}.`);
+  }
+
+  function announceResize(widget: DashboardWidget, columns: number, height: number) {
+    const next = resizeWidget(widgets, widget.id, columns, height);
+    if (next === widgets) return;
+    onChange(next);
+    const dimensions = layoutForWidget(next.find(item => item.id === widget.id)!);
+    setAnnouncement(`${widget.title} resized to ${dimensions.columns} of 12 columns and ${dimensions.height} pixels tall.`);
+  }
+
+  function stopResizing() {
+    resizingPointer.current = null;
+    setResizePreview(null);
   }
 
   function focusWidget(id: string) {
@@ -66,7 +89,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
 
   return (
     <section aria-label={editing ? 'Dashboard composition canvas' : 'Dashboard visualizations'}>
-      {editing && <p className="canvas-instructions" id="canvas-instructions">Drag a handle to rearrange visualizations, or use the Move earlier and Move later buttons. The handle also supports the up and down arrow keys. Changes are saved only when you select Save changes.</p>}
+      {editing && <p className="canvas-instructions" id="canvas-instructions">Drag the Move handle to reorder, or use Move earlier/later. Drag the lower-right Resize handle to adjust width and height, or use its arrow keys. Changes take effect only when you select Save changes.</p>}
       {widgets.length >= 8 && <nav className="dashboard-navigator" aria-label="Find a visualization">
         <div className="dashboard-navigator-copy"><h2>Find a visualization</h2><p>{widgets.length} visualizations. Choose one to jump directly to its heading, or browse the full list below.</p></div>
         <form className="dashboard-navigator-controls" onSubmit={event => { event.preventDefault(); if (selectedTarget) focusWidget(selectedTarget); }}>
@@ -98,6 +121,10 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
           key={widget.id}
           data-widget-id={widget.id}
           className={`canvas-item canvas-item-${widget.kind} ${over === widget.id && dragged !== widget.id ? 'canvas-drop-target' : ''}`}
+          style={{
+            '--widget-columns': resizePreview?.id === widget.id ? resizePreview.columns : layoutForWidget(widget).columns,
+            '--widget-height': `${resizePreview?.id === widget.id ? resizePreview.height : layoutForWidget(widget).height}px`,
+          } as CSSProperties}
           >
           {editing && <div className="canvas-move-controls">
             <button
@@ -135,6 +162,50 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
           <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined}
             onReturnToIndex={!editing && widgets.length >= 8 ? () => returnToIndex(widget.id) : undefined}
             onShareInsight={!editing ? onShareInsight : undefined} />
+          {editing && <button type="button" className="resize-handle"
+            aria-label={`Resize ${widget.title}: ${resizePreview?.id === widget.id ? resizePreview.columns : layoutForWidget(widget).columns} of 12 columns, ${resizePreview?.id === widget.id ? resizePreview.height : layoutForWidget(widget).height} pixels tall. Arrow keys adjust size`}
+            aria-describedby="canvas-instructions" title="Drag to resize; arrow keys adjust width and height"
+            onPointerDown={event => {
+              if (event.button !== 0) return;
+              const size = layoutForWidget(widget);
+              const grid = event.currentTarget.closest<HTMLElement>('.widgets-grid');
+              resizingPointer.current = { id: widget.id, x: event.clientX, y: event.clientY,
+                columns: size.columns, height: size.height, gridWidth: grid?.getBoundingClientRect().width ?? 1200, next: size };
+              event.currentTarget.setPointerCapture(event.pointerId);
+              event.preventDefault();
+            }}
+            onPointerMove={event => {
+              const current = resizingPointer.current;
+              if (!current || current.id !== widget.id) return;
+              const columnStep = Math.round((event.clientX - current.x) / Math.max(80, current.gridWidth / 4));
+              const heightStep = Math.round((event.clientY - current.y) / 20);
+              const minimumColumns = widget.kind === 'metric' ? 3 : 6;
+              const minimumHeight = widget.kind === 'metric' || widget.kind === 'table' ? 220 : 320;
+              const columns = Math.max(minimumColumns, Math.min(12, current.columns + columnStep * 3)) as WidgetLayout['columns'];
+              const height = Math.max(minimumHeight, Math.min(640, current.height + heightStep * 20));
+              current.next = { columns, height };
+              setResizePreview({ id: widget.id, columns, height });
+            }}
+            onPointerUp={() => {
+              const current = resizingPointer.current;
+              if (!current || current.id !== widget.id) return;
+              announceResize(widget, current.next.columns, current.next.height);
+              stopResizing();
+            }}
+            onPointerCancel={stopResizing}
+            onKeyDown={event => {
+              const current = layoutForWidget(widget);
+              const shortcuts: Record<string, [number, number]> = {
+                ArrowLeft: [current.columns - 3, current.height],
+                ArrowRight: [current.columns + 3, current.height],
+                ArrowUp: [current.columns, current.height - 40],
+                ArrowDown: [current.columns, current.height + 40],
+              };
+              const next = shortcuts[event.key];
+              if (!next) return;
+              event.preventDefault();
+              announceResize(widget, next[0]!, next[1]!);
+            }}><span aria-hidden="true">↘</span><span className="sr-only">Resize widget</span></button>}
         </div>)}
         {editing && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Choose a chart and see it on your dashboard</small></button>}
       </div>
