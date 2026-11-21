@@ -899,7 +899,7 @@ export default function App() {
 
       {widgetDraft && editMode && draft && <ModalDialog title={libraryEditing ? 'Edit saved visualization' : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Edit dashboard visualization' : 'Configure visualization'}
         eyebrow="VISUALIZATION BUILDER · SAMPLE DATA"
-        description={libraryEditing ? 'Saving updates this organization template immediately, not your dashboard. Existing copies remain unchanged. Cancel returns to the library.' : returnToLibrary ? 'Configure a new dashboard widget. Cancel returns to the library; Save changes persists the dashboard draft.' : 'Configure this dashboard widget with a live preview. Save changes on the dashboard to keep your edits.'}
+        description={libraryEditing ? 'Saving updates this organization template immediately, not your dashboard. Existing dashboard copies remain unchanged. Cancel returns to the library.' : returnToLibrary ? 'Configure a new dashboard widget. Cancel returns to the library; Save changes persists the dashboard draft.' : 'Configure this dashboard widget with a live preview. Save changes on the dashboard to keep your edits.'}
         className="visualization-modal" initialFocus=".gallery-card" busy={libraryBusy}
         onDismiss={dismissVisualizationEditor}>
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
