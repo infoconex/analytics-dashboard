@@ -4,11 +4,12 @@ import {
   CalendarDays, Check, ChevronDown, ChevronRight, CircleHelp,
   Cloud, Database, Ellipsis, ExternalLink, FileBarChart, Filter, FolderKanban,
   Gauge, LayoutDashboard, LockKeyhole, Menu, Plus, Search,
-  Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2,
+  Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Undo2, Redo2,
   Users,
 } from 'lucide-react';
 import { dashboardApi, visualizationApi } from './api';
 import { copySavedVisualization, duplicateWidget, hasDashboardChanges } from './composition';
+import { captureWidgetChange, emptyWidgetHistory, redoWidgetChange, undoWidgetChange } from './dashboardUndo';
 import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics, selectRows } from './demoData';
 import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
 import { ApiError, type CurrentIdentity, type Dashboard, type DashboardDraft, type DashboardWidget, type DatasetKey, type Membership, type SavedVisualization, type WidgetKind } from './model';
@@ -66,6 +67,9 @@ export default function App() {
   const [period, setPeriod] = useState('12m');
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState<DashboardDraft | null>(null);
+  const [undoHistory, setUndoHistory] = useState(emptyWidgetHistory);
+  const [undoFeedback, setUndoFeedback] = useState('');
+  const [returnToLibrary, setReturnToLibrary] = useState(false);
   const [widgetDraft, setWidgetDraft] = useState<DashboardWidget | null>(null);
   const [library, setLibrary] = useState<{ organizationId: string; items: SavedVisualization[] } | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -118,6 +122,27 @@ export default function App() {
     return () => window.cancelAnimationFrame(frame);
   }, [templateConflict]);
 
+  // Only outside text fields and dialogs: never steal native input undo.
+  useEffect(() => {
+    if (!editMode || !canEdit || !draft || saving || widgetDraft || libraryOpen || librarySource || createOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.repeat || event.isComposing) return;
+      if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable="true"], dialog')) return;
+      const key = event.key.toLowerCase();
+      const redo = (key === 'z' && event.shiftKey) || (key === 'y' && !event.shiftKey);
+      const undo = key === 'z' && !event.shiftKey;
+      if (redo && undoHistory.future.length) {
+        event.preventDefault();
+        redoDashboardWidgets();
+      } else if (undo && undoHistory.past.length) {
+        event.preventDefault();
+        undoDashboardWidgets();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [editMode, canEdit, draft, saving, widgetDraft, libraryOpen, librarySource, createOpen, undoHistory]);
+
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
 
   // Discovery is ephemeral consumer context, never persisted across tenants.
@@ -125,6 +150,7 @@ export default function App() {
     setSearch(''); setQuestionFilter(''); setSelectedTask(null);
     setLibrary(null); setLibraryOpen(false); setLibraryEditing(null); setLibrarySource(null);
     setLibraryError(''); setLibraryLoading(false);
+    resetWidgetUndo(); setReturnToLibrary(false);
   }, [organizationId]);
 
   useEffect(() => {
@@ -140,10 +166,55 @@ export default function App() {
     return !hasPendingWork || window.confirm('Discard your unsaved authoring changes?');
   }
 
+  function resetWidgetUndo() {
+    setUndoHistory(emptyWidgetHistory());
+    setUndoFeedback('');
+  }
+
+  // Widget-array history only; dashboard metadata fields retain native input undo.
+  function commitWidgets(next: DashboardWidget[]) {
+    if (!draft || !editMode || !canEdit || saving) return;
+    const history = captureWidgetChange(undoHistory, draft.widgets, next);
+    if (!history) return;
+    setUndoHistory(history);
+    setDraft({ ...draft, widgets: next });
+    setUndoFeedback('Widget change recorded. Undo is available until dashboard Save or Cancel.');
+  }
+
+  function undoDashboardWidgets() {
+    if (!draft || !editMode || !canEdit || saving || widgetDraft || libraryOpen || librarySource) return;
+    const previous = undoWidgetChange(undoHistory, draft.widgets);
+    if (!previous) return;
+    setDraft({ ...draft, widgets: previous.widgets });
+    setUndoHistory(previous.history);
+    setUndoFeedback('Widget change undone. The dashboard draft is not yet saved.');
+  }
+
+  function redoDashboardWidgets() {
+    if (!draft || !editMode || !canEdit || saving || widgetDraft || libraryOpen || librarySource) return;
+    const next = redoWidgetChange(undoHistory, draft.widgets);
+    if (!next) return;
+    setDraft({ ...draft, widgets: next.widgets });
+    setUndoHistory(next.history);
+    setUndoFeedback('Widget change redone. The dashboard draft is not yet saved.');
+  }
+
+  function dismissVisualizationEditor() {
+    const backToLibrary = returnToLibrary;
+    setWidgetDraft(null);
+    setLibraryEditing(null);
+    setTemplateConflict(null);
+    setLibraryError('');
+    setReturnToLibrary(false);
+    if (backToLibrary) setLibraryOpen(true);
+  }
+
   function stopEditing() {
     if (!confirmDiscard()) return;
     setEditMode(false);
     setDraft(null);
+    resetWidgetUndo();
+    setReturnToLibrary(false);
     setWidgetDraft(null);
     setLibraryOpen(false);
     setLibrarySource(null);
@@ -155,6 +226,8 @@ export default function App() {
 
   function startEditing(openGallery = false) {
     if (!canEdit || !activeDashboard) return;
+    resetWidgetUndo();
+    setReturnToLibrary(false);
     setDraft({ name: activeDashboard.name, description: activeDashboard.description,
       widgets: activeDashboard.widgets.map(item => ({ ...item })) });
     setSaveError('');
@@ -200,6 +273,8 @@ export default function App() {
       }
       setEditMode(false);
       setDraft(null);
+      resetWidgetUndo();
+      setReturnToLibrary(false);
       setWidgetDraft(null);
       setSaveError('');
       setDashboardConflict(null);
@@ -322,6 +397,8 @@ export default function App() {
     setView({ page: next, id });
     setEditMode(false);
     setDraft(null);
+    resetWidgetUndo();
+    setReturnToLibrary(false);
     setWidgetDraft(null);
     setSaveError('');
     setDashboardConflict(null);
@@ -392,6 +469,7 @@ export default function App() {
         ? { ...current, items: current.items.map(item => item.id === updated.id ? updated : item) } : current);
       setDraft(null);
       setEditMode(false);
+      resetWidgetUndo();
       setDashboardConflict(null);
       setToast('All changes saved');
     } catch (exception) {
@@ -425,6 +503,7 @@ export default function App() {
         ? { ...current, items: current.items.map(item => item.id === latest.id ? latest : item) } : current);
       setDraft(null);
       setEditMode(false);
+      resetWidgetUndo();
       setDashboardConflict(null);
       setSaveError('');
       setToast('Latest saved dashboard loaded. Your previous draft was discarded.');
@@ -491,13 +570,14 @@ export default function App() {
   function useSavedVisualization(saved: SavedVisualization) {
     if (!editMode || !draft || saved.organizationId !== organizationId || draft.widgets.length >= 24) return;
     const copy = copySavedVisualization(saved.definition, crypto.randomUUID());
-    setDraft({ ...draft, widgets: [...draft.widgets, copy] });
+    commitWidgets([...draft.widgets, copy]);
     setLibraryOpen(false);
     setToast('Added an independent copy. Save the dashboard to keep it.');
   }
 
   function editSavedVisualization(saved: SavedVisualization) {
     if (!canEdit || saved.organizationId !== organizationId) return;
+    setReturnToLibrary(true);
     setLibraryEditing(saved);
     setTemplateConflict(null);
     setLibraryDescription(saved.description);
@@ -581,6 +661,7 @@ export default function App() {
         setWidgetDraft(null);
         setLibraryEditing(null);
         setTemplateConflict(null);
+        setReturnToLibrary(false);
         setLibraryOpen(true);
         setToast('Template updated independently. Your dashboard draft was not saved or changed.');
       } catch (exception) {
@@ -600,10 +681,11 @@ export default function App() {
         }
       } finally { setLibraryBusy(false); }
     } else {
-      setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id)
+      commitWidgets(draft.widgets.some(item => item.id === widgetDraft.id)
         ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item)
-        : [...draft.widgets, widgetDraft] });
+        : [...draft.widgets, widgetDraft]);
       setWidgetDraft(null);
+      setReturnToLibrary(false);
     }
   }
 
