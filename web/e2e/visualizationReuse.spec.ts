@@ -556,3 +556,80 @@ test('UX-25 keyboard shortcuts respect input focus and divergent history branche
   await expect(redo).toBeDisabled();
   await expect(page.getByRole('article', { name: 'Traffic sources (copy)' })).toBeVisible();
 });
+
+
+test('UX-26 circular charts fit their own widget without clipping at mobile, tablet and desktop widths', async ({ page }, info) => {
+  test.setTimeout(180_000);
+  await fixture(page);
+  for (const width of [320, 390, 720, 768, 1440]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+    await visit(page);
+    const widget = page.locator(`[data-widget-id="${source.id}"]`);
+    const chart = widget.locator('.widget-chart');
+    await expect(chart.locator('.recharts-pie-sector')).toHaveCount(5);
+    if (width <= 390) {
+      await expect(chart.locator('.chart-outside-label')).toHaveCount(0);
+      await expect(widget.getByText(/Outside labels do not fit this chart size/)).toBeVisible();
+    }
+    const chartBounds = await chart.boundingBox();
+    expect(chartBounds).not.toBeNull();
+    const labels = await chart.locator('.chart-outside-label').all();
+    for (const label of labels) {
+      const box = await label.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(chartBounds!.x - 2);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(chartBounds!.x + chartBounds!.width + 2);
+      expect(box!.y).toBeGreaterThanOrEqual(chartBounds!.y - 2);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(chartBounds!.y + chartBounds!.height + 2);
+    }
+    await expect(widget.getByText('View data table')).toBeVisible();
+    await widget.scrollIntoViewIfNeeded();
+    await screenshot(page, info, `ux26-circular-${width}`);
+  }
+});
+
+test('UX-26 mobile edit size controls, Undo/Redo, persisted layout and pie preview remain usable', async ({ page }, info) => {
+  test.setTimeout(180_000);
+  const api = await fixture(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await visit(page);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  const item = page.locator(`[data-widget-id="${source.id}"]`);
+  const size = item.locator('.canvas-size-tools');
+  await expect(size.locator('summary')).toBeVisible();
+  await size.locator('summary').click();
+  const taller = size.getByRole('button', { name: 'Taller Traffic sources' });
+  await expect(taller).toBeVisible();
+  const bounds = await taller.boundingBox();
+  expect(bounds!.height).toBeGreaterThanOrEqual(44);
+  await taller.click();
+  await expect(item).toHaveAttribute('style', /--widget-height: 460px/);
+  await page.getByRole('button', { name: 'Undo widget change' }).click();
+  await expect(item).toHaveAttribute('style', /--widget-height: 420px/);
+  await page.getByRole('button', { name: 'Redo widget change' }).click();
+  await expect(item).toHaveAttribute('style', /--widget-height: 460px/);
+  await size.getByRole('button', { name: 'Narrower Traffic sources on desktop' }).click();
+  await expect(item).toHaveAttribute('style', /--widget-columns: 6/);
+  await item.scrollIntoViewIfNeeded();
+  await screenshot(page, info, 'ux26-mobile-touch-sizing');
+
+  await item.getByRole('button', { name: 'Edit Traffic sources' }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
+  await expect(editor).toBeVisible();
+  await editor.getByRole('button', { name: /Pie Show parts of a total/ }).click();
+  await expect(editor.getByRole('region', { name: 'Live visualization preview' }).locator('.recharts-pie-sector')).toHaveCount(5);
+  await screenshot(page, info, 'ux26-mobile-pie-editor');
+  await editor.getByRole('button', { name: 'Update visualization' }).click();
+  await expect(item.getByRole('article', { name: 'Traffic sources' })).toHaveClass(/widget-pie/);
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  expect(api.dashboards()[0]!.widgets[0]).toMatchObject({ columns: 6, height: 460, kind: 'pie' });
+  await page.reload();
+  await expect(item).toHaveAttribute('style', /--widget-height: 460px/);
+  await expect(item.getByRole('article', { name: 'Traffic sources' })).toHaveClass(/widget-pie/);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(size.locator('summary')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add saved visualization' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+  const a11y = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(a11y.violations.map(item => item.id)).toEqual([]);
+});
