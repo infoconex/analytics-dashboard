@@ -706,6 +706,7 @@ button:disabled { opacity:.6; }
 }
 .canvas-item-table .widget-table-wrap { max-height: clamp(160px, calc(var(--widget-height, 340px) - 130px), 490px); }
 .widgets-grid-editing .canvas-item { padding-bottom: 38px; }
+.widgets-grid-editing > .add-widget { grid-column: span 3; min-width: 0; }
 .resize-handle {
   position: absolute; bottom: 6px; right: 9px; width: 32px; height: 32px;
   display: grid; place-items: center; color: var(--color-text);
@@ -718,6 +719,7 @@ button:disabled { opacity:.6; }
 @media (max-width: 950px) {
   .widgets-grid { grid-template-columns: minmax(0, 1fr); }
   .canvas-item,.canvas-item-metric,.canvas-item-table { grid-column: 1 / -1; }
+  .widgets-grid-editing > .add-widget { grid-column: 1 / -1; }
 }
 @media (forced-colors: active) {
   .resize-handle { border: 1px solid ButtonText; color: ButtonText; background: Canvas; }
