@@ -6,4 +6,6 @@ public sealed record DashboardWidget(
     VisualizationKind Kind,
     string DatasetKey,
     string MetricKey,
-    string DimensionKey);
+    string DimensionKey,
+    int? Columns = null,
+    int? Height = null);
