@@ -754,7 +754,7 @@ test('UX-27 guarded editor Cancel, Escape and Close preserve modified dashboard 
 test('UX-27 partially completed dashboard creation asks before discarding, with no phantom dashboard', async ({ page }) => {
   await fixture(page);
   await page.goto('/#/organization/northstar/dashboards');
-  await page.getByRole('button', { name: 'New dashboard' }).click();
+  await page.getByRole('button', { name: 'New dashboard', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Create dashboard' });
   await dialog.getByRole('textbox', { name: 'Dashboard name' }).fill('Unfinished dashboard');
   page.once('dialog', confirmation => confirmation.dismiss());
@@ -765,7 +765,7 @@ test('UX-27 partially completed dashboard creation asks before discarding, with 
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Unfinished dashboard' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'New dashboard' }).click();
+  await page.getByRole('button', { name: 'New dashboard', exact: true }).click();
   await expect(dialog.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('');
   await dialog.getByRole('button', { name: 'Cancel' }).click();
 });
