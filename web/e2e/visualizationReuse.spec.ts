@@ -85,7 +85,19 @@ async function visit(page: Page, id = first) {
 async function screenshot(page: Page, info: TestInfo, name: string) {
   await page.mouse.move(8, 8);
   const path = info.outputPath(`ux23-${name}.png`);
-  await page.screenshot({ path, animations: 'disabled', fullPage: true });
+  // Viewport capture, not fullPage: Chromium composites native <dialog> overlays
+  // incorrectly into long full-page captures when the background scrolls.
+  await page.screenshot({ path, animations: 'disabled', fullPage: false });
+  const dialog = page.getByRole('dialog');
+  if (await dialog.isVisible()) {
+    const bounds = await dialog.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(-1);
+    expect(bounds!.y).toBeGreaterThanOrEqual(-1);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height + 1);
+  }
   await info.attach(name, { path, contentType: 'image/png' });
   const width = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   expect(width).toBeLessThanOrEqual(1);

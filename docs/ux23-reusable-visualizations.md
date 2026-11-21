@@ -42,7 +42,7 @@ Editing or deleting a *library* template affects future additions only. Editing/
 * Vitest `composition.test.ts`: independent copies, layout handling, duplicate insertion/order and safety bounds, existing dirty detection.
 * Playwright `visualizationReuse.spec.ts`: cross-dashboard copy independence, save/edit/delete intent, search/type filtering, visual preview, reload, duplicate, cancel, viewer restrictions, empty state, axe checks, desktop (1440×900) and mobile (390×844) screenshot capture.
 * CI: `.github/workflows/verify.yml` runs TypeScript production build, Vitest, NUnit, Chromium Playwright and mandatory SQL Server/PostgreSQL conformance; `codeql.yml` analyzes C# and TypeScript.
-* Screenshots are captured by real Chromium into `web/test-results/visualizationReuse-*/ux23-*.png` and attached to the Verify run's `ux-visual-evidence` artifact. Inspect actual images before claiming a visual pass.
+* Viewport screenshots of native dialogs are captured by real Chromium (rather than misleading full-page compositor composites) into `web/test-results/visualizationReuse-*/ux23-*.png` and attached to the Verify run's `ux-visual-evidence` artifact. Inspect actual images before claiming a visual pass.
 * Specific final test counts, artifact links, CodeQL findings and post-merge run URLs must be recorded against actual CI evidence, not inferred from plans.
 
 ## Constraints and known limitations
