@@ -77,6 +77,7 @@ export function EmbeddedDashboard() {
           <DashboardConsumer key={`${result.dashboard.organizationId}:${result.dashboard.id}`} widgets={result.dashboard.widgets}
             updatedAt={result.dashboard.updatedAt} editing={false} canEdit={false} onStartEdit={() => {}}
             onChange={() => {}} onEdit={() => {}} onAdd={() => {}}
+            onAddSaved={() => {}} onDuplicate={() => {}} onSaveToLibrary={() => {}}
             onShareInsight={(widget, filters) => setShareRequest({ widget, filters })} />
           <p className="embedded-footnote">Showing fictional sample data for UI evaluation. Live customer data and production embedding are not enabled.</p>
           {shareRequest && <ShareContextDialog dashboard={result.dashboard} organizationName={result.organizationName}
