@@ -144,6 +144,72 @@ public sealed class DashboardServiceTests
     }
 
     [Test]
+    public async Task AppearanceConfigurationSurvivesPersistenceAndRespectsAuthorization()
+    {
+        var pie = new DashboardWidget(Guid.NewGuid(), "Channel orders", VisualizationKind.Pie,
+            "channels", "orders", "channel", Appearance: new VisualizationAppearance(
+                ShowLegend: false, ShowSliceLabels: true, MaxSliceLabels: 8, CategorySort: "valueAsc"));
+        var histogram = new DashboardWidget(Guid.NewGuid(), "Revenue distribution", VisualizationKind.Histogram,
+            "commerce", "revenue", "month", Appearance: new VisualizationAppearance(HistogramBins: 6));
+        var draft = new DashboardDraft("Configured samples", "Fictional sources only", [pie, histogram]);
+
+        var saved = await service.CreateAsync("northstar", "demo-owner", draft, CancellationToken.None);
+        var reopened = new SqliteCatalog(databasePath);
+        await reopened.InitializeAsync();
+        var found = await reopened.FindAsync("northstar", saved.Id, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(found?.Widgets[0].Appearance?.ShowLegend, Is.False);
+            Assert.That(found?.Widgets[0].Appearance?.ShowSliceLabels, Is.True);
+            Assert.That(found?.Widgets[0].Appearance?.MaxSliceLabels, Is.EqualTo(8));
+            Assert.That(found?.Widgets[0].Appearance?.CategorySort, Is.EqualTo("valueAsc"));
+            Assert.That(found?.Widgets[1].Appearance?.HistogramBins, Is.EqualTo(6));
+            Assert.That(found?.Widgets[0].Columns, Is.Null);
+        });
+
+        var next = draft with { Widgets = [pie with {
+            Appearance = pie.Appearance! with { MaxSliceLabels = 12 }
+        }, histogram] };
+        var changed = await service.UpdateAsync("northstar", saved.Id, "demo-owner",
+            next, saved.Revision, CancellationToken.None);
+        Assert.That(changed?.Widgets[0].Appearance?.MaxSliceLabels, Is.EqualTo(12));
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await service.UpdateAsync("northstar", saved.Id, "demo-viewer",
+                draft, changed!.Revision, CancellationToken.None));
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await service.FindAsync("isolated", saved.Id, "demo-owner", CancellationToken.None));
+    }
+
+    [Test]
+    public async Task AppearanceRejectsInvalidAndIncompatibleInputs()
+    {
+        var original = Draft();
+        var cases = new[] {
+            new DashboardWidget(Guid.NewGuid(), "Invalid count", VisualizationKind.Pie, "channels", "orders",
+                "channel", Appearance: new VisualizationAppearance(MaxSliceLabels: 7)),
+            new DashboardWidget(Guid.NewGuid(), "Legend on bar", VisualizationKind.Bar, "channels", "orders",
+                "channel", Appearance: new VisualizationAppearance(ShowLegend: false)),
+            new DashboardWidget(Guid.NewGuid(), "Histogram overflow", VisualizationKind.Histogram, "commerce", "revenue",
+                "month", Appearance: new VisualizationAppearance(HistogramBins: 13)),
+            new DashboardWidget(Guid.NewGuid(), "Histogram underflow", VisualizationKind.Histogram, "commerce", "revenue",
+                "month", Appearance: new VisualizationAppearance(HistogramBins: 1)),
+            new DashboardWidget(Guid.NewGuid(), "Unknown sort", VisualizationKind.Pie, "channels", "orders",
+                "channel", Appearance: new VisualizationAppearance(CategorySort: "byName")),
+            new DashboardWidget(Guid.NewGuid(), "Timed sort", VisualizationKind.Line, "commerce", "revenue",
+                "month", Appearance: new VisualizationAppearance(CategorySort: "valueDesc")),
+            new DashboardWidget(Guid.NewGuid(), "Unneeded bins", VisualizationKind.Table, "commerce", "orders",
+                "month", Appearance: new VisualizationAppearance(HistogramBins: 4)),
+        };
+        foreach (var bad in cases)
+        {
+            await Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+                await service.CreateAsync("northstar", "demo-owner",
+                    original with { Widgets = [bad] }, CancellationToken.None), bad.Title);
+        }
+    }
+
+    [Test]
     public async Task DuplicateWidgetIdsAreRejected()
     {
         var widget = Draft().Widgets[0];

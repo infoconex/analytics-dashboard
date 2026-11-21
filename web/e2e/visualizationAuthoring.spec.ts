@@ -322,3 +322,87 @@ test('guided Explore exposes valid scatter axes and exact fictional values', asy
   await page.getByRole('img', { name: /scatter chart comparing Revenue with Customers/ }).scrollIntoViewIfNeeded();
   await image(page, info, '10-explore-scatter-mobile');
 });
+
+test('UX-22 saves bounded appearance, live preview, category keyboard order, type retention and mobile evidence', async ({ page }, info) => {
+  test.setTimeout(100_000);
+  const api = await sampleApi(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openEditor(page);
+  const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+
+  await dialog.getByRole('button', { name: /Pie chart/ }).click();
+  await dialog.getByRole('textbox', { name: 'Title' }).fill('Configurable channel orders');
+  await dialog.getByRole('combobox', { name: 'Dataset' }).selectOption('channels');
+  await expect(dialog.getByRole('region', { name: 'Data and measures' })).toBeVisible();
+  await dialog.getByText('Appearance (optional)').click();
+  await dialog.getByRole('checkbox', { name: 'Show category legend' }).uncheck();
+  await dialog.getByRole('checkbox', { name: 'Show slice labels' }).check();
+  await dialog.getByRole('combobox', { name: 'Maximum slice labels' }).selectOption('8');
+  await dialog.getByRole('combobox', { name: 'Category order' }).selectOption('valueAsc');
+  await expect(dialog.locator('.donut-legend')).toHaveCount(0);
+  await expect(dialog.locator('.chart-outside-label')).toHaveCount(5);
+  await expect(dialog.locator('.chart-order-note')).toContainText('smallest first');
+  await image(page, info, 'ux22-01-configured-pie-live-preview-desktop');
+  await dialog.locator('.visualization-preview').scrollIntoViewIfNeeded();
+  await expect(dialog.locator('.recharts-pie-sector')).toHaveCount(5);
+  await image(page, info, 'ux22-01b-pie-chart-visible-beside-settings');
+  await dialog.getByRole('button', { name: 'Add to dashboard' }).click();
+
+  await page.getByRole('button', { name: /Add visualization/ }).click();
+  await dialog.getByRole('button', { name: /Histogram/ }).click();
+  await dialog.getByRole('textbox', { name: 'Title' }).fill('Configurable revenue bins');
+  await dialog.getByText('Appearance (optional)').click();
+  await dialog.getByRole('combobox', { name: 'Histogram bins' }).selectOption('6');
+  await expect(dialog.locator('.recharts-bar-rectangle')).toHaveCount(6);
+  await expect(dialog.getByText('12 observed fictional months')).toBeVisible();
+  await image(page, info, 'ux22-02-histogram-six-source-record-bins');
+  await dialog.locator('.visualization-preview').scrollIntoViewIfNeeded();
+  await image(page, info, 'ux22-02b-six-bin-chart-visible-beside-settings');
+  await dialog.getByRole('button', { name: 'Add to dashboard' }).click();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  expect(api.saved().widgets[0]?.appearance).toEqual({
+    showLegend: false, showSliceLabels: true, maxSliceLabels: 8, categorySort: 'valueAsc',
+  });
+  expect(api.saved().widgets[1]?.appearance).toEqual({ histogramBins: 6 });
+
+  await page.reload();
+  const pie = page.getByRole('article', { name: 'Configurable channel orders' });
+  await expect(pie.locator('.chart-outside-label')).toHaveCount(5);
+  await expect(pie.locator('.donut-legend')).toHaveCount(0);
+  await expect(pie.locator('.chart-order-note')).toContainText('smallest first');
+  await expect(page.getByRole('article', { name: 'Configurable revenue bins' })
+    .locator('.recharts-bar-rectangle')).toHaveCount(6);
+  await pie.locator('.widget-chart').focus();
+  await page.keyboard.press('Space');
+  await expect(page.getByRole('button', { name: 'Remove Referral filter', exact: true })).toBeVisible();
+  await pie.getByText('View data table').click();
+  await expect(pie.getByRole('table')).toContainText('615');
+  await page.getByRole('button', { name: 'Remove Referral filter', exact: true }).click();
+  await image(page, info, 'ux22-03-saved-and-reopened-configured-charts');
+
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: 'Edit Configurable channel orders' }).click();
+  await dialog.getByText('Appearance (optional)').click();
+  await expect(dialog.getByRole('checkbox', { name: 'Show slice labels' })).toBeChecked();
+  await expect(dialog.getByRole('combobox', { name: 'Maximum slice labels' })).toHaveValue('8');
+  await dialog.getByRole('button', { name: /Donut chart/ }).click();
+  await expect(dialog.getByRole('checkbox', { name: 'Show category legend' })).not.toBeChecked();
+  await expect(dialog.getByRole('combobox', { name: 'Category order' })).toHaveValue('valueAsc');
+  await dialog.getByRole('button', { name: 'Update visualization' }).click();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('article', { name: 'Configurable channel orders' }).locator('.recharts-pie-sector')).toHaveCount(5);
+  expect(api.saved().widgets[0]?.kind).toBe('pie');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: 'Edit Configurable revenue bins' }).click();
+  await dialog.getByText('Appearance (optional)').click();
+  await expect(dialog.getByRole('combobox', { name: 'Histogram bins' })).toHaveValue('6');
+  await dialog.locator('.visualization-preview').scrollIntoViewIfNeeded();
+  await image(page, info, 'ux22-04-mobile-configured-histogram-editor');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+});

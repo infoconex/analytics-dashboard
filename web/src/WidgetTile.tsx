@@ -13,12 +13,14 @@ import type { DashboardWidget } from './model';
 import { buildHistogram, visualizationProblem } from './visualizationSemantics';
 import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip, selectedPieLabels } from './chartPresentation';
 import { describeWidgetFilters } from './widgetFilterContext';
+import { chartAppearance, chartCategoryRows } from './visualizationAppearance';
 
 const axisTick = { fontSize: 12, fill: '#566780' };
 
 interface Props {
   widget: DashboardWidget;
   period: string;
+  preview?: boolean;
   position?: number;
   total?: number;
   editing?: boolean;
@@ -30,21 +32,27 @@ interface Props {
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function WidgetTile({ widget, period, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
+export function WidgetTile({ widget, period, preview, position, total, editing, onEdit, onRemove, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
   const [keyboardIndex, setKeyboardIndex] = useState(0);
   const [chartFocused, setChartFocused] = useState(false);
-  const [showOutsideLabels, setShowOutsideLabels] = useState(false);
-  const [maxOutsideLabels, setMaxOutsideLabels] = useState<5 | 8 | 12>(5);
+  const appearance = chartAppearance(widget);
+  // These consumer-only controls temporarily override the saved appearance.
+  // The editor preview follows the widget draft directly, with no extra controls.
+  const [showOutsideLabels, setShowOutsideLabels] = useState(appearance.showSliceLabels);
+  const [maxOutsideLabels, setMaxOutsideLabels] = useState<5 | 8 | 12>(appearance.maxSliceLabels);
+  useEffect(() => { setShowOutsideLabels(appearance.showSliceLabels); }, [widget.id, appearance.showSliceLabels]);
+  useEffect(() => { setMaxOutsideLabels(appearance.maxSliceLabels); }, [widget.id, appearance.maxSliceLabels]);
   const pointerFocusRef = useRef(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  const headingId = `widget-heading-${widget.id}`;
+  const headingId = `widget-heading-${preview ? 'preview-' : ''}${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
+  const chartRows = chartCategoryRows(data, widget);
   const scatter = widget.kind === 'scatter';
   const axis = scatter ? dimensions[widget.datasetKey] : widget.dimensionKey;
   const context = sampleMetricContext(widget.datasetKey, widget.metricKey, axis, data, filters);
   const problem = visualizationProblem(widget, data);
-  const histogram = widget.kind === 'histogram' ? buildHistogram(data, widget.metricKey) : [];
+  const histogram = widget.kind === 'histogram' ? buildHistogram(data, widget.metricKey, appearance.histogramBins) : [];
   const xMeasure = metrics[widget.datasetKey]?.find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
   const tooltipValue = (value: unknown) => formatChartTooltip(Number(value), metric);
   const axisValue = (value: number) => formatChartAxis(value, metric);
@@ -65,7 +73,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
     observer.observe(chart, { subtree: true, childList: true, attributes: true, attributeFilter: ['tabindex'] });
     return () => observer.disconnect();
   }, [chartKeyboardInteraction, data.length]);
-  const pieLabels = selectedPieLabels(data, axis, widget.metricKey, maxOutsideLabels);
+  const pieLabels = selectedPieLabels(chartRows, axis, widget.metricKey, maxOutsideLabels);
   const selectedChannel = filters?.channel;
   const filterContext = filters && !editing ? describeWidgetFilters(widget.datasetKey, filters) : null;
   function clearLocalFilter() {
@@ -79,19 +87,19 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
     ? chartInsight(widget.dimensionKey, widget.metricKey, data)
     : null;
   function selectCategory(index: number) {
-    const category = data[index]?.channel;
+    const category = chartRows[index]?.channel;
     if (channelInteraction && typeof category === 'string') onChannelSelect?.(category);
   }
-  const activeKeyboardIndex = Math.min(keyboardIndex, Math.max(0, data.length - 1));
-  const keyboardCategory = String(data[activeKeyboardIndex]?.[axis] ?? '');
+  const activeKeyboardIndex = Math.min(keyboardIndex, Math.max(0, chartRows.length - 1));
+  const keyboardCategory = String(chartRows[activeKeyboardIndex]?.[axis] ?? '');
   function onChartKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (!chartKeyboardInteraction || !data.length || event.target !== event.currentTarget) return;
+    if (!chartKeyboardInteraction || !chartRows.length || event.target !== event.currentTarget) return;
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-      event.preventDefault(); setKeyboardIndex(Math.min(activeKeyboardIndex + 1, data.length - 1));
+      event.preventDefault(); setKeyboardIndex(Math.min(activeKeyboardIndex + 1, chartRows.length - 1));
     } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
       event.preventDefault(); setKeyboardIndex(Math.max(activeKeyboardIndex - 1, 0));
     } else if (event.key === 'Home' || event.key === 'End') {
-      event.preventDefault(); setKeyboardIndex(event.key === 'Home' ? 0 : data.length - 1);
+      event.preventDefault(); setKeyboardIndex(event.key === 'Home' ? 0 : chartRows.length - 1);
     } else if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault(); event.stopPropagation(); selectCategory(activeKeyboardIndex);
     }
@@ -172,7 +180,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
           <ResponsiveContainer width="100%" height="100%">
             {widget.kind === 'donut' || widget.kind === 'pie' ? (
               <PieChart accessibilityLayer={false}>
-                <Pie data={data} dataKey={metric} nameKey={axis} cx="50%" cy="50%" startAngle={90} endAngle={-270} innerRadius={widget.kind === 'donut' ? (showOutsideLabels ? '51%' : '59%') : 0} outerRadius={showOutsideLabels ? '72%' : '80%'} paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} labelLine={false} label={showOutsideLabels ? (props) => {
+                <Pie data={chartRows} dataKey={metric} nameKey={axis} cx="50%" cy="50%" startAngle={90} endAngle={-270} innerRadius={widget.kind === 'donut' ? (showOutsideLabels ? '51%' : '59%') : 0} outerRadius={showOutsideLabels ? '72%' : '80%'} paddingAngle={3} stroke="none" isAnimationActive={false} onClick={(_entry, index) => selectCategory(index)} cursor={channelInteraction ? 'pointer' : 'default'} labelLine={false} label={showOutsideLabels ? (props) => {
                   const { cx, cy, midAngle, outerRadius, payload } = props;
                   const category = String(payload?.[axis] ?? '');
                   if (!pieLabels.has(category)) return null;
@@ -185,7 +193,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                   const right = Math.cos(radians) >= 0;
                   return <g className="chart-outside-label" aria-hidden="true"><path d={`M${x1},${y1} L${x2},${y2} L${x2 + (right ? 6 : -6)},${y2}`} fill="none" /><text x={x2 + (right ? 9 : -9)} y={y2} textAnchor={right ? 'start' : 'end'} dominantBaseline="central">{category}</text></g>;
                 } : false}>
-                  {data.map((row, index) => <Cell key={String(row[axis])} fill={colorForCategory(widget.datasetKey, String(row[axis]))} stroke={chartFocused && chartKeyboardInteraction && index === activeKeyboardIndex ? '#172c55' : 'none'} strokeWidth={chartFocused && index === activeKeyboardIndex ? 4 : 0} />)}
+                  {chartRows.map((row, index) => <Cell key={String(row[axis])} fill={colorForCategory(widget.datasetKey, String(row[axis]))} stroke={chartFocused && chartKeyboardInteraction && index === activeKeyboardIndex ? '#172c55' : 'none'} strokeWidth={chartFocused && index === activeKeyboardIndex ? 4 : 0} />)}
                 </Pie>
                 <Tooltip formatter={(value, name, item) => [tooltipValue(value), categoryTooltipLabel(String(item.payload?.[axis] ?? name), context.label)]} />
               </PieChart>
@@ -206,7 +214,7 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
                 <Scatter name={`${xMeasure} and ${context.label}`} data={data} fill="#6179f4" isAnimationActive={false} />
               </ScatterChart>
             ) : widget.kind === 'bar' ? (
-              <BarChart data={data} tabIndex={-1} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
+              <BarChart data={chartRows} tabIndex={-1} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
                 <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
@@ -223,19 +231,22 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
               </LineChart>
             ) : (
               <AreaChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
-                <defs><linearGradient id={`area-${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.27} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0.01} /></linearGradient></defs>
+                <defs><linearGradient id={`area-${preview ? 'preview-' : ''}${widget.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6179f4" stopOpacity={0.27} /><stop offset="100%" stopColor="#6179f4" stopOpacity={0.01} /></linearGradient></defs>
                 <CartesianGrid stroke="#edf0f6" strokeDasharray="3 5" vertical={false} />
                 <XAxis dataKey={axis} tickLine={false} axisLine={false} tick={axisTick} />
                 <YAxis tickLine={false} axisLine={false} tick={axisTick} tickFormatter={axisValue} width={52} />
                 <Tooltip formatter={value => [tooltipValue(value), context.label]} />
-                <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.7} fill={`url(#area-${widget.id})`} />
+                <Area type="monotone" dataKey={metric} stroke="#6179f4" strokeWidth={2.7} fill={`url(#area-${preview ? 'preview-' : ''}${widget.id})`} />
               </AreaChart>
             )}
           </ResponsiveContainer>
         </div>
       )}
       {chartKeyboardInteraction && chartFocused && <p className="chart-keyboard-hint" aria-live="polite">Keyboard chart selection: <strong>{keyboardCategory}</strong>. Use arrow keys to choose a category; Enter or Space to {selectedChannel === keyboardCategory ? 'clear' : 'apply'} its filter.</p>}
-      {(widget.kind === 'donut' || widget.kind === 'pie') && <div className="chart-label-options"><button type="button" className="text-link" aria-pressed={showOutsideLabels} onClick={() => setShowOutsideLabels(current => !current)}>{showOutsideLabels ? 'Hide slice labels' : 'Show slice labels'}</button>{showOutsideLabels ? <><label htmlFor={`slice-label-count-${widget.id}`}>Maximum labels</label><select id={`slice-label-count-${widget.id}`} value={maxOutsideLabels} onChange={event => setMaxOutsideLabels(Number(event.target.value) as 5 | 8 | 12)}><option value={5}>5</option><option value={8}>8</option><option value={12}>12</option></select><span>Showing {pieLabels.size} leader-line labels where space permits; hover or open the data table for all categories.</span></> : <span>Optional leader-line labels</span>}</div>}
+      {!preview && (widget.kind === 'donut' || widget.kind === 'pie') && <div className="chart-label-options"><button type="button" className="text-link" aria-pressed={showOutsideLabels} onClick={() => setShowOutsideLabels(current => !current)}>{showOutsideLabels ? 'Hide slice labels' : 'Show slice labels'}</button>{showOutsideLabels ? <><label htmlFor={`slice-label-count-${widget.id}`}>Maximum labels</label><select id={`slice-label-count-${widget.id}`} value={maxOutsideLabels} onChange={event => setMaxOutsideLabels(Number(event.target.value) as 5 | 8 | 12)}><option value={5}>5</option><option value={8}>8</option><option value={12}>12</option></select><span>Showing {pieLabels.size} leader-line labels where space permits; hover or open the data table for all categories.</span></> : <span>Optional leader-line labels</span>}</div>}
+      {widget.kind === 'histogram' && <p className="scatter-axis-titles"><strong>X-axis:</strong> {context.label} ({context.unit}) · <strong>Y-axis:</strong> Source-record frequency (count)</p>}
+      {(widget.kind === 'bar' || widget.kind === 'line' || widget.kind === 'area') && <p className="scatter-axis-titles"><strong>X-axis:</strong> {widget.datasetKey === 'commerce' ? 'Sample month (Jan–Dec, year unspecified)' : 'Channel'} · <strong>Y-axis:</strong> {context.label} ({context.unit})</p>}
+      {widget.datasetKey === 'channels' && appearance.categorySort !== 'source' && ['bar', 'pie', 'donut'].includes(widget.kind) && <p className="chart-order-note">Categories ordered by {context.label.toLowerCase()}, {appearance.categorySort === 'valueAsc' ? 'smallest' : 'largest'} first. The source table retains its original order.</p>}
       {scatter && <div className="scatter-axis-titles"><span><strong>X-axis:</strong> {xMeasure}</span><span><strong>Y-axis:</strong> {context.label} ({context.unit})</span></div>}
       {insight && <p className="chart-insight"><strong>At a glance:</strong> {insight}</p>}
       {widget.kind === 'histogram' && <p className="chart-insight"><strong>Distribution:</strong> {data.length} observed fictional {widget.datasetKey === 'commerce' ? 'months' : 'channels'} grouped into {histogram.length} value {histogram.length === 1 ? 'range' : 'ranges'}. These are counts of source records, not an additional business metric.</p>}
@@ -251,9 +262,9 @@ export function WidgetTile({ widget, period, position, total, editing, onEdit, o
         </dl>
         {onShareInsight && <button type="button" className="text-link insight-share" onClick={() => onShareInsight(widget)}>Share this insight’s context</button>}
       </details>
-      {(widget.kind === 'donut' || widget.kind === 'pie') && <div className="donut-legend">
-        {data.map(row => channelInteraction
-          ? <button type="button" className={`donut-legend-button${chartFocused && data[activeKeyboardIndex]?.[axis] === row[axis] ? ' keyboard-current' : ''}`} key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}{selectedChannel === row.channel && <X size={13} aria-hidden="true" />}</button>
+      {(widget.kind === 'donut' || widget.kind === 'pie') && appearance.showLegend && <div className="donut-legend">
+        {chartRows.map(row => channelInteraction
+          ? <button type="button" className={`donut-legend-button${chartFocused && chartRows[activeKeyboardIndex]?.[axis] === row[axis] ? ' keyboard-current' : ''}`} key={String(row[axis])} aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}{selectedChannel === row.channel && <X size={13} aria-hidden="true" />}</button>
           : <span key={String(row[axis])}><i style={{ background: colorForCategory(widget.datasetKey, String(row[axis])) }} />{row[axis]}</span>)}
       </div>}
       {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut' || widget.kind === 'pie') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter, or use the keyboard-accessible channel selector or data table.</p>}

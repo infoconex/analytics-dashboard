@@ -51,6 +51,15 @@ describe('dashboard composition', () => {
     expect(moveWidget(initial.widgets, 'third', 1)).toBe(initial.widgets);
   });
 
+  it('recognizes persisted appearance changes without treating absent legacy options as dirty', () => {
+    const saved = { ...initial, widgets: [widget('first'), widget('second'), widget('third')] };
+    const draft = { name: saved.name, description: saved.description, widgets: saved.widgets.map(item => ({ ...item })) };
+    expect(hasDashboardChanges(draft, saved)).toBe(false);
+    draft.widgets[1] = { ...draft.widgets[1]!, appearance: { showLegend: false } };
+    expect(hasDashboardChanges(draft, saved)).toBe(true);
+    expect(hasDashboardChanges({ ...draft, widgets: saved.widgets }, saved)).toBe(false);
+  });
+
   it('compares metadata, widget fields and widget ordering, ignoring revision timestamps', () => {
     const same = { name: initial.name, description: initial.description, widgets: initial.widgets.map(item => ({ ...item })) };
     expect(hasDashboardChanges(same, initial)).toBe(false);

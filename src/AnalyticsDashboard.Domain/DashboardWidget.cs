@@ -8,4 +8,5 @@ public sealed record DashboardWidget(
     string MetricKey,
     string DimensionKey,
     int? Columns = null,
-    int? Height = null);
+    int? Height = null,
+    VisualizationAppearance? Appearance = null);

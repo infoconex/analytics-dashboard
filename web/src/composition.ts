@@ -55,6 +55,7 @@ export function hasDashboardChanges(draft: DashboardDraft, saved: Dashboard): bo
     if (!original) return true;
     return item.id !== original.id || item.title !== original.title || item.kind !== original.kind ||
       item.datasetKey !== original.datasetKey || item.metricKey !== original.metricKey || item.dimensionKey !== original.dimensionKey ||
-      (item.columns ?? null) !== (original.columns ?? null) || (item.height ?? null) !== (original.height ?? null);
+      (item.columns ?? null) !== (original.columns ?? null) || (item.height ?? null) !== (original.height ?? null) ||
+      JSON.stringify(item.appearance ?? {}) !== JSON.stringify(original.appearance ?? {});
   });
 }

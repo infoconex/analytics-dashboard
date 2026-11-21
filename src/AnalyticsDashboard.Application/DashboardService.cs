@@ -147,6 +147,29 @@ public sealed class DashboardService(
             {
                 throw new InvalidDashboardException("Widget layout size is invalid.");
             }
+
+            ValidateAppearance(widget);
+        }
+    }
+
+    private static void ValidateAppearance(DashboardWidget widget)
+    {
+        var appearance = widget.Appearance;
+        if (appearance is null) return;
+
+        var isPie = widget.Kind is VisualizationKind.Pie or VisualizationKind.Donut;
+        var isCategorical = widget.DatasetKey == "channels"
+            && widget.Kind is VisualizationKind.Bar or VisualizationKind.Pie or VisualizationKind.Donut;
+
+        if (((appearance.ShowLegend.HasValue || appearance.ShowSliceLabels.HasValue
+                || appearance.MaxSliceLabels.HasValue) && !isPie)
+            || (appearance.MaxSliceLabels is { } max && max is not (5 or 8 or 12))
+            || (appearance.HistogramBins is { } bins
+                && (widget.Kind != VisualizationKind.Histogram || bins < 2 || bins > 12))
+            || (appearance.CategorySort is { } sort
+                && (!isCategorical || sort is not ("source" or "valueAsc" or "valueDesc"))))
+        {
+            throw new InvalidDashboardException("Visualization appearance settings are invalid for this chart.");
         }
     }
 

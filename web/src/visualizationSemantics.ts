@@ -15,7 +15,7 @@ export interface HistogramBin {
 /** An observed-value distribution; never infer timestamps or additional records. */
 export function buildHistogram(rows: readonly Row[], metric: string, bucketCount = 4): HistogramBin[] {
   const values = rows.map(row => row[metric]);
-  if (!values.length || !Number.isInteger(bucketCount) || bucketCount < 1 || bucketCount > 12 ||
+  if (!values.length || !Number.isInteger(bucketCount) || bucketCount < 2 || bucketCount > 12 ||
     values.some(value => typeof value !== 'number' || !Number.isFinite(value) || value < 0)) return [];
   const numeric = values as number[];
   const minimum = Math.min(...numeric);
@@ -54,7 +54,7 @@ export function visualizationProblem(widget: DashboardWidget, rows: readonly Row
   } else if (widget.dimensionKey !== dimensions[widget.datasetKey]) {
     return 'The selected dimension does not match the fictional dataset.';
   }
-  if (widget.kind === 'histogram' && !buildHistogram(rows, widget.metricKey).length)
+  if (widget.kind === 'histogram' && !buildHistogram(rows, widget.metricKey, widget.appearance?.histogramBins ?? 4).length)
     return 'No usable numeric observations exist for this distribution.';
   return null;
 }

@@ -277,3 +277,35 @@ test('real Chromium tab zoom at 200% and 400% retains embedded navigation and fi
     await context.close();
   }
 });
+
+test('UX-22 saved appearance renders consistently in the read-only sample embed', async ({ page }, info) => {
+  const mutations: string[] = [];
+  const configured: Dashboard = { ...sample, widgets: [
+    { ...sample.widgets[3]!, appearance: { showLegend: false, showSliceLabels: true,
+      maxSliceLabels: 8, categorySort: 'valueAsc' } },
+    { ...sample.widgets[2]!, appearance: { categorySort: 'valueAsc' } },
+    { ...sample.widgets[1]!, kind: 'histogram', title: 'Saved revenue distribution',
+      appearance: { histogramBins: 6 } },
+  ] };
+  await routeSample(page, configured, mutations);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(embeddedUrl);
+
+  const donut = page.getByRole('article', { name: 'Traffic sources' });
+  await expect(donut.locator('.recharts-pie-sector')).toHaveCount(5);
+  await expect(donut.locator('.chart-outside-label')).toHaveCount(5);
+  await expect(donut.locator('.donut-legend')).toHaveCount(0);
+  await expect(donut.locator('.chart-order-note')).toContainText('smallest first');
+  await expect(page.getByRole('article', { name: 'Saved revenue distribution' })
+    .locator('.recharts-bar-rectangle')).toHaveCount(6);
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
+  await capture(page, info, 'ux22-readonly-embedded-desktop');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(donut).toBeVisible();
+  await assertNoOverflow(page);
+  await capture(page, info, 'ux22-readonly-embedded-mobile');
+  await donut.scrollIntoViewIfNeeded();
+  await capture(page, info, 'ux22-readonly-embedded-mobile-chart');
+  expect(mutations).toEqual([]);
+});
