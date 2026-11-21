@@ -6,7 +6,8 @@ async function capture(page: Page, info: TestInfo, name: string) {
   await page.mouse.move(8, 8);
   const path = info.outputPath(`ux28-${name}.png`);
   await page.screenshot({ path, animations: 'disabled', fullPage: false });
-  const bounds = await page.getByRole('dialog').first().boundingBox().catch(() => null);
+  const dialogs = page.getByRole('dialog');
+  const bounds = await dialogs.count() ? await dialogs.first().boundingBox() : null;
   if (bounds) {
     const viewport = page.viewportSize()!;
     expect(bounds.x).toBeGreaterThanOrEqual(-1);
