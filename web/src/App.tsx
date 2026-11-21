@@ -7,16 +7,17 @@ import {
   Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2,
   Users,
 } from 'lucide-react';
-import { dashboardApi } from './api';
-import { hasDashboardChanges } from './composition';
+import { dashboardApi, visualizationApi } from './api';
+import { copySavedVisualization, duplicateWidget, hasDashboardChanges } from './composition';
 import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics, selectRows } from './demoData';
 import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
-import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, WidgetKind } from './model';
+import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, SavedVisualization, WidgetKind } from './model';
 import { DashboardConsumer } from './DashboardConsumer';
 import { WidgetTile } from './WidgetTile';
 import { DataSourcesPage } from './DataSourcesPage';
 import { ExplorePage } from './ExplorePage';
 import { VisualizationGallery } from './VisualizationGallery';
+import { VisualizationLibraryPicker } from './VisualizationLibraryPicker';
 import { Button } from './ui/Button';
 import { ModalDialog } from './ui/ModalDialog';
 import { isSupportedAppHash, organizationHash, parseOrganizationHash } from './organizationRoute';
@@ -66,6 +67,16 @@ export default function App() {
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState<DashboardDraft | null>(null);
   const [widgetDraft, setWidgetDraft] = useState<DashboardWidget | null>(null);
+  const [library, setLibrary] = useState<{ organizationId: string; items: SavedVisualization[] } | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryBusy, setLibraryBusy] = useState(false);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState('');
+  const [libraryEditing, setLibraryEditing] = useState<SavedVisualization | null>(null);
+  const [libraryDescription, setLibraryDescription] = useState('');
+  const [librarySource, setLibrarySource] = useState<DashboardWidget | null>(null);
+  const [libraryName, setLibraryName] = useState('');
+  const [librarySourceDescription, setLibrarySourceDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [createError, setCreateError] = useState('');
@@ -90,7 +101,11 @@ export default function App() {
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
 
   // Discovery is ephemeral consumer context, never persisted across tenants.
-  useEffect(() => { setSearch(''); setQuestionFilter(''); setSelectedTask(null); }, [organizationId]);
+  useEffect(() => {
+    setSearch(''); setQuestionFilter(''); setSelectedTask(null);
+    setLibrary(null); setLibraryOpen(false); setLibraryEditing(null); setLibrarySource(null);
+    setLibraryError(''); setLibraryLoading(false);
+  }, [organizationId]);
 
   useEffect(() => {
     if (sidebarOpen) sidebar.current?.querySelector<HTMLButtonElement>('.nav-button')?.focus();
@@ -110,6 +125,9 @@ export default function App() {
     setEditMode(false);
     setDraft(null);
     setWidgetDraft(null);
+    setLibraryOpen(false);
+    setLibrarySource(null);
+    setLibraryEditing(null);
     setSaveError('');
   }
 
@@ -377,6 +395,114 @@ export default function App() {
     const selectedFilters = filters ?? (viewingSnapshot.current?.key === snapshotKey
       ? viewingSnapshot.current.filters : defaultConsumerFilters);
     setShareRequest({ dashboard, organizationName: membership.name, filters: { ...selectedFilters }, widget });
+  }
+
+  async function openSavedLibrary() {
+    const org = organizationId;
+    if (!canEdit || !org || !editMode) return;
+    setLibraryError('');
+    setLibraryOpen(true);
+    setLibraryLoading(true);
+    try {
+      const items = await visualizationApi.list(org);
+      if (activeOrganization.current === org) setLibrary({ organizationId: org, items });
+    } catch (exception) {
+      if (activeOrganization.current === org) {
+        setLibrary(null);
+        setLibraryError(exception instanceof Error ? exception.message : 'Unable to load saved visualizations.');
+      }
+    } finally {
+      if (activeOrganization.current === org) setLibraryLoading(false);
+    }
+  }
+
+  function useSavedVisualization(saved: SavedVisualization) {
+    if (!editMode || !draft || saved.organizationId !== organizationId || draft.widgets.length >= 24) return;
+    const copy = copySavedVisualization(saved.definition, crypto.randomUUID());
+    setDraft({ ...draft, widgets: [...draft.widgets, copy] });
+    setLibraryOpen(false);
+    setToast('Added an independent copy. Save the dashboard to keep it.');
+  }
+
+  function editSavedVisualization(saved: SavedVisualization) {
+    if (!canEdit || saved.organizationId !== organizationId) return;
+    setLibraryEditing(saved);
+    setLibraryDescription(saved.description);
+    setWidgetDraft({ ...saved.definition, appearance: saved.definition.appearance ? { ...saved.definition.appearance } : undefined });
+    setLibraryOpen(false);
+    setLibraryError('');
+  }
+
+  async function deleteSavedVisualization(saved: SavedVisualization) {
+    if (!canEdit || saved.organizationId !== organizationId || libraryBusy) return;
+    if (!window.confirm(`Delete saved template "${saved.definition.title}"? Existing dashboard copies will remain unchanged.`)) return;
+    const org = organizationId;
+    setLibraryBusy(true);
+    setLibraryError('');
+    try {
+      await visualizationApi.remove(org, saved);
+      if (activeOrganization.current === org) setLibrary(current => current?.organizationId === org
+        ? { ...current, items: current.items.filter(item => item.id !== saved.id) } : current);
+    } catch (exception) {
+      if (activeOrganization.current === org) setLibraryError(exception instanceof Error ? exception.message : 'Could not delete template.');
+    } finally { setLibraryBusy(false); }
+  }
+
+  function offerSaveToLibrary(widget: DashboardWidget) {
+    setLibrarySource(widget);
+    setLibraryName(widget.title);
+    setLibrarySourceDescription('');
+    setLibraryError('');
+  }
+
+  async function saveToLibrary() {
+    const source = librarySource;
+    const org = organizationId;
+    if (!source || !canEdit || !libraryName.trim() || libraryBusy) return;
+    setLibraryBusy(true);
+    setLibraryError('');
+    try {
+      const saved = await visualizationApi.create(org, {
+        description: librarySourceDescription,
+        definition: { ...source, title: libraryName.trim() },
+      });
+      if (activeOrganization.current !== org) return;
+      setLibrary(current => current?.organizationId === org
+        ? { ...current, items: [saved, ...current.items] } : { organizationId: org, items: [saved] });
+      setLibrarySource(null);
+      setToast('Reusable visualization saved independently of the dashboard.');
+    } catch (exception) {
+      if (activeOrganization.current === org) setLibraryError(exception instanceof Error ? exception.message : 'Unable to save template.');
+    } finally { setLibraryBusy(false); }
+  }
+
+  async function finishWidgetEdit() {
+    if (!widgetDraft || !draft || libraryBusy) return;
+    if (libraryEditing) {
+      const org = organizationId;
+      setLibraryBusy(true);
+      setLibraryError('');
+      try {
+        const saved = await visualizationApi.update(org, libraryEditing, {
+          description: libraryDescription,
+          definition: widgetDraft,
+        });
+        if (activeOrganization.current !== org) return;
+        setLibrary(current => current?.organizationId === org
+          ? { ...current, items: current.items.map(item => item.id === saved.id ? saved : item) } : current);
+        setWidgetDraft(null);
+        setLibraryEditing(null);
+        setLibraryOpen(true);
+        setToast('Template updated. Existing dashboard copies were not changed.');
+      } catch (exception) {
+        if (activeOrganization.current === org) setLibraryError(exception instanceof Error ? exception.message : 'Could not update template.');
+      } finally { setLibraryBusy(false); }
+    } else {
+      setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id)
+        ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item)
+        : [...draft.widgets, widgetDraft] });
+      setWidgetDraft(null);
+    }
   }
 
   const preview = editMode && draft && activeDashboard
