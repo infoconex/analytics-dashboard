@@ -842,3 +842,7 @@ button:disabled { opacity:.6; }
   .canvas-size-buttons button { border-color:ButtonText; background:ButtonFace; color:ButtonText; }
   .canvas-size-tools > summary:focus-visible,.canvas-size-buttons button:focus-visible { outline-color:Highlight; }
 }
+
+/* UX-26: a narrow live preview explains why saved outside-label preferences may
+   not render at this size; the exact data alternative remains available. */
+.chart-label-notice { margin:8px 0; color:var(--color-muted); font-size:var(--type-caption); line-height:1.5; }
