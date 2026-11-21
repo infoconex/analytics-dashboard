@@ -2,7 +2,7 @@
 
 Tracking [issue #83](https://github.com/infoconex/analytics-dashboard/issues/83). Implementation branch `ux26/visualization-presentation-mobile`, baseline `main` `f3b72128655bece64308cc90cda72d96c2e2e7df` (UX-25 #81 / PR #82).
 
-> Verification status: this file records implementation decisions and test intent. CI outcomes and actual screenshot inspection must be updated **after** they are available. No passing result is implied until recorded.
+> Verification evidence is tracked in [PR #84](https://github.com/infoconex/analytics-dashboard/pull/84), with mandatory fresh-head Verify and CodeQL checks and follow-up main-branch validation. Recorded partial runs below are historical diagnostics, not permission to merge without a completely green latest head.
 
 ## Investigation and code evidence
 
@@ -36,6 +36,33 @@ Tracking [issue #83](https://github.com/infoconex/analytics-dashboard/issues/83)
 - **Full suite:** Verify (NUnit, Vitest, Chromium, evaluation lab, production build) and real SQL Server/PostgreSQL conformance; CodeQL must pass on the final PR head and again on post-merge `main`.
 - **Screenshots:** CI screenshot artifacts are a collection step, not proof of visual inspection. Directly inspect available PNGs, especially edge labels, control overlap, page overflow, long text, chart padding, blank space, preview and Save/Cancel at all requested widths. Record specific outcomes and any uncovered gaps here.
 
+## Actual Chromium screenshot inspection
+
+Reviewed real PNGs from [Verify run #44945579385](https://github.com/infoconex/analytics-dashboard/actions/runs/44945579385), sample-only artifact `ux-visual-evidence`, with additional 390px editor images from the same run. This is **direct visual review**, not just screenshot filenames or automated geometry assertions.
+
+| Width | Donut/pie | Mixed dashboard / widget types | Authoring/editor |
+| --- | --- | --- | --- |
+| 320px | Outside labels omitted; full legend and five-record alternative still available | Metric, line and table readable in their own single-column cards; tables wrap long category values without page-wide overflow | Existing UX-25 editor and toolbar captures retained; new size buttons use in-flow 44px targets |
+| 390px | Outside labels omitted, chart intact; exact category names available without ellipses | Metric and table legible; categories and actions wrap intentionally | Inspected `ux26-mobile-touch-sizing` and `ux26-mobile-pie-editor`: no overlapping size buttons, chart, editor gallery or modal actions |
+| 720px | Five label lines can fit without clipping, including categories on both sides | Single-column dashboard, readable small chart; no unexpected page-wide horizontal scrolling | Responsive single-column controls stay available |
+| 768px | Sidebar consumes space; outside labels omitted for a narrower chart, as expected from **widget** size | Sidebar/navigation and chart cards remain separate; line/table text readable | Existing dashboard authoring controls and editor are retained |
+| 1440px | Multiple circular types displayed side-by-side with their assigned layout and contextual labels | Nine kinds appear in the mixed-dashboard captures; metrics, lines and tables respect their intended card widths | Existing desktop pointer/keyboard resize and editing remain available |
+
+The mixed-dashboard capture series includes top (metric/line), middle (pie/donut), and bottom (table) at **all five** target widths. Visual differences in intrinsic card height are intentional; text/data alternatives extend vertically instead of being clipped. At 768px the available **widget width**, not the nominal viewport width, is appropriately the determining factor for label omission.
+
+The E2E label bounding-rectangle check was originally prone to a timeout if `ResizeObserver` rebuilt the SVG labels between multiple awaited DOM calls; it was corrected to read the label/frame geometry atomically in a single browser evaluation. No browser assertion or label boundary was disabled.
+
+## Accessibility findings and corrections
+
+A full mobile dashboard authoring axe audit at 390px identified three normal-text color-contrast defects (not screenshot guesses). The instruction text on the dashboard canvas was measured at **4.49:1** against the canvas (minimum 4.5:1), while the descriptions under the two Add visualization tiles were **2.55:1**. UX-26 overrides those inherited hard-coded gray colors with the accessible semantic `--color-muted` and increases the tile-description size to the shared caption token. The axe audit remains a required assertion; no violations are ignored or excluded. The precise-node failure output stays in the test to make future regressions actionable.
+
+## CI and test results
+
+- [First browser CI #44944674506](https://github.com/infoconex/analytics-dashboard/actions/runs/44944674506): 145 NUnit, 121 Vitest, 20 evaluation-lab tests, production build and real-provider conformance passed; 125/132 Playwright passed, seven responsive-assumption or test-locator failures diagnosed.
+- [Second browser CI #44945579385](https://github.com/infoconex/analytics-dashboard/actions/runs/44945579385): 131/133 Playwright passed; two remaining issues were an SVG resize timing race in the **test** and an actual color-contrast defect.
+- [Third browser CI #44946427429](https://github.com/infoconex/analytics-dashboard/actions/runs/44946427429): 132/133 Playwright passed; the sole remaining failure was the three normal-text contrast nodes above, diagnosed without suppressions. Unit/lab/build, SQL Server/PostgreSQL and CodeQL language checks passed.
+- Final required proof: [PR #84 latest-head checks](https://github.com/infoconex/analytics-dashboard/pull/84/checks), plus independent Verify and CodeQL after squash merge to main. All tests must pass on the commit being merged; any failed latest-head check is a merge blocker. Screenshot files and their actual review are retained in GitHub Actions artifacts (14-day retention).
+
 ## Security and architectural review
 
 All proposed changes are to the **presentation-only frontend** and its tests/docs. No endpoint, database model, auth flow, authorization role, organization identifier, server-side tenant filter, data source, public embed contract or sharing policy is altered. Reusable templates remain organization-owned and inserted as independent copies. Existing expected-revision checks and explicit stale-save recovery remain server-authoritative. Undo remains bounded and ephemeral. All charts still rely solely on fictional sample data and expose accessible exact data tables.
@@ -48,7 +75,7 @@ Review the PR diff for unexpected contract changes before merge. CodeQL and mand
 - Long legends and native tables can create vertical growth or **contained** scrolling, which is preferable to truncating facts or creating document-wide horizontal overflow.
 - Narrow widths intentionally use full-width cards; resizing their saved desktop column span does not change how many mobile columns render.
 - Further mobile usability and mixed-widget visual review must be based on actual browser screenshots and task evidence, not assumptions.
-- UX-27 recommendation to be finalized after UX-26 verification and any remaining responsive defects are assessed; avoid expanding feature scope without evidence.
+- Recommended UX-27: evidence-driven dashboard authoring task-path polish, emphasizing end-to-end mobile navigation and preview/editor transitions rather than new visualization types. Continue testing 320px axis tick density and intentionally contained long-table scrolling with realistic sample fixtures; only ship fixes supported by browser evidence.
 
 ## Deferred product-owner review
 
