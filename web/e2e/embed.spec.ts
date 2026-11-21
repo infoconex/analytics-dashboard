@@ -305,5 +305,7 @@ test('UX-22 saved appearance renders consistently in the read-only sample embed'
   await expect(donut).toBeVisible();
   await assertNoOverflow(page);
   await capture(page, info, 'ux22-readonly-embedded-mobile');
+  await donut.scrollIntoViewIfNeeded();
+  await capture(page, info, 'ux22-readonly-embedded-mobile-chart');
   expect(mutations).toEqual([]);
 });

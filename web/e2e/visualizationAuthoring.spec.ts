@@ -343,6 +343,9 @@ test('UX-22 saves bounded appearance, live preview, category keyboard order, typ
   await expect(dialog.locator('.chart-outside-label')).toHaveCount(5);
   await expect(dialog.locator('.chart-order-note')).toContainText('smallest first');
   await image(page, info, 'ux22-01-configured-pie-live-preview-desktop');
+  await dialog.locator('.visualization-preview').scrollIntoViewIfNeeded();
+  await expect(dialog.locator('.recharts-pie-sector')).toHaveCount(5);
+  await image(page, info, 'ux22-01b-pie-chart-visible-beside-settings');
   await dialog.getByRole('button', { name: 'Add to dashboard' }).click();
 
   await page.getByRole('button', { name: /Add visualization/ }).click();
@@ -353,6 +356,8 @@ test('UX-22 saves bounded appearance, live preview, category keyboard order, typ
   await expect(dialog.locator('.recharts-bar-rectangle')).toHaveCount(6);
   await expect(dialog.getByText('12 observed fictional months')).toBeVisible();
   await image(page, info, 'ux22-02-histogram-six-source-record-bins');
+  await dialog.locator('.visualization-preview').scrollIntoViewIfNeeded();
+  await image(page, info, 'ux22-02b-six-bin-chart-visible-beside-settings');
   await dialog.getByRole('button', { name: 'Add to dashboard' }).click();
   await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   await page.getByRole('button', { name: 'Save changes' }).click();

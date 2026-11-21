@@ -209,7 +209,17 @@ h1 { font-size: clamp(27px,2.55vw,35px); font-weight: 800; color: #19253b; lette
 .canvas-empty { padding:40px 24px; border:1px dashed #d9e2f4; border-radius:13px; background:#fff; color:#415271; text-align:center; }
 .canvas-empty strong { font-size:14px; }.canvas-empty p,.canvas-empty-hint { color:#71819a; font-size:12px; line-height:1.6; }
 .canvas-empty-hint { margin:13px 2px 0; }
-.visualization-modal { width:min(640px,100%); }
+.visualization-modal { width:min(1030px,100%); }
+.visualization-workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:start; gap:18px; }
+.visualization-settings { min-width:0; }
+.visualization-workspace .visualization-preview { position:sticky; top:0; min-width:0; }
+@media(min-width:850px) {
+  .visualization-modal .visualization-gallery { grid-template-columns:repeat(5,minmax(0,1fr)); }
+}
+@media(max-width:800px) {
+  .visualization-workspace { display:block; }
+  .visualization-workspace .visualization-preview { position:static; }
+}
 .visualization-data-fields { border:1px solid var(--color-border,#dfe5ef); border-radius:12px; margin:0 0 14px; padding:14px; }
 .visualization-data-fields h2 { margin:0 0 6px; font-size:15px; }
 .visualization-data-fields > p,.appearance-fields > p { color:var(--color-muted,#566780); font-size:12px; line-height:1.5; margin:0 0 12px; }

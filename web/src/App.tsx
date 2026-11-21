@@ -535,6 +535,8 @@ export default function App() {
 
       {widgetDraft && editMode && draft && <ModalDialog title="Configure visualization" eyebrow="VISUALIZATION BUILDER · SAMPLE DATA" description="Pick a visual, then choose what it should show." className="visualization-modal" initialFocus=".gallery-card" onDismiss={() => setWidgetDraft(null)}>
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
+        <div className="visualization-workspace">
+          <div className="visualization-settings">
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
         <section className="visualization-data-fields" aria-label="Data and measures">
           <h2>Data and measures</h2>
@@ -563,10 +565,12 @@ export default function App() {
             {widgetDraft.kind !== 'histogram' && widgetDraft.kind !== 'pie' && widgetDraft.kind !== 'donut' && !(widgetDraft.datasetKey === 'channels' && widgetDraft.kind === 'bar') && <p>This chart uses source-order observations and descriptive axes. No additional appearance settings are needed.</p>}
           </div>
         </details>
+          </div>
         <section className="visualization-preview" aria-label="Live visualization preview">
           <h2>Live preview</h2><p>Original fictional sample records only. This preview does not save changes or query a customer data source.</p>
           <WidgetTile widget={widgetDraft} period="12m" preview />
         </section>
+        </div>
         {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
         <div className="modal-actions"><Button variant="light" onClick={() => setWidgetDraft(null)}>Cancel</Button><Button disabled={!widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => { setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id) ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item) : [...draft.widgets, widgetDraft] }); setWidgetDraft(null); }}><Check size={16} /> {draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
       </ModalDialog>}
