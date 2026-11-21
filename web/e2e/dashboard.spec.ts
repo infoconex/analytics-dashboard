@@ -119,10 +119,11 @@ test('revision conflict keeps unsaved editor work available', async ({ page }) =
     return route.continue();
   });
   await page.getByRole('button', { name: 'Save changes' }).click();
-  await expect(page.getByRole('alert')).toContainText('This resource changed in another session.');
+  await expect(page.getByRole('alert')).toContainText('Another editor saved a newer dashboard revision.');
   await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Unsaved draft');
   await expect(page.getByText('Unsaved changes')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await expect(page.getByRole('region', { name: 'Dashboard conflict recovery' })).toBeVisible();
 });
 
 test('tenant-isolated demo dashboard loads six visualizations', async ({ page }) => {

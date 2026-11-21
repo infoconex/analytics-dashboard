@@ -41,9 +41,11 @@ export function ModalDialog({ title, eyebrow, description, onDismiss, children, 
     }}
     onKeyDown={event => {
       if (event.key !== 'Tab') return;
+      // Responsive layouts may hide redundant actions. Never include display:none
+      // descendants in the first/last focus trap (notably mobile library footer).
       const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
         'button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])',
-      ));
+      )).filter(node => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden');
       const first = controls[0];
       const last = controls[controls.length - 1];
       if (!first || !last) return;

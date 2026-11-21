@@ -11,7 +11,7 @@ import { dashboardApi, visualizationApi } from './api';
 import { copySavedVisualization, duplicateWidget, hasDashboardChanges } from './composition';
 import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics, selectRows } from './demoData';
 import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
-import type { CurrentIdentity, Dashboard, DashboardDraft, DashboardWidget, DatasetKey, Membership, SavedVisualization, WidgetKind } from './model';
+import { ApiError, type CurrentIdentity, type Dashboard, type DashboardDraft, type DashboardWidget, type DatasetKey, type Membership, type SavedVisualization, type WidgetKind } from './model';
 import { DashboardConsumer } from './DashboardConsumer';
 import { WidgetTile } from './WidgetTile';
 import { DataSourcesPage } from './DataSourcesPage';
@@ -79,6 +79,9 @@ export default function App() {
   const [librarySourceDescription, setLibrarySourceDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // Only in memory: stale saves never replace either the user's draft or a newer server revision.
+  const [dashboardConflict, setDashboardConflict] = useState<Dashboard | 'unavailable' | null>(null);
+  const [templateConflict, setTemplateConflict] = useState<SavedVisualization | 'deleted' | 'unavailable' | null>(null);
   const [createError, setCreateError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -97,6 +100,23 @@ export default function App() {
   const dashboards = dashboardList?.organizationId === organizationId ? dashboardList.items : [];
   const activeDashboard = dashboards.find(item => item.id === view.id);
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
+  // Configuration edits and a named new dashboard can be lost on refresh even before
+  // they are committed to a dashboard draft. Never persist them into browser storage.
+  const hasPendingWork = Boolean(hasChanges || widgetDraft || librarySource
+    || (createOpen && draft && (draft.name.trim() || draft.description.trim())));
+
+  // In a long visualization editor, the recovery banner may sit above the
+  // current scroll position. Bring the actionable conflict into view and focus
+  // after the server response; the unsaved editor fields remain untouched.
+  useEffect(() => {
+    if (!templateConflict) return;
+    const frame = window.requestAnimationFrame(() => {
+      const region = document.querySelector<HTMLElement>('[aria-label="Template conflict recovery"]');
+      region?.scrollIntoView({ block: 'center' });
+      region?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [templateConflict]);
 
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
 
@@ -117,7 +137,7 @@ export default function App() {
   }
 
   function confirmDiscard(): boolean {
-    return !hasChanges || window.confirm('Discard your unsaved dashboard changes?');
+    return !hasPendingWork || window.confirm('Discard your unsaved authoring changes?');
   }
 
   function stopEditing() {
@@ -129,6 +149,8 @@ export default function App() {
     setLibrarySource(null);
     setLibraryEditing(null);
     setSaveError('');
+    setDashboardConflict(null);
+    setTemplateConflict(null);
   }
 
   function startEditing(openGallery = false) {
@@ -136,6 +158,7 @@ export default function App() {
     setDraft({ name: activeDashboard.name, description: activeDashboard.description,
       widgets: activeDashboard.widgets.map(item => ({ ...item })) });
     setSaveError('');
+    setDashboardConflict(null);
     setEditMode(true);
     if (openGallery) setWidgetDraft(createWidget());
   }
@@ -179,10 +202,12 @@ export default function App() {
       setDraft(null);
       setWidgetDraft(null);
       setSaveError('');
+      setDashboardConflict(null);
+      setTemplateConflict(null);
     };
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
-  }, [organizations, hasChanges]);
+  }, [organizations, hasPendingWork]);
 
   // Navigation replaces the previous control; place keyboard focus on the new
   // page heading instead of leaving it on a detached element. The question
@@ -202,11 +227,11 @@ export default function App() {
   }, [view, loading, selectedTask, organizationId, dashboardLoadFailed]);
 
   useEffect(() => {
-    if (!hasChanges) return;
+    if (!hasPendingWork) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [hasChanges]);
+  }, [hasPendingWork]);
 
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
@@ -284,8 +309,8 @@ export default function App() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  function navigate(next: Page, id?: string, nextOrganizationId = organizationId) {
-    if (!confirmDiscard()) return;
+  function navigate(next: Page, id?: string, nextOrganizationId = organizationId, justCreated = false) {
+    if (!justCreated && !confirmDiscard()) return;
     if (!organizations.some(item => item.id === nextOrganizationId)) return;
     const nextHash = organizationHash(nextOrganizationId, next, id);
     focusOnNavigation.current = true;
@@ -299,6 +324,8 @@ export default function App() {
     setDraft(null);
     setWidgetDraft(null);
     setSaveError('');
+    setDashboardConflict(null);
+    setTemplateConflict(null);
     setSelectedTask(null);
     viewingSnapshot.current = null;
     setShareRequest(null);
@@ -346,14 +373,15 @@ export default function App() {
       setCreateOpen(false);
       setDraft(null);
       setToast('Dashboard created');
-      navigate('dashboards', created.id);
+      // The just-saved creation form is no longer unsaved authoring work.
+      navigate('dashboards', created.id, targetOrganizationId, true);
     } catch (exception) {
       setCreateError(exception instanceof Error ? exception.message : 'Unable to create dashboard.');
     }
   }
 
   async function saveDashboard() {
-    if (!draft || !activeDashboard || saving || !hasChanges || !draft.name.trim()) return;
+    if (!draft || !activeDashboard || saving || dashboardConflict || !hasChanges || !draft.name.trim()) return;
     const targetOrganizationId = organizationId;
     setSaving(true);
     setSaveError('');
@@ -364,11 +392,55 @@ export default function App() {
         ? { ...current, items: current.items.map(item => item.id === updated.id ? updated : item) } : current);
       setDraft(null);
       setEditMode(false);
+      setDashboardConflict(null);
       setToast('All changes saved');
     } catch (exception) {
-      setSaveError(exception instanceof Error ? exception.message : 'Unable to save dashboard. Your edits are still here.');
+      if (activeOrganization.current !== targetOrganizationId) return;
+      if (exception instanceof ApiError && exception.status === 409) {
+        setSaveError('Another editor saved a newer dashboard revision. Your local draft was not overwritten.');
+        try {
+          const current = await dashboardApi.find(targetOrganizationId, activeDashboard.id);
+          if (activeOrganization.current === targetOrganizationId) setDashboardConflict(current);
+        } catch {
+          if (activeOrganization.current === targetOrganizationId) setDashboardConflict('unavailable');
+        }
+      } else {
+        setSaveError(exception instanceof Error ? exception.message : 'Unable to save dashboard.');
+      }
     } finally {
       setSaving(false);
+    }
+  }
+
+  // Deliberate, server-authorized recovery: never auto-merge, auto-revise or overwrite a conflict.
+  async function reloadCurrentDashboard() {
+    if (!activeDashboard || !dashboardConflict || saving) return;
+    if (!window.confirm('Discard your unsaved dashboard edits and load the latest saved version?')) return;
+    const org = organizationId;
+    setSaving(true);
+    try {
+      const latest = await dashboardApi.find(org, activeDashboard.id);
+      if (activeOrganization.current !== org) return;
+      setDashboardList(current => current?.organizationId === org
+        ? { ...current, items: current.items.map(item => item.id === latest.id ? latest : item) } : current);
+      setDraft(null);
+      setEditMode(false);
+      setDashboardConflict(null);
+      setSaveError('');
+      setToast('Latest saved dashboard loaded. Your previous draft was discarded.');
+    } catch {
+      if (activeOrganization.current === org) setSaveError('Unable to load the latest authorized dashboard. Your draft is still available.');
+    } finally { setSaving(false); }
+  }
+
+  async function inspectCurrentDashboard() {
+    if (!activeDashboard || saving) return;
+    const org = organizationId;
+    try {
+      const latest = await dashboardApi.find(org, activeDashboard.id);
+      if (activeOrganization.current === org) setDashboardConflict(latest);
+    } catch {
+      if (activeOrganization.current === org) setDashboardConflict('unavailable');
     }
   }
 
@@ -427,6 +499,7 @@ export default function App() {
   function editSavedVisualization(saved: SavedVisualization) {
     if (!canEdit || saved.organizationId !== organizationId) return;
     setLibraryEditing(saved);
+    setTemplateConflict(null);
     setLibraryDescription(saved.description);
     setWidgetDraft({ ...saved.definition, appearance: saved.definition.appearance ? { ...saved.definition.appearance } : undefined });
     setLibraryOpen(false);
@@ -444,7 +517,21 @@ export default function App() {
       if (activeOrganization.current === org) setLibrary(current => current?.organizationId === org
         ? { ...current, items: current.items.filter(item => item.id !== saved.id) } : current);
     } catch (exception) {
-      if (activeOrganization.current === org) setLibraryError(exception instanceof Error ? exception.message : 'Could not delete template.');
+      if (activeOrganization.current !== org) return;
+      if (exception instanceof ApiError && (exception.status === 409 || exception.status === 404)) {
+        try {
+          const latest = await visualizationApi.list(org);
+          if (activeOrganization.current !== org) return;
+          setLibrary({ organizationId: org, items: latest });
+          setLibraryError(latest.some(item => item.id === saved.id)
+            ? 'This template changed in another session. The library was refreshed; review it before choosing Delete template again.'
+            : 'This template has already been removed in another session. Existing dashboard copies remain unchanged.');
+        } catch {
+          if (activeOrganization.current === org) setLibraryError('This template changed, but the library could not be refreshed. Retry loading the library.');
+        }
+      } else {
+        setLibraryError(exception instanceof Error ? exception.message : 'Could not delete template.');
+      }
     } finally { setLibraryBusy(false); }
   }
 
@@ -480,6 +567,7 @@ export default function App() {
     if (!widgetDraft || !draft || libraryBusy) return;
     if (libraryEditing) {
       const org = organizationId;
+      if (templateConflict) return; // The user must explicitly reload a newer revision.
       setLibraryBusy(true);
       setLibraryError('');
       try {
@@ -492,16 +580,49 @@ export default function App() {
           ? { ...current, items: current.items.map(item => item.id === saved.id ? saved : item) } : current);
         setWidgetDraft(null);
         setLibraryEditing(null);
+        setTemplateConflict(null);
         setLibraryOpen(true);
-        setToast('Template updated. Existing dashboard copies were not changed.');
+        setToast('Template updated independently. Your dashboard draft was not saved or changed.');
       } catch (exception) {
-        if (activeOrganization.current === org) setLibraryError(exception instanceof Error ? exception.message : 'Could not update template.');
+        if (activeOrganization.current !== org) return;
+        if (exception instanceof ApiError && (exception.status === 409 || exception.status === 404)) {
+          setLibraryError('The template was changed or deleted in another session. Your template edits remain here, unsaved.');
+          try {
+            const latest = await visualizationApi.list(org);
+            if (activeOrganization.current !== org) return;
+            setLibrary({ organizationId: org, items: latest });
+            setTemplateConflict(latest.find(item => item.id === libraryEditing.id) ?? 'deleted');
+          } catch {
+            if (activeOrganization.current === org) setTemplateConflict('unavailable');
+          }
+        } else {
+          setLibraryError(exception instanceof Error ? exception.message : 'Could not update template.');
+        }
       } finally { setLibraryBusy(false); }
     } else {
       setDraft({ ...draft, widgets: draft.widgets.some(item => item.id === widgetDraft.id)
         ? draft.widgets.map(item => item.id === widgetDraft.id ? widgetDraft : item)
         : [...draft.widgets, widgetDraft] });
       setWidgetDraft(null);
+    }
+  }
+
+  function reopenCurrentTemplate() {
+    if (!libraryEditing || !templateConflict || libraryBusy) return;
+    if (!window.confirm('Discard your unsaved template edits and reopen the latest saved template?')) return;
+    if (typeof templateConflict !== 'string') {
+      setLibraryEditing(templateConflict);
+      setLibraryDescription(templateConflict.description);
+      setWidgetDraft({ ...templateConflict.definition,
+        appearance: templateConflict.definition.appearance ? { ...templateConflict.definition.appearance } : undefined });
+      setLibraryError('');
+      setTemplateConflict(null);
+    } else {
+      setLibraryEditing(null);
+      setWidgetDraft(null);
+      setTemplateConflict(null);
+      setLibraryOpen(true);
+      void openSavedLibrary();
     }
   }
 
@@ -603,15 +724,25 @@ export default function App() {
                       {editMode && draft ? <input className="description-edit" aria-label="Dashboard description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /> : <p>{preview.description}</p>}</div>
                   </div>
                   <div className="heading-actions">
-                    {editMode ? <><button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
+                    {editMode ? <><button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving || Boolean(dashboardConflict)} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
                       : <><button className="button button-light" onClick={() => share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => startEditing()}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
                   </div>
                 </div>
                 {editMode && <div className="composition-status" role="status" aria-live="polite"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Arrange and configure your dashboard before publishing changes to your team.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}
-                {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available.</div>}
+                {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available in this tab.</div>}
+                {dashboardConflict && editMode && <section className="conflict-recovery" aria-label="Dashboard conflict recovery">
+                  {dashboardConflict === 'unavailable'
+                    ? <p>The latest dashboard could not be read with your current access. Keep this draft open and check access or try again.</p>
+                    : <p>Opened at revision {activeDashboard?.revision}; latest saved revision {dashboardConflict.revision}: <strong>{dashboardConflict.name}</strong> ({dashboardConflict.widgets.length} visualizations). Your draft remains unchanged.</p>}
+                  <div className="conflict-recovery-actions">
+                    {dashboardConflict === 'unavailable'
+                      ? <button type="button" className="button button-light" disabled={saving} onClick={() => void inspectCurrentDashboard()}>Check latest version</button>
+                      : <button type="button" className="button button-light" disabled={saving} onClick={() => void reloadCurrentDashboard()}>Reload latest (discard draft)</button>}
+                  </div>
+                </section>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
                   && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={widget => { setLibraryEditing(null); setWidgetDraft(widget); }} onAdd={() => { setLibraryEditing(null); setWidgetDraft(createWidget()); }}
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={widget => { setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(widget); }} onAdd={() => { setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(createWidget()); }}
                    onAddSaved={() => void openSavedLibrary()}
                    onDuplicate={widget => setDraft(current => current ? { ...current, widgets: duplicateWidget(current.widgets, widget.id, crypto.randomUUID()) } : current)}
                    onSaveToLibrary={offerSaveToLibrary} onChange={widgets => setDraft(current => current ? { ...current, widgets } : current)}
@@ -666,7 +797,7 @@ export default function App() {
         key={organizationId} items={library?.organizationId === organizationId ? library.items : []}
         loading={libraryLoading} error={libraryError} busy={libraryBusy}
         onRetry={() => void openSavedLibrary()} onDismiss={() => setLibraryOpen(false)}
-        onCreate={() => { setLibraryOpen(false); setLibraryEditing(null); setWidgetDraft(createWidget()); }}
+        onCreate={() => { setLibraryOpen(false); setLibraryEditing(null); setTemplateConflict(null); setWidgetDraft(createWidget()); }}
         onUse={useSavedVisualization} onEdit={editSavedVisualization} onDelete={saved => void deleteSavedVisualization(saved)} />}
 
       {librarySource && editMode && draft && <ModalDialog title="Save to visualization library" eyebrow="REUSABLE SAMPLE CHART"
@@ -683,11 +814,19 @@ export default function App() {
         eyebrow="VISUALIZATION BUILDER · SAMPLE DATA"
         description={libraryEditing ? 'Edit this organization template. Existing dashboard copies remain unchanged.' : 'Pick a visual, then choose what it should show.'}
         className="visualization-modal" initialFocus=".gallery-card" busy={libraryBusy}
-        onDismiss={() => { setWidgetDraft(null); setLibraryEditing(null); setLibraryError(''); }}>
+        onDismiss={() => { setWidgetDraft(null); setLibraryEditing(null); setTemplateConflict(null); setLibraryError(''); }}>
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
         {libraryEditing && <label className="form-label">Template description<textarea maxLength={500} rows={2}
           value={libraryDescription} onChange={event => setLibraryDescription(event.target.value)} /></label>}
         {libraryEditing && libraryError && <p role="alert" className="error-banner">{libraryError}</p>}
+        {libraryEditing && templateConflict && <section className="conflict-recovery" aria-label="Template conflict recovery" tabIndex={-1}>
+          {typeof templateConflict === 'string'
+            ? <p>{templateConflict === 'deleted' ? 'This template no longer exists.' : 'The latest template could not be checked with your current access.'} Your unsaved editor fields are still visible.</p>
+            : <p>Opened at revision {libraryEditing.revision}; latest revision {templateConflict.revision}: <strong>{templateConflict.definition.title}</strong>. Existing dashboard copies are unaffected.</p>}
+          <button type="button" className="button button-light" disabled={libraryBusy} onClick={reopenCurrentTemplate}>
+            {typeof templateConflict === 'string' ? 'Return to library (discard edits)' : 'Reopen latest template (discard edits)'}
+          </button>
+        </section>}
         <div className="visualization-workspace">
           <div className="visualization-settings">
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
@@ -725,7 +864,7 @@ export default function App() {
         </section>
         </div>
         {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
-        <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={() => { setWidgetDraft(null); setLibraryEditing(null); setLibraryError(''); }}>Cancel</Button><Button disabled={libraryBusy || !widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => void finishWidgetEdit()}><Check size={16} /> {libraryEditing ? (libraryBusy ? 'Saving…' : 'Save template') : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
+        <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={() => { setWidgetDraft(null); setLibraryEditing(null); setTemplateConflict(null); setLibraryError(''); }}>Cancel</Button><Button disabled={libraryBusy || Boolean(templateConflict) || !widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => void finishWidgetEdit()}><Check size={16} /> {libraryEditing ? (libraryBusy ? 'Saving…' : 'Save template') : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
       </ModalDialog>}
     </div>
   );

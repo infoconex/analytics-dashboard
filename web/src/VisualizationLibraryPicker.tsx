@@ -65,6 +65,6 @@ export function VisualizationLibraryPicker({ items, loading, error, busy, onDism
         <p>Only original fictional sample records are shown.</p>
       </section>}
     </>}
-    <div className="modal-actions"><Button variant="light" onClick={onDismiss} disabled={busy}>Close library</Button></div>
+    <div className="modal-actions library-close-footer"><Button variant="light" onClick={onDismiss} disabled={busy}>Close library</Button></div>
   </ModalDialog>;
 }

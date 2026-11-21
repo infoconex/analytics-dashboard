@@ -76,6 +76,11 @@ test('Explore creates a valid scatter from two measures in the same original row
   await horizontal.selectOption('customers');
   await expect(title).toHaveValue('Revenue versus customers');
   await page.getByRole('button', { name: 'Create dashboard' }).click();
+  // The Explore preview already has the same chart title. Wait for the actual
+  // successful dashboard navigation before reloading or the in-flight POST can
+  // be aborted, producing a misleading flaky "persistence" failure.
+  await expect(page).toHaveURL(/#\/organization\/northstar\/dashboard\/[0-9a-f-]+/);
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Revenue versus customers' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Revenue versus customers' })).toBeVisible().catch(async error => {
