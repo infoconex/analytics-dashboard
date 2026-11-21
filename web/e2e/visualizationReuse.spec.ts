@@ -573,6 +573,19 @@ test('UX-26 circular charts fit their own widget without clipping at mobile, tab
       await expect(chart.locator('.chart-outside-label')).toHaveCount(0);
       await expect(widget.getByText(/Outside labels do not fit this chart size/)).toBeVisible();
     }
+    // The chart may initially paint labels using its previous width while
+    // ResizeObserver reacts to a viewport change. Wait for the actual chart
+    // frame to settle; never relax or suppress the final bounding-box checks.
+    await expect.poll(async () => chart.evaluate(element => {
+      const frame = element.getBoundingClientRect();
+      const labels = [...element.querySelectorAll('.chart-outside-label')];
+      if (frame.width < 480 && labels.length > 0) return false;
+      return labels.every(label => {
+        const bounds = label.getBoundingClientRect();
+        return bounds.left >= frame.left - 2 && bounds.right <= frame.right + 2
+          && bounds.top >= frame.top - 2 && bounds.bottom <= frame.bottom + 2;
+      });
+    }), { timeout: 10000, message: 'Circular labels must fit the settled chart frame after resize' }).toBe(true);
     // Read DOM geometry atomically. ResizeObserver can legitimately rebuild
     // an SVG label between Playwright .all() and boundingBox() awaits.
     const labelGeometry = await chart.evaluate(element => {
