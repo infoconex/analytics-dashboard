@@ -97,6 +97,7 @@ test('dashboard creation errors stay visible inside the open dialog', async ({ p
   await dialog.getByRole('button', { name: 'Create dashboard' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Request failed (503)');
   await expect(dialog).toBeVisible();
+  page.once('dialog', confirmation => confirmation.accept());
   await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(dialog).toHaveCount(0);
 });
