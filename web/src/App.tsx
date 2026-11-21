@@ -89,6 +89,7 @@ export default function App() {
   const [dashboardConflict, setDashboardConflict] = useState<Dashboard | 'unavailable' | null>(null);
   const [templateConflict, setTemplateConflict] = useState<SavedVisualization | 'deleted' | 'unavailable' | null>(null);
   const [createError, setCreateError] = useState('');
+  const [creating, setCreating] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [organizationNotice, setOrganizationNotice] = useState('');
@@ -97,6 +98,7 @@ export default function App() {
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
   const mainContent = useRef<HTMLElement>(null);
+  const saveChangesButton = useRef<HTMLButtonElement>(null);
   const skipNextHashPrompt = useRef(false);
   const acceptedHash = useRef(window.location.hash);
   const focusOnNavigation = useRef(false);
@@ -265,7 +267,14 @@ export default function App() {
   useEffect(() => {
     const handleHash = () => {
       const internalNavigation = skipNextHashPrompt.current;
-      if (!internalNavigation && !confirmDiscard()) {
+      // navigate() has already changed view and cleared or initialized editing.
+      // Reprocessing its hashchange would reset a freshly created dashboard editor.
+      if (internalNavigation) {
+        skipNextHashPrompt.current = false;
+        acceptedHash.current = window.location.hash;
+        return;
+      }
+      if (!confirmDiscard()) {
         window.history.replaceState(null, '', acceptedHash.current || '#/');
         return;
       }
@@ -320,7 +329,7 @@ export default function App() {
       focusOnNavigation.current = false;
       return;
     }
-    const heading = mainContent.current?.querySelector<HTMLElement>('.page-heading h1, .empty-state h2, .embedded-state h1');
+    const heading = mainContent.current?.querySelector<HTMLElement>('.page-heading h1, .canvas-empty-start h2, .empty-state h2, .embedded-state h1');
     if (!heading) return;
     heading.tabIndex = -1;
     heading.focus({ preventScroll: true });
@@ -468,20 +477,30 @@ export default function App() {
   }
 
   async function createDashboard() {
-    if (!draft || !organizationId) return;
+    if (!draft || !organizationId || !canEdit || !createOpen || creating || !draft.name.trim()) return;
     const targetOrganizationId = organizationId;
+    setCreating(true);
+    setCreateError('');
     try {
       const created = await dashboardApi.create(targetOrganizationId, draft);
       if (activeOrganization.current !== targetOrganizationId) return;
       setDashboardList(current => current?.organizationId === targetOrganizationId
         ? { ...current, items: [created, ...current.items] } : current);
       setCreateOpen(false);
-      setDraft(null);
-      setToast('Dashboard created');
-      // The just-saved creation form is no longer unsaved authoring work.
+      // The dashboard itself was persisted by POST. Only later composition changes
+      // need Save changes; do not manufacture an unsaved initial revision.
       navigate('dashboards', created.id, targetOrganizationId, true);
+      resetWidgetUndo();
+      setDraft({ name: created.name, description: created.description,
+        widgets: created.widgets.map(widget => ({ ...widget })) });
+      setEditMode(true);
+      setToast('Dashboard created and saved. Add a visualization to get started.');
     } catch (exception) {
-      setCreateError(exception instanceof Error ? exception.message : 'Unable to create dashboard.');
+      if (activeOrganization.current === targetOrganizationId) {
+        setCreateError(exception instanceof Error ? exception.message : 'Unable to create dashboard.');
+      }
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -598,9 +617,11 @@ export default function App() {
   function useSavedVisualization(saved: SavedVisualization) {
     if (!editMode || !draft || saved.organizationId !== organizationId || draft.widgets.length >= 24) return;
     const copy = copySavedVisualization(saved.definition, crypto.randomUUID());
+    const firstVisualization = draft.widgets.length === 0;
     commitWidgets([...draft.widgets, copy]);
     setLibraryOpen(false);
     setToast('Added an independent copy. Save the dashboard to keep it.');
+    if (firstVisualization) window.requestAnimationFrame(() => saveChangesButton.current?.focus());
   }
 
   function editSavedVisualization(saved: SavedVisualization) {
@@ -707,6 +728,7 @@ export default function App() {
       } finally { setLibraryBusy(false); }
     } else {
       const alreadyOnDashboard = draft.widgets.some(item => item.id === widgetDraft.id);
+      const firstVisualization = !alreadyOnDashboard && draft.widgets.length === 0;
       const changed = !alreadyOnDashboard || (widgetBaseline.current !== null
         && widgetEditorHasChanges(widgetDraft, widgetBaseline.current.widget));
       commitWidgets(alreadyOnDashboard
@@ -718,6 +740,9 @@ export default function App() {
       if (changed) setToast(alreadyOnDashboard
         ? 'Visualization updated in dashboard draft. Save changes to keep it.'
         : 'Visualization added to dashboard draft. Save changes to keep it.');
+      // The first empty-state action unmounts when its widget is added.
+      // Place focus on the next required action instead of losing it to <body>.
+      if (firstVisualization) window.requestAnimationFrame(() => saveChangesButton.current?.focus());
     }
   }
 
@@ -842,7 +867,7 @@ export default function App() {
                          <button type="button" className="button button-light" aria-label="Undo widget change" title="Undo widget change (Ctrl/Cmd+Z)" disabled={!undoHistory.past.length || saving} onClick={undoDashboardWidgets}><Undo2 size={16} /> Undo</button>
                          <button type="button" className="button button-light" aria-label="Redo widget change" title="Redo widget change (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled={!undoHistory.future.length || saving} onClick={redoDashboardWidgets}><Redo2 size={16} /> Redo</button>
                        </div>
-                       <button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving || Boolean(dashboardConflict)} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
+                       <button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button ref={saveChangesButton} className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving || Boolean(dashboardConflict)} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
                       : <><button className="button button-light" onClick={() => share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => startEditing()}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
                   </div>
                 </div>
@@ -904,11 +929,11 @@ export default function App() {
         key={`${shareRequest.dashboard.organizationId}:${shareRequest.dashboard.id}:${shareRequest.widget?.id ?? 'dashboard'}`}
         dashboard={shareRequest.dashboard} organizationName={shareRequest.organizationName} filters={shareRequest.filters}
         widget={shareRequest.widget} onDismiss={() => setShareRequest(null)} />}
-      {createOpen && draft && <ModalDialog title="Create dashboard" eyebrow="NEW WORKSPACE VIEW" description="Give your dashboard a name. Add visualizations after creating it." initialFocus="input" onDismiss={dismissCreateDashboard}>
+      {createOpen && draft && <ModalDialog title="Create dashboard" eyebrow="NEW WORKSPACE VIEW" description="Name your dashboard. It will be saved first, then open ready for visualizations." initialFocus="input" busy={creating} onDismiss={dismissCreateDashboard}>
         {createError && <p role="alert" className="error-banner">{createError}</p>}
         <label className="form-label">Dashboard name<input maxLength={100} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder="e.g. Customer health overview" /></label>
         <label className="form-label">Description<textarea maxLength={500} rows={3} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} placeholder="What would you like your team to learn from this view?" /></label>
-        <div className="modal-actions"><Button variant="light" onClick={dismissCreateDashboard}>Cancel</Button><Button disabled={!draft.name.trim()} onClick={() => void createDashboard()}>Create dashboard <ArrowRight size={16} /></Button></div>
+        <div className="modal-actions"><Button variant="light" disabled={creating} onClick={dismissCreateDashboard}>Cancel</Button><Button disabled={creating || !draft.name.trim()} onClick={() => void createDashboard()}>{creating ? 'Creating…' : 'Create dashboard'} <ArrowRight size={16} /></Button></div>
       </ModalDialog>}
 
       {libraryOpen && editMode && draft && <VisualizationLibraryPicker
