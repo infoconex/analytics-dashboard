@@ -332,7 +332,9 @@ button:disabled { opacity:.6; }
   .icon-button { min-width:36px; min-height:40px; }
   .consumer-filters { padding:var(--space-4); }
   .filter-scope-note { font-size:var(--type-caption); }
-  .visualization-modal .modal-actions { position:sticky; bottom:-27px; z-index:1; background:var(--color-surface); padding-bottom:var(--space-3); box-shadow:0 -10px 18px #121d3b10; }
+  /* UX-25: keep actions in natural scroll order; a sticky footer obscures preview fields at high zoom. */
+  .visualization-modal .modal-actions { position:static; flex-wrap:wrap; padding-bottom:var(--space-2); }
+  .visualization-modal .modal-actions .button { flex:1 1 130px; }
 }
 
 /* UX-4b: semantic typography and legible controls across the legacy shell. */
@@ -785,3 +787,13 @@ button:disabled { opacity:.6; }
 .conflict-recovery-actions { display:flex; flex-wrap:wrap; gap:10px; }
 .conflict-recovery .button { white-space:normal; text-align:center; }
 @media (forced-colors:active) { .conflict-recovery { border:1px solid CanvasText; background:Canvas; color:CanvasText; } }
+
+/* UX-25: bounded widget history is grouped with dashboard Save/Cancel, not a floating overlay. */
+.dashboard-undo-controls { display:flex; gap:8px; flex-wrap:wrap; }
+.dashboard-heading .heading-actions { align-items:center; flex-wrap:wrap; }
+@media(max-width:480px) {
+  .dashboard-heading .heading-actions { width:100%; }
+  .dashboard-undo-controls { width:100%; }
+  .dashboard-undo-controls > button { flex:1 1 0; }
+  .dashboard-heading .heading-actions > button { flex:1 1 auto; }
+}

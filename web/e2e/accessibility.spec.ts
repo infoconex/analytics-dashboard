@@ -56,13 +56,16 @@ test('mobile navigation, forms and active filters remain operable without page o
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
-test('mobile visualization dialog keeps its primary action visible', async ({ page }) => {
+test('mobile visualization dialog exposes its primary action by natural scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/#/dashboards');
   await page.getByRole('button', { name: /Open Business performance/ }).click();
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
   await page.getByRole('button', { name: /Add visualization/ }).click();
   const action = page.getByRole('dialog', { name: 'Configure visualization' }).getByRole('button', { name: 'Add to dashboard' });
+  // UX-25 deliberately uses in-flow actions rather than a sticky footer that obscures fields.
+  await action.scrollIntoViewIfNeeded();
+  await expect(action).toBeInViewport();
   const bounds = await action.boundingBox();
   expect(bounds).not.toBeNull();
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);

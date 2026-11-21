@@ -76,7 +76,7 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
   const api = await sampleApi(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await openEditor(page);
-  const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+  const dialog = page.getByRole('dialog', { name: /^(Configure visualization|Edit dashboard visualization)$/ });
 
   await dialog.getByRole('button', { name: /Pie chart/ }).click();
   await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders by channel pie');
@@ -154,7 +154,7 @@ test('author pie, histogram, scatter; preview, edit, save and revisit exact samp
 test('refuses a misleading conversion pie; owner can recover, viewer cannot author', async ({ page }, info) => {
   await sampleApi(page);
   await openEditor(page);
-  const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+  const dialog = page.getByRole('dialog', { name: /^(Configure visualization|Edit dashboard visualization)$/ });
   await dialog.getByRole('button', { name: /Pie chart/ }).click();
   await dialog.getByRole('combobox', { name: 'Dataset' }).selectOption('channels');
   await dialog.getByRole('combobox', { name: 'Metric' }).selectOption('conversion');
@@ -182,7 +182,7 @@ test('preview reflows at 390 and 320, preserves keyboard focus and forced colors
   await sampleApi(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await openEditor(page);
-  const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+  const dialog = page.getByRole('dialog', { name: /^(Configure visualization|Edit dashboard visualization)$/ });
   await dialog.getByRole('button', { name: /Scatter plot/ }).click();
   await dialog.getByRole('combobox', { name: 'Horizontal measure' }).focus();
   await expect(dialog.getByRole('combobox', { name: 'Horizontal measure' })).toBeFocused();
@@ -221,7 +221,7 @@ test('genuine Chromium 200% and 400% tab zoom preserves the creator dialog and i
     await expect(page.getByRole('heading', { name: 'Fictional analytics' })).toBeVisible();
     await page.getByRole('button', { name: 'Edit dashboard' }).click();
     await page.getByRole('button', { name: /Add visualization/ }).click();
-    const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+    const dialog = page.getByRole('dialog', { name: /^(Configure visualization|Edit dashboard visualization)$/ });
     await dialog.getByRole('button', { name: /Scatter plot/ }).click();
     await expect(dialog.locator('.recharts-scatter-symbol')).toHaveCount(12);
 
@@ -328,7 +328,7 @@ test('UX-22 saves bounded appearance, live preview, category keyboard order, typ
   const api = await sampleApi(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await openEditor(page);
-  const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
+  const dialog = page.getByRole('dialog', { name: /^(Configure visualization|Edit dashboard visualization)$/ });
 
   await dialog.getByRole('button', { name: /Pie chart/ }).click();
   await dialog.getByRole('textbox', { name: 'Title' }).fill('Configurable channel orders');
