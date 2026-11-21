@@ -30,7 +30,7 @@ button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .nav-button.nav-active { background: #25365b; color: #dfe6ff; }
 .nav-button.nav-active svg { color: #8fa3ff; }
 .nav-button span { flex: 1; }
-.nav-button small { padding: 3px 7px; font-size: 10px; background: #364764; border-radius: 5px; }
+.nav-button small { padding: 3px 7px; font-size: 10px; background: #364764; color: #e0e7f4; border-radius: 5px; }
 .sidebar-divider { height: 1px; margin: 20px 10px 24px; background: #293449; }
 .sidebar-bottom { margin-top: auto; }
 .sidebar-tip { margin: 0 5px 23px; border-radius: 12px; padding: 18px 17px; background: linear-gradient(135deg,#2b3c68,#223052 65%,#1e2b48); }
