@@ -51,6 +51,9 @@ jobs:
             web/test-results/ux30Navigation-*/**/*.png
             web/test-results/ux30Navigation-*/**/*.json
             web/test-results/ux30Navigation-*/**/trace.zip
+            web/test-results/ux31Workflows-*/**/*.png
+            web/test-results/ux31Workflows-*/**/*.json
+            web/test-results/ux31Workflows-*/**/trace.zip
             web/test-results/embed-*/**/*.png
             web/test-results/embed-*/**/*.webm
             web/test-results/embed-*/**/*.json
@@ -87,6 +90,18 @@ jobs:
             web/test-results/ux30Navigation-*/**/*.png
             web/test-results/ux30Navigation-*/**/*.json
             web/test-results/ux30Navigation-*/**/trace.zip
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish focused UX-31 workflow evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux31-workflow-evidence
+          path: |
+            web/test-results/ux31Workflows-*/**/*.png
+            web/test-results/ux31Workflows-*/**/*.json
+            web/test-results/ux31Workflows-*/**/trace.zip
           if-no-files-found: warn
           retention-days: 14
 
