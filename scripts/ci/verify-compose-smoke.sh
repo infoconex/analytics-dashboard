@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Owner's same-origin Docker Compose smoke test; always removes disposable containers.
+# Local sample-host Compose smoke test; always removes disposable containers.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 cleanup() {

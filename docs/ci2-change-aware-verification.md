@@ -46,9 +46,8 @@ Multiple changed areas use the **union** of suites. We intentionally avoid test-
 
 ```bash
 bash scripts/ci/verify-providers.sh       # Docker, pwsh, local DB port availability
-bash scripts/ci/verify-ux13-lab.sh        # Isolated fictional Elastic lab
-bash scripts/ci/verify-ux14-lab.sh        # Isolated matched comparison lab
-bash scripts/ci/verify-owner-compose.sh  # Isolated fictional Compose smoke
+bash scripts/ci/verify-product-comparison.sh        # Both archived comparison phases in one disposable lab
+bash scripts/ci/verify-compose-smoke.sh  # Isolated fictional Compose smoke
 python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py'
 python3 scripts/ci/change-impact.py --files docs/example.md
 python3 scripts/ci/change-impact.py --files web/src/App.tsx

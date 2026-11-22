@@ -213,7 +213,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Test | Sample host startup, API isolation and cleanup
-        run: bash ./scripts/ci/verify-owner-compose.sh
+        run: bash ./scripts/ci/verify-compose-smoke.sh
 
   gate:
     name: Gate | Required verification

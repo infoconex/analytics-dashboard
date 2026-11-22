@@ -11,8 +11,8 @@
 | `verify.yml` — general verification | **Keep** | `CI | Verify`: impact plan, .NET, Vitest/build, fictional lab guards, 4 browser shards, real providers, sample-host Compose, stable required gate |
 | `codeql.yml` — security analysis | **Keep** | `Security | CodeQL`: PR language impact, both languages on main/schedule, stable security gate |
 | `ux16-owner-docker.yml` — sample-host Docker smoke | **Integrate and retire** | `Integration | Sample host Compose` job in `CI | Verify`. Trigger on impacted runtime code and on all main pushes. Gate its result. Original shell script stays runnable locally. |
-| `ux13-lab.yml` — Elastic research smoke | **Retire standing PR workflow** | On-demand `Evaluation | External analytics comparison` with `elastic-smoke` selection. Preserve the original script/evidence, stop rerunning research on ordinary PRs. |
-| `ux14-comparison.yml` — matched evaluation | **Retire standing PR workflow** | On-demand `Evaluation | External analytics comparison` with `matched-tasks` selection. Historical evaluation must not be silently treated as an app merge gate. |
+| `ux13-lab.yml` — Elastic research smoke | **Retire standing PR workflow** | On-demand `Evaluation | External analytics comparison` with one explicitly dispatched combined comparison. Preserve original source scripts/evidence, stop rerunning research on ordinary PRs. |
+| `ux14-comparison.yml` — matched evaluation | **Retire standing PR workflow** | On-demand `Evaluation | External analytics comparison` using the same disposable fixture lifecycle. Historical evaluation must not be silently treated as an app merge gate. |
 
 ## Validation mapping
 
@@ -26,12 +26,11 @@
 ## Reproducing locally
 
 ```bash
-bash scripts/ci/verify-owner-compose.sh
-bash scripts/ci/verify-ux13-lab.sh
-bash scripts/ci/verify-ux14-lab.sh
+bash scripts/ci/verify-compose-smoke.sh
+bash scripts/ci/verify-product-comparison.sh
 ```
 
-PowerShell scripts `scripts/ci/verify-backend.ps1`, `verify-frontend.ps1` and `verify-lab.ps1` remain independently runnable; `scripts/verify.ps1 -IncludeBrowserTests` remains a local full suite. The three retained historical scripts keep their issue-era names as traceable research artifacts, **not workflows**.
+PowerShell scripts `scripts/ci/verify-backend.ps1`, `verify-frontend.ps1` and `verify-lab.ps1` remain independently runnable; `scripts/verify.ps1 -IncludeBrowserTests` remains a local full suite. The comparison's historical JavaScript evidence producers and fixture data retain their provenance while the runnable CI entrypoint uses a capability name.
 
 ## Administrative follow-up
 
@@ -41,3 +40,7 @@ The active `main` ruleset (ID `27303915`) requires pull requests and squash merg
 
 - Eliminated the unnecessary .NET SDK setup and NuGet restore from **JavaScript/TypeScript CodeQL**; both are conditional on the C# matrix entry. Native GitHub setup, cache, artifact and code-analysis actions remain YAML primitives, while local test execution and fixture lifecycle stay in runnable scripts.
 - Preserved npm, NuGet and Chromium cache restoration as required per isolated job. Four Playwright shards intentionally duplicate service setup to prevent shared mutable test state; their successful independent execution is not the same as duplicate test coverage.
+
+### Consolidated evaluation script
+
+A manually dispatched `Evaluation | External analytics comparison` runs `scripts/ci/verify-product-comparison.sh`, which performs both unique comparison phases using **one** fixture setup, one Chromium installation and unconditional cleanup, while preserving source PNGs, manifests and the matched-task review package. This avoids duplicating expensive research setup on every pull request. The historical workflow URLs are replaced with the single manual evaluation workflow in the original evidence documentation.
