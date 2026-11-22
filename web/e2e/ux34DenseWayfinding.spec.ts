@@ -151,6 +151,8 @@ test('tables preserve headings and full numeric values at 390/320px with horizon
     expect(before.scrollWidth).toBeGreaterThan(before.clientWidth + 1);
     expect(before.scrollHeight - before.clientHeight, 'no nested vertical table scrolling').toBeLessThanOrEqual(1);
     await expect(article.locator('.table-scroll-hint')).toContainText('More columns to the right');
+    // Show the unscrolled columns and cue, not the host header, in the initial screenshot.
+    await region.scrollIntoViewIfNeeded();
     await capture(page, info, `ux34-data-initial-${width}`);
     await region.focus();
     await page.keyboard.press('ArrowRight');
