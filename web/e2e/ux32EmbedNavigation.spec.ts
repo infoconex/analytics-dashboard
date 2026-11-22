@@ -97,7 +97,8 @@ test('host deep links and guarded invalid dashboard selection', async ({ page })
   await expect(page.getByRole('status', { name: '' }).filter({ hasText: 'not available to your account' })).toBeVisible();
   await expect(page.locator('.host-frame-shell')).toBeHidden();
   await page.getByRole('navigation', { name: 'Customer portal navigation' }).getByRole('link', { name: 'Insights' }).click();
-  await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();
+  // Recover the most recently authorized host dashboard after an invalid link.
+  await expect(frame.getByRole('heading', { name: 'Channel performance' })).toBeVisible();
   await page.goto(`/embed.html#/organization/northstar/dashboard/${firstId}?period=6m&channel=Direct`);
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('6m');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
