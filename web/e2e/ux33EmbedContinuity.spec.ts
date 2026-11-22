@@ -99,14 +99,14 @@ test('long host embed owns scrolling at desktop, tablet, mobile and narrow width
     const before = await expectContentSized(page);
     expect(before.frameHeight).toBeGreaterThan(900);
     expect(before.hostDocumentHeight).toBeGreaterThan(900);
-    await frame.getByRole('article', { name: 'Revenue over time' }).locator('summary').filter({ hasText: 'View data table' }).click();
+    await frame.getByRole('article', { name: 'Revenue over time', exact: true }).locator('summary').filter({ hasText: 'View data table' }).click();
     await expect.poll(async () => (await layout(page)).frameHeight).toBeGreaterThan(before.frameHeight + 20);
     const expanded = await expectContentSized(page);
-    await frame.getByRole('article', { name: 'Revenue over time' }).locator('summary').filter({ hasText: 'View data table' }).click();
+    await frame.getByRole('article', { name: 'Revenue over time', exact: true }).locator('summary').filter({ hasText: 'View data table' }).click();
     await expect.poll(async () => (await layout(page)).frameHeight).toBeLessThan(expanded.frameHeight - 20);
     const closed = await expectContentSized(page);
     if (width === 390) {
-      await frame.getByRole('article', { name: 'Revenue over time' })
+      await frame.getByRole('article', { name: 'Revenue over time', exact: true })
         .getByRole('button', { name: 'Share this insight’s context' }).click();
       const dialog = frame.getByRole('dialog', { name: 'Share insight context' });
       await expect(dialog).toBeVisible();
