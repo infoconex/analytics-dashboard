@@ -106,8 +106,11 @@ test('long host embed owns scrolling at desktop, tablet, mobile and narrow width
     await expect.poll(async () => (await layout(page)).frameHeight).toBeLessThan(expanded.frameHeight - 20);
     const closed = await expectContentSized(page);
     if (width === 390) {
-      await frame.getByRole('article', { name: 'Revenue over time', exact: true })
-        .getByRole('button', { name: 'Share this insight’s context' }).click();
+      const chart = frame.getByRole('article', { name: 'Revenue over time', exact: true });
+      // Share is deliberately disclosed inside the chart's "What this means" details.
+      await chart.locator('details.insight-context summary').click();
+      await expectContentSized(page);
+      await chart.getByRole('button', { name: 'Share this insight’s context' }).click();
       const dialog = frame.getByRole('dialog', { name: 'Share insight context' });
       await expect(dialog).toBeVisible();
       const placement = () => dialog.evaluate(node => {
