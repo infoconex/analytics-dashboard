@@ -191,3 +191,19 @@ test('UX-30 reusable library search and sorting survive an edit-and-return trans
   await expect(library.getByRole('combobox', { name: 'Sort saved visualizations' })).toHaveValue('name-desc');
   await expect(library.getByRole('status')).toContainText('1 of 2');
 });
+
+test('UX-30 browser navigation does not resurrect an abandoned visualization library dialog', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/#/organization/northstar/dashboards');
+  await page.locator('[data-dashboard-id="quarterly-business-23"]').getByRole('button', { name: 'View dashboard' }).click();
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: 'Add saved visualization' }).click();
+  await expect(page.getByRole('dialog', { name: 'Add saved visualization' })).toBeVisible();
+  await page.evaluate(() => history.back());
+  await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.evaluate(() => history.forward());
+  await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
