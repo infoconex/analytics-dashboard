@@ -268,6 +268,10 @@ h1 { font-size: clamp(27px,2.55vw,35px); font-weight: 800; color: #19253b; lette
 .filter-chip { display:flex; align-items:center; gap:5px; background:#e7edff; color:#405fbe; border:1px solid #cbd7ff; border-radius:20px; padding:5px 8px 5px 11px; font-size:10px; font-weight:750; }
 .filter-chip:hover { background:#dae5ff; }
 .filter-scope-note { font-size:10px; line-height:1.5; color:#8a97ab; }
+.filter-impact { flex:1 1 100%; display:grid; gap:4px; min-width:0; border-top:1px solid var(--color-border); padding-top:10px; }
+.filter-impact p { margin:0; font-size:var(--type-caption); color:var(--color-text); line-height:1.6; overflow-wrap:anywhere; }
+.filter-impact strong { color:var(--color-heading); }
+@media(forced-colors:active) { .filter-impact { border-color:CanvasText; } .filter-impact p,.filter-impact strong { color:CanvasText; } }
 @media(max-width:720px) { .consumer-filters { padding:16px; } .consumer-filters-header { align-items:flex-start; } .consumer-filters-title { gap:8px; } .consumer-filter-field { max-width:none; } .consumer-filter-bottom { align-items:flex-start; flex-direction:column; } }
 @media(max-width:400px) { .consumer-filters-header { flex-direction:column; } .reset-filters { align-self:flex-start; } }
 

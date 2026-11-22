@@ -1,5 +1,5 @@
 import { selectRows } from './demoData';
-import type { DatasetKey } from './model';
+import type { DashboardWidget, DatasetKey } from './model';
 
 export type ConsumerPeriod = '3m' | '6m' | '12m';
 
@@ -9,6 +9,19 @@ export interface ConsumerFilters {
 }
 
 export const defaultConsumerFilters: Readonly<ConsumerFilters> = { period: '12m', channel: null };
+
+export const consumerPeriodLabels: Readonly<Record<ConsumerPeriod, string>> = {
+  '3m': 'Final 3 sample months',
+  '6m': 'Final 6 sample months',
+  '12m': 'All 12 sample months',
+};
+
+/** Counts only supported, independent sample sources; never infers relationships. */
+export function summarizeFilterImpact(widgets: readonly Pick<DashboardWidget, 'datasetKey'>[]) {
+  const commerce = widgets.filter(widget => widget.datasetKey === 'commerce').length;
+  const channels = widgets.filter(widget => widget.datasetKey === 'channels').length;
+  return { commerce, channels, other: widgets.length - commerce - channels };
+}
 
 // Client-only samples: no query plans, tenant IDs or API calls are involved.
 // The two sample datasets have independent dimensions; they are never joined.
