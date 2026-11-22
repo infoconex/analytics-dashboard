@@ -107,7 +107,8 @@ export default function App() {
 
   const organization = organizations.find(item => item.id === organizationId);
   const canEdit = organization?.role === 'owner' || organization?.role === 'editor';
-  const dashboards = dashboardList?.organizationId === organizationId ? dashboardList.items : [];
+  const dashboards = dashboardList?.organizationId === organizationId
+    ? dashboardList.items.filter(item => item.organizationId === organizationId) : [];
   const activeDashboard = dashboards.find(item => item.id === view.id);
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
   // Configuration edits and a named new dashboard can be lost on refresh even before
@@ -576,6 +577,7 @@ export default function App() {
   }
 
   async function removeDashboard(dashboard: Dashboard) {
+    if (!canEdit || dashboard.organizationId !== organizationId) return;
     if (!window.confirm(`Delete "${dashboard.name}"? This cannot be undone.`)) return;
     const targetOrganizationId = organizationId;
     try {
