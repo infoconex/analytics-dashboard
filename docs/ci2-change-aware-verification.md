@@ -8,7 +8,7 @@ The GitHub workflows are **declarative orchestration**. Commands and fixture lif
 - The PR classifier compares the **merge base** of the PR base/head SHAs, including deletion and rename paths, to select `backend`, `frontend`, `lab`, `browser`, `providers`, and CodeQL languages. Unexpected paths, absent diffs or CI/script/shared-config edits require **all** suites.
 - On `main` pushes and manual dispatches the classifier selects **all** suites even for documentation-only changes. CodeQL also runs both languages on weekly scheduled scans.
 - A stable `Gate | Required verification` job uses `always()` to ensure each selected suite succeeded and no required suite was silently skipped or failed. This gate does not validate CodeQL; CodeQL checks remain separately visible and should also be required in branch rules.
-- No `paths` or `paths-ignore` filters are placed on `CI | Verify`. The permanent **Product comparison** and **Compose smoke** workflows retain explicit path triggers and manual dispatch support; the issue-number workflows have been retired.
+- No `paths` or `paths-ignore` filters are placed on `CI | Verify`. Optional, historically expensive UX-13/14/16 labs retain their explicit path triggers and manual dispatch support.
 - **Security:** The classifier is a test-routing optimization, not an authorization boundary; use main-branch full verification and trusted reviews on workflow/policy changes. The GitHub App connection cannot update branch rules or configured required checks.
 
 ### PR impact policy
@@ -46,8 +46,8 @@ Multiple changed areas use the **union** of suites. We intentionally avoid test-
 
 ```bash
 bash scripts/ci/verify-providers.sh       # Docker, pwsh, local DB port availability
-bash scripts/ci/verify-comparison-lab.sh # Pinned fictional Elastic and matched-task comparison
-bash scripts/ci/verify-compose-smoke.sh  # Fictional sample host and port smoke
+bash scripts/ci/verify-product-comparison.sh        # Both archived comparison phases in one disposable lab
+bash scripts/ci/verify-compose-smoke.sh  # Isolated fictional Compose smoke
 python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py'
 python3 scripts/ci/change-impact.py --files docs/example.md
 python3 scripts/ci/change-impact.py --files web/src/App.tsx
@@ -66,3 +66,7 @@ Before merging, verify **all** impacted suites, both CodeQL languages and option
 The CodeQL workflow generates a dynamic language matrix with **only impacted languages**, rather than reporting skipped per-step language analyses as green. An always-present `Gate | Security analysis` validates the matrix result (and confirms documentation-only skips). Require this stable security gate separately from the general verification gate when configuring branch rules.
 
 The optional owner Compose script now validates complete HTTP responses before inspecting their contents, avoiding `curl | grep -q` broken pipes under `set -o pipefail`.
+
+## Enduring workflow ownership (CI-3)
+
+The standing PR pipeline validates capabilities, not historical UX increment numbers. `CI | Verify` owns backend, frontend, fictional lab guards, browser E2E, SQL Server/PostgreSQL and **same-origin sample-host Docker Compose integration**. The Compose smoke is change-aware on relevant application code and always runs on `main`; it is included in `Gate | Required verification`. `Security | CodeQL` retains language-selected PR checks and full main/scheduled scans. `Evaluation | External analytics comparison` provides **manual-only** historical Elastic/Kibana smoke or matched browser evidence and is intentionally not a permanent PR merge gate. The original comparison scripts and recorded documents remain available for reproducibility.

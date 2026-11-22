@@ -29,7 +29,7 @@ Every other task is unapproved for paired scoring until its separate requirement
 
 ## 2. Reproducible operator steps
 
-The [Product comparison lab workflow](../.github/workflows/comparison-lab.yml) performs these steps on a disposable GitHub-hosted Linux runner. Docker Engine 28+, Compose, Node 24, OpenSSL, enough Elastic memory, and Playwright Chromium are required. A missing runtime is an **environment/setup defect**, never a product result.
+The [manual External analytics comparison workflow](../.github/workflows/evaluation-comparison.yml) performs these steps on a disposable GitHub-hosted Linux runner. Docker Engine 28+, Compose, Node 24, OpenSSL, enough Elastic memory, and Playwright Chromium are required. A missing runtime is an **environment/setup defect**, never a product result.
 
 ```bash
 npm --prefix web ci --no-audit --no-fund
@@ -51,7 +51,7 @@ The captured display matrix is 1440×900, 390×844, 320×900, forced colors, and
 
 ## 3. Evidence integrity, package and inspection
 
-The workflow uploads `ux14-fictional-comparison` with **original unmodified PNGs** under `lab/ux14/evidence/raw/`, path attempts and actual browser measurements in `manifest.json`, the checked-in source fixture manifest, a copy of actual UX-13 environment evidence, and per-file SHA-256 checksums. Its `ux14-review-package.zip` contains the same assets and machine-readable limitations. The workflow artifact is retained for **14 days only**: it must be explicitly copied into durable project evidence storage before expiration. CI artifact retention alone does **not** satisfy the permanent delivery gate. Do not commit the disposable passwords or any participant information.
+The current manual workflow uploads `evaluation-analytics-comparison` with **original unmodified PNGs** under `lab/ux14/evidence/raw/`, path attempts and actual browser measurements in `manifest.json`, the checked-in source fixture manifest, a copy of actual UX-13 environment evidence, and per-file SHA-256 checksums. Its `ux14-review-package.zip` contains the same assets and machine-readable limitations. The workflow artifact is retained for **14 days only**: it must be explicitly copied into durable project evidence storage before expiration. CI artifact retention alone does **not** satisfy the permanent delivery gate. Do not commit the disposable passwords or any participant information.
 
 Only if **both T02 browser paths reach the report from their own catalog** does the runner generate labeled side-by-side review sheets (`review-T02-*.png`). Native-zoom sheets use the independently captured DevTools chart-target viewport for both products; unscrolled Playwright screenshots remain separate originals. Sheets are layout/scaling derivatives for convenience; open the corresponding `raw/` images for the original pixels, focus states and exact zoom. Missing requested display conditions now fail the comparison workflow, not silently pass on desktop alone. A failed path produces an `incomplete` PNG and an unapproved decision, never a fake paired result. The manifest differentiates actual PR head from GitHub's synthetic PR-test-merge checkout and includes the GitHub run ID.
 

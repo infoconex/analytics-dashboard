@@ -26,20 +26,29 @@ class ChangeImpactTests(unittest.TestCase):
     def test_frontend_requires_ui_tests_and_security(self):
         self.assertEqual(
             impact.classify(["web/src/App.tsx"]),
-            {"frontend", "browser", "javascript"},
+            {"frontend", "browser", "integration", "javascript"},
         )
 
     def test_backend_api_requires_real_browser_and_dotnet(self):
         self.assertEqual(
             impact.classify(["src/AnalyticsDashboard.Api/Program.cs"]),
-            {"backend", "browser", "csharp"},
+            {"backend", "browser", "integration", "csharp"},
         )
 
     def test_infrastructure_triggers_real_providers(self):
         self.assertEqual(
             impact.classify(["src/AnalyticsDashboard.Infrastructure/Adapter.cs"]),
-            {"backend", "browser", "providers", "csharp"},
+            {"backend", "browser", "integration", "providers", "csharp"},
         )
+
+    def test_integration_routing_for_runtime_but_not_docs_or_browser_specs(self):
+        for path in ("web/src/EmbeddedDashboard.tsx", "web/sample-host.html",
+                     "web/vite.config.ts", "src/AnalyticsDashboard.Api/Program.cs"):
+            with self.subTest(path=path):
+                self.assertIn("integration", impact.classify([path]))
+        self.assertNotIn("integration", impact.classify(["web/e2e/embed.spec.ts"]))
+        self.assertNotIn("integration", impact.classify(["docs/notes.md"]))
+        self.assertEqual(impact.classify(["compose.ux16-owner.yml"]), set(impact.SUITES))
 
     def test_backend_tests_preserve_provider_coverage(self):
         self.assertIn("providers", impact.classify(["tests/AnalyticsDashboard.Tests/A.cs"]))
@@ -59,6 +68,24 @@ class ChangeImpactTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(impact.classify([path]), set(impact.SUITES))
 
+    def test_invalid_or_traversing_paths_fail_closed(self):
+        for path in ("../docs/guide.md", "./../docs/guide.md",
+                     "/docs/guide.md", "docs//guide.md",
+                     "docs/../docs/guide.md", "docs/.hidden/../guide.md"):
+            with self.subTest(path=path):
+                self.assertEqual(impact.classify([path]), set(impact.SUITES))
+        self.assertEqual(impact.classify(["./docs/guide.md"]), set())
+
+    def test_compose_failure_rejects_required_integration(self):
+        expected = dict.fromkeys(gate.SUITES, "false")
+        actual = dict.fromkeys(gate.SUITES, "skipped")
+        expected["integration"] = "true"
+        self.assertTrue(gate.evaluate("success", expected, actual))
+        actual["integration"] = "failure"
+        self.assertTrue(gate.evaluate("success", expected, actual))
+        actual["integration"] = "success"
+        self.assertFalse(gate.evaluate("success", expected, actual))
+
     def test_missing_diff_fails_safe(self):
         self.assertEqual(impact.classify([]), set(impact.SUITES))
 
@@ -66,7 +93,7 @@ class ChangeImpactTests(unittest.TestCase):
         selected = impact.classify(["docs/guide.md", "web/src/App.tsx",
                                     "src/AnalyticsDashboard.Infrastructure/Sql.cs"])
         self.assertEqual(
-            selected, {"frontend", "backend", "browser", "providers",
+            selected, {"frontend", "backend", "browser", "integration", "providers",
                        "javascript", "csharp"},
         )
 

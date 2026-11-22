@@ -1,0 +1,45 @@
+name: Evaluation | External analytics comparison
+
+# Historical comparison is deliberate evaluation work, not a PR merge gate.
+# Runs both unique evidence phases using one disposable Elastic fixture.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-analytics-evaluation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  comparison:
+    name: Evaluation | Fictional Elastic and Analytics browser evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout | Research fixtures and scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | Node.js 24 and npm cache
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Evaluation | Run isolated comparison and matched tasks
+        env:
+          UX14_PR_HEAD_SHA: ${{ github.sha }}
+        run: bash ./scripts/ci/verify-product-comparison.sh
+      - name: Evidence | Archive fictional comparison originals and review assets
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: evaluation-analytics-comparison
+          path: |
+            lab/ux13/evidence/**
+            lab/ux14/evidence/**
+            lab/ux14/ux14-review-package.zip
+          if-no-files-found: warn
+          retention-days: 14

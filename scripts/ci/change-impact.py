@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SUITES = ("backend", "frontend", "lab", "browser", "providers", "csharp", "javascript")
+SUITES = ("backend", "frontend", "lab", "browser", "providers", "integration", "csharp", "javascript")
 SHARED = {
     "AnalyticsDashboard.slnx", "Directory.Build.props", "global.json",
     ".editorconfig", ".gitignore", "compose.ux16-owner.yml",
@@ -23,15 +23,19 @@ def classify(paths: list[str]) -> set[str]:
     if not paths:
         return set(SUITES)  # A missing diff is not proof that nothing changed.
     for raw in paths:
-        path = raw.replace("\\", "/").lstrip("./")
-        if not path or path.startswith("../"):
+        path = raw.replace("\\", "/")
+        while path.startswith("./"):
+            path = path[2:]
+        # Never normalize traversal or malformed paths into a safe documentation-only change.
+        if (not path or path.startswith("/") or
+                any(part in ("", ".", "..") for part in path.split("/"))):
             return set(SUITES)
         if path.startswith("docs/") or path in DOCUMENTATION:
             continue
         if path in SHARED or path.startswith((".github/", "scripts/")):
             return set(SUITES)
         if path.startswith("src/"):
-            selected.update(("backend", "browser", "csharp"))
+            selected.update(("backend", "browser", "integration", "csharp"))
             if path.startswith("src/AnalyticsDashboard.Infrastructure/"):
                 selected.add("providers")
         elif path.startswith("tests/"):
@@ -40,7 +44,7 @@ def classify(paths: list[str]) -> set[str]:
             if path.startswith("web/e2e/"):
                 selected.update(("browser", "javascript"))
             else:
-                selected.update(("frontend", "browser", "javascript"))
+                selected.update(("frontend", "browser", "integration", "javascript"))
                 if path.startswith("web/scripts/") or path in (
                     "web/package.json", "web/package-lock.json"
                 ):
