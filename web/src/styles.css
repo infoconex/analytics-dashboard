@@ -790,6 +790,26 @@ button:disabled { opacity:.6; }
 .conflict-recovery p { margin:0 0 12px; line-height:1.5; font-size:13px; overflow-wrap:anywhere; }
 .conflict-recovery-actions { display:flex; flex-wrap:wrap; gap:10px; }
 .conflict-recovery .button { white-space:normal; text-align:center; }
+.conflict-recovery:focus-visible { outline:3px solid var(--color-primary, #4157b6); outline-offset:3px; }
+.conflict-recovery h2 { margin:0 0 10px; font-size:16px; line-height:1.4; }
+.conflict-summary { font-weight:650; }
+.conflict-details { margin:10px 0 16px; border-top:1px solid var(--color-border); padding-top:10px; }
+.conflict-details summary { cursor:pointer; font-weight:700; font-size:13px; line-height:1.5; }
+.conflict-details summary:focus-visible { outline:2px solid currentColor; outline-offset:3px; }
+.conflict-details > p { margin:12px 0; }
+.conflict-change-list { display:grid; gap:9px; margin:12px 0; }
+.conflict-change { border:1px solid var(--color-border); border-radius:8px; padding:10px 12px; min-width:0; }
+.conflict-change label { display:flex; align-items:flex-start; flex-wrap:wrap; gap:7px; font-size:13px; line-height:1.4; cursor:pointer; }
+.conflict-change input { flex-shrink:0; width:17px; height:17px; margin:0; }
+.conflict-change strong { font-size:13px; overflow-wrap:anywhere; }
+.conflict-change strong span, .conflict-change label span { font-weight:500; }
+.conflict-change p { margin:6px 0 0; }
+.conflict-notice { font-weight:650; }
+@media(max-width:480px) {
+  .conflict-recovery { padding:12px; }
+  .conflict-recovery-actions { flex-direction:column; }
+  .conflict-recovery-actions .button { width:100%; min-width:0; }
+}
 @media (forced-colors:active) { .conflict-recovery { border:1px solid CanvasText; background:Canvas; color:CanvasText; } }
 
 /* UX-25: bounded widget history is grouped with dashboard Save/Cancel, not a floating overlay. */
