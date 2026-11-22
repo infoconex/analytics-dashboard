@@ -115,7 +115,7 @@ test('UX-29 five-width dashboard and library evidence, filtering, preview, permi
     if (width === 320 || width === 390) {
       const accessibility = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-      expect(accessibility.violations.map(item => item.id)).toEqual([]);
+      expect(accessibility.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => ({ html: node.html, summary: node.failureSummary })) }))).toEqual([]);
     }
     await dialog.getByRole('button', { name: 'Clear filters' }).click();
     await expect(dialog.getByRole('textbox', { name: 'Search saved visualizations' })).toBeFocused();
