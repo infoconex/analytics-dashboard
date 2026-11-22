@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SUITES = ("backend", "frontend", "lab", "browser", "providers", "csharp", "javascript")
+SUITES = ("backend", "frontend", "lab", "browser", "providers", "integration", "csharp", "javascript")
 SHARED = {
     "AnalyticsDashboard.slnx", "Directory.Build.props", "global.json",
     ".editorconfig", ".gitignore", "compose.ux16-owner.yml",
@@ -31,7 +31,7 @@ def classify(paths: list[str]) -> set[str]:
         if path in SHARED or path.startswith((".github/", "scripts/")):
             return set(SUITES)
         if path.startswith("src/"):
-            selected.update(("backend", "browser", "csharp"))
+            selected.update(("backend", "browser", "integration", "csharp"))
             if path.startswith("src/AnalyticsDashboard.Infrastructure/"):
                 selected.add("providers")
         elif path.startswith("tests/"):
@@ -40,7 +40,7 @@ def classify(paths: list[str]) -> set[str]:
             if path.startswith("web/e2e/"):
                 selected.update(("browser", "javascript"))
             else:
-                selected.update(("frontend", "browser", "javascript"))
+                selected.update(("frontend", "browser", "integration", "javascript"))
                 if path.startswith("web/scripts/") or path in (
                     "web/package.json", "web/package-lock.json"
                 ):

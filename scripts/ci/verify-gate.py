@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-SUITES = ("backend", "frontend", "lab", "browser", "providers")
+SUITES = ("backend", "frontend", "lab", "browser", "providers", "integration")
 
 
 def evaluate(impact_result: str, expected: dict[str, str],

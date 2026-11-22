@@ -67,3 +67,7 @@ Before merging, verify **all** impacted suites, both CodeQL languages and option
 The CodeQL workflow generates a dynamic language matrix with **only impacted languages**, rather than reporting skipped per-step language analyses as green. An always-present `Gate | Security analysis` validates the matrix result (and confirms documentation-only skips). Require this stable security gate separately from the general verification gate when configuring branch rules.
 
 The optional owner Compose script now validates complete HTTP responses before inspecting their contents, avoiding `curl | grep -q` broken pipes under `set -o pipefail`.
+
+## Enduring workflow ownership (CI-3)
+
+The standing PR pipeline validates capabilities, not historical UX increment numbers. `CI | Verify` owns backend, frontend, fictional lab guards, browser E2E, SQL Server/PostgreSQL and **same-origin sample-host Docker Compose integration**. The Compose smoke is change-aware on relevant application code and always runs on `main`; it is included in `Gate | Required verification`. `Security | CodeQL` retains language-selected PR checks and full main/scheduled scans. `Evaluation | External analytics comparison` provides **manual-only** historical Elastic/Kibana smoke or matched browser evidence and is intentionally not a permanent PR merge gate. The original comparison scripts and recorded documents remain available for reproducibility.

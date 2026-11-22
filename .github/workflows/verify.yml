@@ -24,6 +24,7 @@ jobs:
       lab: ${{ steps.detect.outputs.lab }}
       browser: ${{ steps.detect.outputs.browser }}
       providers: ${{ steps.detect.outputs.providers }}
+      integration: ${{ steps.detect.outputs.integration }}
     steps:
       - name: Checkout | Full git history for PR comparison
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -200,10 +201,24 @@ jobs:
       - name: Test | Real-provider fixtures, conformance and cleanup
         run: bash ./scripts/ci/verify-providers.sh
 
+  integration:
+    name: Integration | Sample host Compose
+    needs: impact
+    if: needs.impact.outputs.integration == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout | Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Test | Sample host startup, API isolation and cleanup
+        run: bash ./scripts/ci/verify-owner-compose.sh
+
   gate:
     name: Gate | Required verification
     if: always()
-    needs: [impact, backend, frontend, lab, browser, providers]
+    needs: [impact, backend, frontend, lab, browser, providers, integration]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -224,4 +239,6 @@ jobs:
           BROWSER_RESULT: ${{ needs.browser.result }}
           PROVIDERS_EXPECTED: ${{ needs.impact.outputs.providers }}
           PROVIDERS_RESULT: ${{ needs.providers.result }}
+          INTEGRATION_EXPECTED: ${{ needs.impact.outputs.integration }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
         run: python3 scripts/ci/verify-gate.py

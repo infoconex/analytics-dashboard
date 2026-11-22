@@ -1,0 +1,58 @@
+name: Evaluation | External analytics comparison
+
+# Historical, sample-only external product comparisons are manual research,
+# not standing application PR gates. Run an explicit comparison when needed.
+on:
+  workflow_dispatch:
+    inputs:
+      comparison:
+        description: Choose the evaluation procedure
+        required: true
+        type: choice
+        default: elastic-smoke
+        options:
+          - elastic-smoke
+          - matched-tasks
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-comparison-${{ github.ref }}-${{ inputs.comparison }}
+  cancel-in-progress: false
+
+jobs:
+  comparison:
+    name: Evaluation | ${{ inputs.comparison }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout | Sample-only evaluation scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | Node.js 24 and npm cache
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Evaluation | Disposable Elastic UI smoke
+        if: inputs.comparison == 'elastic-smoke'
+        run: bash ./scripts/ci/verify-ux13-lab.sh
+      - name: Evaluation | Matched Analytics and Elastic browser tasks
+        if: inputs.comparison == 'matched-tasks'
+        env:
+          UX14_PR_HEAD_SHA: ${{ github.sha }}
+        run: bash ./scripts/ci/verify-ux14-lab.sh
+      - name: Evidence | Archive sample-only comparison results
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: evaluation-${{ inputs.comparison }}
+          path: |
+            lab/ux13/evidence/**
+            lab/ux14/evidence/**
+            lab/ux14/ux14-review-package.zip
+          if-no-files-found: warn
+          retention-days: 14
