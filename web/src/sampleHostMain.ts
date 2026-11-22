@@ -70,6 +70,14 @@ function measureFrame() {
     // still reflect the previous (much taller) dashboard after a switch.
     const height = Math.ceil(Math.max(shell.scrollHeight, shell.getBoundingClientRect().height)) + 1;
     if (height > 1 && frame.style.height !== `${height}px`) frame.style.height = `${height}px`;
+    // Native modal dialogs otherwise center in a many-screen-tall iframe.
+    // These CSS-only viewport hints are available solely to this sample host.
+    const bounds = frame.getBoundingClientRect();
+    const visibleTop = Math.max(0, Math.min(bounds.height, -bounds.top));
+    const visibleBottom = Math.max(visibleTop, Math.min(bounds.height, innerHeight - bounds.top));
+    child.documentElement.classList.add('same-origin-sample-host');
+    child.documentElement.style.setProperty('--host-visible-top', `${visibleTop}px`);
+    child.documentElement.style.setProperty('--host-visible-height', `${visibleBottom - visibleTop}px`);
     frameLoading.hidden = true;
     frameShell.setAttribute('aria-busy', 'false');
   } catch {
@@ -284,6 +292,7 @@ document.addEventListener('click', event => {
 });
 frame.addEventListener('load', observeFrame);
 window.addEventListener('resize', scheduleFrameMeasure);
+window.addEventListener('scroll', scheduleFrameMeasure, { passive: true });
 window.visualViewport?.addEventListener('resize', scheduleFrameMeasure);
 // pagehide runs before a normal reload and while the same-origin child URL
 // still holds its latest filters (updated via history.replaceState).
