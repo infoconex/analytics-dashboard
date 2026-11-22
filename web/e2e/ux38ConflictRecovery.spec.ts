@@ -110,7 +110,7 @@ test('two editors edit different widgets; local repair is reapplied without over
   }));
   const region = await conflict(page);
   await region.getByText('Review differences and choose edits to recover').click();
-  await expect(region).toContainText('Visualization: Orders remote (saved remotely)');
+  await expect(region).toContainText('Visualization: Orders (saved remotely)');
   await region.getByRole('checkbox', { name: /Revenue repaired/ }).check();
   page.once('dialog', dialog => void dialog.accept());
   await region.getByRole('button', { name: 'Recover selected edits (1)' }).click();
@@ -169,6 +169,7 @@ test('newer revision during recovery forces renewed review; another stale save i
   await expect(region).toContainText('latest saved revision 3');
   await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Local name');
   await expect(region.getByRole('button', { name: 'Recover selected edits (0)' })).toBeDisabled();
+  await region.getByText('Review differences and choose edits to recover').click();
   await region.getByRole('checkbox', { name: /Dashboard name/ }).check();
   page.once('dialog', dialog => void dialog.accept());
   await region.getByRole('button', { name: 'Recover selected edits (1)' }).click();
@@ -204,6 +205,7 @@ test('narrow recovery and forced colors remain keyboard-accessible without horiz
   const server = await mockApi(page);
   for (const width of [1440, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
+    if (width !== 1440) await page.reload();
     await open(page);
     await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Locally updated');
     server.otherEditor(current => ({ ...current, description: `Remote revision ${current.revision + 1}` }));
