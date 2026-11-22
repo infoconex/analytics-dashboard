@@ -94,6 +94,7 @@ test('UX-30 browser Back and Forward preserve return context and a declined dirt
   // Editing without a hash change is still a draft; dismissing native Back
   // must return to this exact history entry without destroying Forward.
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toBeFocused();
   await expect(page.locator('.dashboard-heading .eyebrow')).toContainText('EDITING DRAFT');
   await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Unsaved quarterly draft');
   page.once('dialog', dialog => void dialog.dismiss());
@@ -111,6 +112,10 @@ test('UX-30 browser Back and Forward preserve return context and a declined dirt
   await expect(page.getByText('Unsaved quarterly draft')).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toBeFocused();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeFocused();
 });
 
 test('UX-30 question context survives return; viewer and organization boundaries remain intact', async ({ page }) => {
