@@ -929,7 +929,7 @@ export default function App() {
 
   function selectVisualizationKind(kind: WidgetKind) {
     if (!widgetDraft) return;
-    setWidgetDraft({ ...widgetDraft, kind, ...layoutForChangedKind(widgetDraft, kind), dimensionKey: suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey),
+    setWidgetDraft({ ...widgetDraft, kind, ...layoutForChangedKind(widgetDraft, kind), dimensionKey: metrics[widgetDraft.datasetKey] ? suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey) : widgetDraft.dimensionKey,
       appearance: compatibleAppearance(widgetDraft.appearance, kind, widgetDraft.datasetKey) });
   }
 
