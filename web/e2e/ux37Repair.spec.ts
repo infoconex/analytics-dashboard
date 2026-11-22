@@ -201,7 +201,7 @@ test('responsive authoring and forced-colors repair controls remain navigable wi
   await page.emulateMedia({ forcedColors: 'active' });
   await page.getByRole('article', { name: 'Legacy metric' }).getByRole('button', { name: /Review configuration/ }).click();
   const dialog = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
-  await expect(dialog.locator('.visualization-repair-summary')).toHaveCSS('borderTopStyle', 'solid');
+  await expect(dialog.locator('.visualization-repair-summary')).toHaveCSS('border-top-style', 'solid');
   const findings = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
   expect(findings.violations.map(item => item.id)).toEqual([]);
   await screenshot(page, info, 'repair-forced-colors-320');
