@@ -159,6 +159,23 @@ async function loadDashboards() {
   render();
 }
 
+// The sample portal owns its fragment routes. Native anchor navigation
+// performs a second fragment focus/scroll after hashchange, stealing focus
+// from the newly revealed page heading. Keep real history entries while
+// completing the host view transition before the click returns.
+document.addEventListener('click', event => {
+  const target = event.target;
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey ||
+      event.ctrlKey || event.altKey || event.shiftKey || !(target instanceof Element)) return;
+  const link = target.closest<HTMLAnchorElement>('a[href^="#"]');
+  if (!link || !parseHostView(link.hash) ||
+      link.origin !== location.origin || link.pathname !== location.pathname) return;
+  event.preventDefault();
+  if (link.hash !== location.hash) {
+    history.pushState(null, '', link.hash);
+  }
+  render();
+});
 window.addEventListener('hashchange', render);
 window.addEventListener('popstate', render);
 retry.addEventListener('click', () => { void loadDashboards(); });
