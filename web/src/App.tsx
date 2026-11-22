@@ -926,10 +926,12 @@ export default function App() {
 
   const widgetDraftIssue = widgetDraft ? sampleConfigurationIssue(widgetDraft) : null;
   const widgetDraftProblem = widgetDraftIssue?.explanation ?? null;
+  const supportedMetrics = widgetDraft && Array.isArray(metrics[widgetDraft.datasetKey]) ? metrics[widgetDraft.datasetKey] : [];
+  const supportedDimension = widgetDraft && Object.hasOwn(dimensions, widgetDraft.datasetKey) ? dimensions[widgetDraft.datasetKey] : null;
 
   function selectVisualizationKind(kind: WidgetKind) {
     if (!widgetDraft) return;
-    setWidgetDraft({ ...widgetDraft, kind, ...layoutForChangedKind(widgetDraft, kind), dimensionKey: metrics[widgetDraft.datasetKey] ? suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey) : widgetDraft.dimensionKey,
+    setWidgetDraft({ ...widgetDraft, kind, ...layoutForChangedKind(widgetDraft, kind), dimensionKey: supportedMetrics.length ? suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey) : widgetDraft.dimensionKey,
       appearance: compatibleAppearance(widgetDraft.appearance, kind, widgetDraft.datasetKey) });
   }
 
@@ -1168,14 +1170,14 @@ export default function App() {
           {!datasetOptions.some(item => item.key === widgetDraft.datasetKey) && <option value={widgetDraft.datasetKey}>Unsupported saved source: {widgetDraft.datasetKey}</option>}
           {datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
         <label className="form-label">{widgetDraft.kind === 'scatter' ? 'Vertical measure' : 'Metric'}<select value={widgetDraft.metricKey} aria-invalid={widgetDraftIssue?.field === 'metric' || undefined} aria-describedby={widgetDraftIssue?.field === 'metric' ? 'visualization-repair-problem' : undefined} onChange={event => { const metricKey = event.target.value; setWidgetDraft({ ...widgetDraft, metricKey, dimensionKey: widgetDraft.kind === 'scatter' && widgetDraft.dimensionKey === metricKey ? suggestedDimension('scatter', widgetDraft.datasetKey, metricKey) : widgetDraft.dimensionKey }); }}>
-          {!(metrics[widgetDraft.datasetKey] ?? []).some(item => item.key === widgetDraft.metricKey) && <option value={widgetDraft.metricKey}>Unsupported saved metric: {widgetDraft.metricKey}</option>}
-          {(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+          {!supportedMetrics.some(item => item.key === widgetDraft.metricKey) && <option value={widgetDraft.metricKey}>Unsupported saved metric: {widgetDraft.metricKey}</option>}
+          {supportedMetrics.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
         {widgetDraft.kind === 'scatter' && <label className="form-label">Horizontal measure<select value={widgetDraft.dimensionKey} aria-invalid={widgetDraftIssue?.field === 'dimension' || undefined} aria-describedby={widgetDraftIssue?.field === 'dimension' ? 'visualization-repair-problem' : undefined} onChange={event => setWidgetDraft({ ...widgetDraft, dimensionKey: event.target.value })}>
-          {!(metrics[widgetDraft.datasetKey] ?? []).some(item => item.key === widgetDraft.dimensionKey && item.key !== widgetDraft.metricKey) && <option value={widgetDraft.dimensionKey}>Unsupported saved horizontal measure: {widgetDraft.dimensionKey}</option>}
-          {(metrics[widgetDraft.datasetKey] ?? []).filter(item => item.key !== widgetDraft.metricKey).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>}
+          {!supportedMetrics.some(item => item.key === widgetDraft.dimensionKey && item.key !== widgetDraft.metricKey) && <option value={widgetDraft.dimensionKey}>Unsupported saved horizontal measure: {widgetDraft.dimensionKey}</option>}
+          {supportedMetrics.filter(item => item.key !== widgetDraft.metricKey).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>}
         {widgetDraft.kind !== 'scatter' && <div className="visualization-dimension">
           <strong>Dimension:</strong> {widgetDraft.dimensionKey}
-          {widgetDraftIssue?.field === 'dimension' && dimensions[widgetDraft.datasetKey] && <button type="button" className="widget-recovery" aria-describedby="visualization-repair-problem" onClick={() => setWidgetDraft({ ...widgetDraft, dimensionKey: dimensions[widgetDraft.datasetKey] })}>Use supported dimension: {dimensions[widgetDraft.datasetKey]}</button>}
+          {widgetDraftIssue?.field === 'dimension' && supportedDimension && <button type="button" className="widget-recovery" aria-describedby="visualization-repair-problem" onClick={() => setWidgetDraft({ ...widgetDraft, dimensionKey: supportedDimension })}>Use supported dimension: {supportedDimension}</button>}
         </div>}
         </section>
         <details className="visualization-appearance">
