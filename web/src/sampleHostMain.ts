@@ -5,6 +5,7 @@ import { isHostDashboard, parseHostView, sampleDashboard, sampleOrganization } f
 type HostDashboard = { id: string; name: string; organizationId: string };
 const frame = document.querySelector<HTMLIFrameElement>('.host-frame')!;
 const frameShell = document.querySelector<HTMLElement>('.host-frame-shell')!;
+const frameLoading = document.getElementById('host-frame-loading')!;
 const insights = document.getElementById('analytics-section')!;
 const account = document.getElementById('host-account-panel')!;
 const accountHeading = document.getElementById('host-account-heading') as HTMLHeadingElement;
@@ -25,6 +26,79 @@ let loaded = false;
 let loadError = '';
 let lastRenderedPage: 'account' | 'insights' | null = null;
 
+// Same-tab, fictional view preferences only. Stored locators are revalidated
+// and never grant access: the authorized dashboard collection is fetched first.
+const snapshotKey = 'nexa.sample-host.view-filters.v1';
+function restoreSnapshots() {
+  try {
+    const stored: unknown = JSON.parse(sessionStorage.getItem(snapshotKey) ?? 'null');
+    if (!Array.isArray(stored)) return;
+    for (const entry of stored.slice(0, 20)) {
+      if (!Array.isArray(entry) || entry.length !== 2 ||
+          typeof entry[0] !== 'string' || typeof entry[1] !== 'string') continue;
+      const target = parseEmbedTarget(entry[1]);
+      if (target?.organizationId === sampleOrganization && target.dashboardId === entry[0]) {
+        savedHashes.set(entry[0], formatEmbedTarget(target));
+      }
+    }
+  } catch {
+    // Storage can be denied or corrupted; fall back to default view filters.
+  }
+}
+function persistSnapshots() {
+  try {
+    sessionStorage.setItem(snapshotKey, JSON.stringify([...savedHashes].slice(-20)));
+  } catch {
+    // Storage is an optional convenience, not an authorization dependency.
+  }
+}
+
+let frameObserver: ResizeObserver | null = null;
+let measureQueued = false;
+
+// Content sizing is deliberately restricted to this same-origin example.
+// A production cross-origin embed needs a separately reviewed protocol.
+function measureFrame() {
+  if (frameShell.hidden || !currentId) return;
+  try {
+    const child = frame.contentDocument;
+    if (child?.location.origin !== location.origin || child.location.pathname !== '/embed.html') return;
+    const shell = child.querySelector<HTMLElement>('.embedded-shell');
+    if (!shell) return;
+    // Measure the content rather than the child's viewport: the latter may
+    // still reflect the previous (much taller) dashboard after a switch.
+    const height = Math.ceil(Math.max(shell.scrollHeight, shell.getBoundingClientRect().height)) + 1;
+    if (height > 1 && frame.style.height !== `${height}px`) frame.style.height = `${height}px`;
+    frameLoading.hidden = true;
+    frameShell.setAttribute('aria-busy', 'false');
+  } catch {
+    // Never read cross-origin content or assume it can be auto-sized.
+  }
+}
+function scheduleFrameMeasure() {
+  if (measureQueued) return;
+  measureQueued = true;
+  requestAnimationFrame(() => {
+    measureQueued = false;
+    measureFrame();
+  });
+}
+function observeFrame() {
+  frameObserver?.disconnect();
+  frameObserver = null;
+  try {
+    const child = frame.contentDocument;
+    if (child?.location.origin !== location.origin || child.location.pathname !== '/embed.html') return;
+    const shell = child.querySelector<HTMLElement>('.embedded-shell');
+    if (!shell) return;
+    frameObserver = new ResizeObserver(scheduleFrameMeasure);
+    frameObserver.observe(shell);
+    scheduleFrameMeasure();
+  } catch {
+    // This sample does not implement cross-origin frame communication.
+  }
+}
+
 function snapshotCurrent() {
   if (!currentId) return;
   try {
@@ -33,6 +107,7 @@ function snapshotCurrent() {
     const parsed = parseEmbedTarget(frame.contentWindow?.location.hash ?? '');
     if (parsed?.organizationId === sampleOrganization && parsed.dashboardId === currentId) {
       savedHashes.set(currentId, formatEmbedTarget(parsed));
+      persistSnapshots();
     }
   } catch {
     // A cross-origin host cannot inspect a frame and needs an independently
@@ -49,12 +124,19 @@ function showDashboard(dashboard: HostDashboard) {
   const desired = new URL('/embed.html' + hash, location.href).href;
   frame.title = `${dashboard.name} analytics — Northstar Commerce sample`;
   if (isNew) {
-    // Replacing child navigation avoids adding misleading host Back entries.
-    // The host URL alone owns account/dashboard navigation history.
-    try {
-      frame.contentWindow?.location.replace(desired);
-    } catch {
+    frameObserver?.disconnect();
+    frameLoading.hidden = false;
+    frameShell.setAttribute('aria-busy', 'true');
+    // The first frame navigation occurs only AFTER the authenticated host
+    // collection authorized this dashboard. Later switches replace history.
+    if (currentId === null) {
       frame.src = desired;
+    } else {
+      try {
+        frame.contentWindow?.location.replace(desired);
+      } catch {
+        frame.src = desired;
+      }
     }
     currentId = dashboard.id;
   }
@@ -139,6 +221,12 @@ function render() {
 async function loadDashboards() {
   loaded = false;
   loadError = '';
+  frameShell.hidden = true;
+  frameObserver?.disconnect();
+  frameLoading.hidden = false;
+  frameShell.setAttribute('aria-busy', 'true');
+  frame.src = 'about:blank';
+  currentId = null;
   retry.hidden = true;
   status.textContent = 'Loading accessible dashboards…';
   try {
@@ -151,6 +239,11 @@ async function loadDashboards() {
     if (!Array.isArray(body)) throw new Error('Could not load dashboards. Check your connection and try again.');
     dashboards = body.filter(isHostDashboard);
     if (!dashboards.length) throw new Error('No dashboards are available to this account.');
+    const permitted = new Set(dashboards.map(item => item.id));
+    for (const id of savedHashes.keys()) {
+      if (!permitted.has(id)) savedHashes.delete(id);
+    }
+    persistSnapshots();
   } catch (error) {
     dashboards = [];
     loadError = error instanceof Error ? error.message : 'Could not load dashboards.';
@@ -178,6 +271,16 @@ document.addEventListener('click', event => {
     insights.scrollIntoView({ block: 'start' });
   }
 });
+frame.addEventListener('load', observeFrame);
+window.addEventListener('resize', scheduleFrameMeasure);
+window.visualViewport?.addEventListener('resize', scheduleFrameMeasure);
+// pagehide runs before a normal reload and while the same-origin child URL
+// still holds its latest filters (updated via history.replaceState).
+window.addEventListener('pagehide', snapshotCurrent);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') snapshotCurrent();
+});
+restoreSnapshots();
 window.addEventListener('hashchange', render);
 window.addEventListener('popstate', render);
 retry.addEventListener('click', () => { void loadDashboards(); });
