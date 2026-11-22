@@ -13,6 +13,7 @@ interface Props {
   editing: boolean;
   canEdit: boolean;
   onStartEdit: () => void;
+  onRepair: (widget: DashboardWidget) => void;
   onChange: (widgets: DashboardWidget[]) => void;
   onEdit: (widget: DashboardWidget) => void;
   onAdd: () => void;
@@ -26,7 +27,7 @@ interface Props {
 
 // Mount with a dashboard-and-organization key to keep unsaved consumer filters
 // scoped to one open dashboard, not to a link or server-persisted draft.
-export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight, initialFilters }: Props) {
+export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onRepair, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight, initialFilters }: Props) {
   const [filters, setFilters] = useState({ ...(initialFilters ?? defaultConsumerFilters) });
   const hasFilters = widgets.some(widget => widget.datasetKey === 'commerce' || widget.datasetKey === 'channels');
   const availability = summarizeSampleAvailability(widgets, filters);
@@ -53,7 +54,7 @@ export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStar
       </p>
       <p>Available visualizations remain usable. Unavailable cards are not counted as zero, and no dashboard-wide total is calculated.</p>
     </section>}
-    <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onEdit={onEdit} onAdd={onAdd} onAddSaved={onAddSaved} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onChange={onChange}
+    <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onRepair={onRepair} onEdit={onEdit} onAdd={onAdd} onAddSaved={onAddSaved} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onChange={onChange}
       onChannelSelect={channel => changeFilters({ ...filters, channel: toggleChannel(filters.channel, channel) })}
       onPeriodReset={() => changeFilters({ ...filters, period: '12m' })}
       onShareInsight={onShareInsight ? widget => onShareInsight(widget, filters) : undefined} />
