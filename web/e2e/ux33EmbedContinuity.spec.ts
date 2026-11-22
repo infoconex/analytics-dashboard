@@ -105,6 +105,23 @@ test('long host embed owns scrolling at desktop, tablet, mobile and narrow width
     await frame.getByRole('article', { name: 'Revenue over time' }).locator('summary').filter({ hasText: 'View data table' }).click();
     await expect.poll(async () => (await layout(page)).frameHeight).toBeLessThan(expanded.frameHeight - 20);
     const closed = await expectContentSized(page);
+    if (width === 390) {
+      await frame.getByRole('article', { name: 'Revenue over time' })
+        .getByRole('button', { name: 'Share this insight’s context' }).click();
+      const dialog = frame.getByRole('dialog', { name: 'Share insight context' });
+      await expect(dialog).toBeVisible();
+      const placement = () => dialog.evaluate(node => {
+        const frameBounds = (window.frameElement as HTMLElement).getBoundingClientRect();
+        const dialogBounds = node.getBoundingClientRect();
+        return { top: frameBounds.top + dialogBounds.top, bottom: frameBounds.top + dialogBounds.bottom,
+          hostHeight: window.parent.innerHeight };
+      });
+      await expect.poll(async () => (await placement()).top).toBeGreaterThanOrEqual(-1);
+      const positioned = await placement();
+      expect(positioned.bottom).toBeLessThanOrEqual(positioned.hostHeight + 2);
+      await screenshot(page, info, 'ux33-host-mobile-dialog');
+      await dialog.getByRole('button', { name: 'Close' }).click();
+    }
     const after = page.getByRole('navigation', { name: 'After the embedded dashboard' });
     await after.getByRole('link', { name: 'Return to account overview' }).scrollIntoViewIfNeeded();
     await expect(after).toBeInViewport();
