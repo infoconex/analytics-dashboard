@@ -33,7 +33,7 @@ done
 index_html=$(curl --silent --show-error --fail http://127.0.0.1:5173/)
 [[ "$index_html" == *root* ]] || { echo 'Vite root was not served.' >&2; exit 1; }
 host_html=$(curl --silent --show-error --fail http://127.0.0.1:5173/sample-host.html)
-[[ "$host_html" == *Insights* && "$host_html" == *host-dashboard-picker* && "$host_html" == *sampleHostMain.ts* ]] || {
+[[ "$host_html" == *Insights* && "$host_html" == *host-dashboard-picker* && "$host_html" == *sampleHostMain.ts* && "$host_html" == *\x27src="about:blank"\x27* && "$host_html" == *host-frame-loading* ]] || {
   echo 'Sample host navigation content was not served.' >&2; exit 1;
 }
 dashboard=$(curl --silent --show-error --fail http://127.0.0.1:5173/api/organizations/northstar/dashboards)
