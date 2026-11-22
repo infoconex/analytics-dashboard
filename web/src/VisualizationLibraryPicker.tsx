@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { SavedVisualization, WidgetKind } from './model';
 import { visualizations } from './demoData';
 import { discoverVisualizations, savedDateLabel, type DiscoveryOrder } from './contentDiscovery';
@@ -36,6 +36,22 @@ interface Props {
 export function VisualizationLibraryPicker({ context, onContextChange, organizationId, items, loading, error, busy, onDismiss, onRetry, onCreate, onUse, onEdit, onDelete }: Props) {
   const { search, kind, order, previewId } = context;
   const searchInput = useRef<HTMLInputElement>(null);
+  const previewPanel = useRef<HTMLElement>(null);
+  // Data arrives after showModal, so focus Search when the input mounts.
+  useEffect(() => {
+    if (!loading) searchInput.current?.focus();
+  }, [loading]);
+  // Expanding a large preview inside a narrow, scrollable dialog must reveal
+  // its heading without stealing keyboard focus from the Preview toggle.
+  useEffect(() => {
+    if (!previewId) return;
+    // Scroll just the preview heading, not the entire (potentially tall)
+    // chart panel. Scrolling the whole panel pushes the focused Preview toggle
+    // and the dialog's Close control out of view on narrow screens.
+    const frame = window.requestAnimationFrame(() =>
+      previewPanel.current?.querySelector('h3')?.scrollIntoView({ block: 'nearest', behavior: 'instant' }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [previewId]);
   // The API returns only authorized organization-scoped items. Recheck scope in
   // the client to prevent a stale/malformed response from being shown or used.
   const scoped = items.filter(item => item.organizationId === organizationId);
@@ -49,7 +65,7 @@ export function VisualizationLibraryPicker({ context, onContextChange, organizat
 
   return <ModalDialog title="Add saved visualization" eyebrow="ORGANIZATION LIBRARY · SAMPLE DATA"
     description="Use an independent copy of a saved chart. Editing this dashboard will not change the library or other dashboards."
-    initialFocus=".library-create" onDismiss={onDismiss} busy={busy} className="visualization-library-modal">
+    initialFocus=".library-search" onDismiss={onDismiss} busy={busy} className="visualization-library-modal">
     <div className="library-topline">
       <Button variant="light" className="library-create" onClick={onCreate} disabled={busy}>Create new instead</Button>
       <p>Only visualizations saved in this organization are listed.</p>
@@ -58,7 +74,7 @@ export function VisualizationLibraryPicker({ context, onContextChange, organizat
     {loading ? <p role="status">Loading saved visualizations…</p> : <>
       <div className="library-filters">
         <label className="form-label">Search saved visualizations
-          <input ref={searchInput} value={search} onChange={event => onContextChange({ ...context, search: event.target.value, previewId: null })} placeholder="Search by name or description" /></label>
+          <input className="library-search" ref={searchInput} value={search} onChange={event => onContextChange({ ...context, search: event.target.value, previewId: null })} placeholder="Search by name or description" /></label>
         <label className="form-label">Visualization type
           <select value={kind} onChange={event => onContextChange({ ...context, kind: event.target.value as WidgetKind | 'all', previewId: null })}>
             <option value="all">All types</option>
@@ -94,7 +110,7 @@ export function VisualizationLibraryPicker({ context, onContextChange, organizat
               <button type="button" onClick={() => onDelete(item)} disabled={busy}>Delete template</button>
             </div>
           </article>
-          {previewId === item.id && <section className="library-preview" aria-label="Saved visualization preview">
+          {previewId === item.id && <section ref={previewPanel} className="library-preview" aria-label="Saved visualization preview">
             <h3>Preview: {item.definition.title}</h3>
             <WidgetTile widget={item.definition} period="12m" preview />
             <p>Preview of this library template using fictional sample records. Add copy creates an independent dashboard instance.</p>

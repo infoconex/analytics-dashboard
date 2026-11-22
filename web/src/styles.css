@@ -949,3 +949,7 @@ button:disabled { opacity:.6; }
   .dashboard-heading .heading-left { flex-direction:column; align-items:flex-start; gap:10px; width:100%; }
   .dashboard-heading .heading-left > div { width:100%; }
 }
+
+/* UX-31: the library's Clear filters link is visible beside inline previews;
+   its former #6478ec on white fails normal text contrast (3.86:1). */
+.visualization-library-modal .text-link { color:#4f65d2; }

@@ -734,6 +734,22 @@ export default function App() {
     }
   }
 
+  // A library/builder modal may close far from the visualization that changed.
+  // Return keyboard and scroll context to the affected chart, but never to
+  // another dashboard or organization. This does not persist any user state.
+  function focusDraftWidget(widgetId: string) {
+    const originOrganization = organizationId;
+    const originDashboard = view.id;
+    window.requestAnimationFrame(() => {
+      if (!originDashboard || activeOrganization.current !== originOrganization
+        || window.location.hash !== organizationHash(originOrganization, 'dashboards', originDashboard)) return;
+      const heading = document.getElementById(`widget-heading-${widgetId}`);
+      if (!heading) return;
+      heading.scrollIntoView({ block: 'center', behavior: 'instant' });
+      heading.focus({ preventScroll: true });
+    });
+  }
+
   function useSavedVisualization(saved: SavedVisualization) {
     if (!editMode || !draft || saved.organizationId !== organizationId || draft.widgets.length >= 24) return;
     const copy = copySavedVisualization(saved.definition, crypto.randomUUID());
@@ -742,6 +758,7 @@ export default function App() {
     setLibraryOpen(false);
     setToast('Added an independent copy. Save the dashboard to keep it.');
     if (firstVisualization) window.requestAnimationFrame(() => saveChangesButton.current?.focus());
+    else focusDraftWidget(copy.id);
   }
 
   function editSavedVisualization(saved: SavedVisualization) {
@@ -863,6 +880,7 @@ export default function App() {
       // The first empty-state action unmounts when its widget is added.
       // Place focus on the next required action instead of losing it to <body>.
       if (firstVisualization) window.requestAnimationFrame(() => saveChangesButton.current?.focus());
+      else if (changed) focusDraftWidget(widgetDraft.id);
     }
   }
 
