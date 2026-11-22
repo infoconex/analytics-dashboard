@@ -184,7 +184,13 @@ test('responsive authoring and forced-colors repair controls remain navigable wi
   await api(page);
   for (const width of [1440, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    await open(page);
+    if (width === 1440) await open(page);
+    else {
+      // The dashboard remains in unsaved composition mode after closing its
+      // widget dialog. A same-URL goto does not promise a document reload.
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'Sample repair' })).toBeVisible();
+    }
     await page.getByRole('article', { name: 'Legacy metric' }).getByRole('button', { name: /Review configuration/ }).click();
     const dialog = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
     await expect(dialog.getByRole('combobox', { name: 'Metric' })).toHaveAttribute('aria-invalid', 'true');

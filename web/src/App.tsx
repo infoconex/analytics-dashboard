@@ -1146,7 +1146,7 @@ export default function App() {
           : 'Update visualization / Add to dashboard changes only the current draft. Dashboard Save changes is still required.'}</p>
         {widgetDraftIssue && <section className="visualization-repair-summary" data-repair-summary tabIndex={-1} role="group" aria-label="Configuration needs review">
           <strong>Configuration needs review</strong>
-          <p id="visualization-repair-problem">{widgetDraftIssue.explanation} The original saved values are retained until you choose replacements. Preview is unavailable and Update visualization is disabled until the configuration is valid.</p>
+          <p id="visualization-repair-problem" role="alert">{widgetDraftIssue.explanation} The original saved values are retained until you choose replacements. Preview is unavailable and Update visualization is disabled until the configuration is valid.</p>
           {widgetDraftIssue.field === 'kind' && <p>Saved chart type: <code>{widgetDraft.kind}</code>. Changing the chart type is optional if the metric can instead be made compatible.</p>}
         </section>}
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
