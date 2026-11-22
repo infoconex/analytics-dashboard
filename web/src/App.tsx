@@ -362,6 +362,11 @@ export default function App() {
       resetWidgetUndo();
       setReturnToLibrary(false);
       setWidgetDraft(null);
+      setLibraryOpen(false);
+      setLibrarySource(null);
+      setLibraryEditing(null);
+      setLibraryError('');
+      setCreateOpen(false);
       setSaveError('');
       setDashboardConflict(null);
       setTemplateConflict(null);
@@ -538,6 +543,11 @@ export default function App() {
     resetWidgetUndo();
     setReturnToLibrary(false);
     setWidgetDraft(null);
+    setLibraryOpen(false);
+    setLibrarySource(null);
+    setLibraryEditing(null);
+    setLibraryError('');
+    setCreateOpen(false);
     setSaveError('');
     setDashboardConflict(null);
     setTemplateConflict(null);
