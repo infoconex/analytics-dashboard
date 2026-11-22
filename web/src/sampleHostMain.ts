@@ -101,7 +101,7 @@ function render() {
     status.textContent = 'Account overview. Your embedded analytics view is preserved.';
     // Returning from a link that is now hidden must not leave keyboard
     // focus on the document body or inside an inaccessible frame.
-    if (focusWasInAnalytics) accountHeading.focus({ preventScroll: true });
+    if (focusWasInAnalytics) accountHeading.focus();
     return;
   }
   if (loadError) {
@@ -130,7 +130,7 @@ function render() {
   showDashboard(dashboard);
   // The account return link disappears on navigation. Place focus on the
   // authorized dashboard choice without disturbing focus in the host header.
-  if (focusWasInAccount) picker.querySelector<HTMLAnchorElement>('[aria-current="page"]')?.focus({ preventScroll: true });
+  if (focusWasInAccount) picker.querySelector<HTMLAnchorElement>('[aria-current="page"]')?.focus();
 }
 
 async function loadDashboards() {
