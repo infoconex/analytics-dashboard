@@ -56,13 +56,17 @@ test('host switches authorized dashboards, preserves per-dashboard filters and o
     .toContain('period=3m&channel=Direct');
   await screenshot(page, info, 'ux32-host-first-filtered');
 
-  await choices.getByRole('link', { name: 'Channel performance' }).click();
+  const channelChoice = choices.getByRole('link', { name: 'Channel performance' });
+  await channelChoice.click();
+  await expect(channelChoice).toBeFocused();
   await expect(page).toHaveURL(/#insights\/c730b8e2/);
   await expect(frame.getByRole('heading', { name: 'Channel performance' })).toBeVisible();
   await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Organic search');
   await screenshot(page, info, 'ux32-host-second-filtered');
 
-  await choices.getByRole('link', { name: 'Business performance' }).click();
+  const firstChoice = choices.getByRole('link', { name: 'Business performance' });
+  await firstChoice.click();
+  await expect(firstChoice).toBeFocused();
   await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();
   await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
