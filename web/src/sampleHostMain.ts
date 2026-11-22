@@ -78,6 +78,7 @@ function measureFrame() {
     child.documentElement.classList.add('same-origin-sample-host');
     child.documentElement.style.setProperty('--host-visible-top', `${visibleTop}px`);
     child.documentElement.style.setProperty('--host-visible-height', `${visibleBottom - visibleTop}px`);
+    child.documentElement.style.setProperty('--host-visible-center', `${(visibleTop + visibleBottom) / 2}px`);
     frameLoading.hidden = true;
     frameShell.setAttribute('aria-busy', 'false');
   } catch {
