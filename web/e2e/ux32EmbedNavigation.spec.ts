@@ -72,9 +72,13 @@ test('host switches authorized dashboards, preserves per-dashboard filters and o
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
 
   await page.getByRole('link', { name: 'Return to account overview' }).click();
-  await expect(page.getByRole('heading', { name: 'Account overview' })).toBeVisible();
+  const accountHeading = page.getByRole('heading', { name: 'Account overview' });
+  await expect(accountHeading).toBeVisible();
+  await expect(accountHeading).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Customer insights' })).toBeHidden();
   await expect(page.locator('#analytics-section')).toBeHidden();
   await page.getByRole('link', { name: 'Return to customer insights' }).click();
+  await expect(firstChoice).toBeFocused();
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
   await page.goBack();
   await expect(page.getByRole('heading', { name: 'Account overview' })).toBeVisible();
