@@ -1,4 +1,4 @@
-name: UX13 Lab Smoke
+name: Lab | UX-13 Elastic smoke
 
 on:
   pull_request:
@@ -10,48 +10,40 @@ on:
       - 'docs/ux13-independent-lab.md'
       - 'docs/ux12-independent-evaluation.md'
       - 'docs/ux12-task-matrix.csv'
+      - 'scripts/ci/verify-ux13-lab.sh'
       - '.github/workflows/ux13-lab.yml'
   workflow_dispatch:
+
+concurrency:
+  group: ux13-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  lab:
-    name: Disposable Elastic 9.5.6 fixture and UI smoke
+  ux13:
+    name: Lab | Disposable UX-13 browser comparison
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: Checkout | Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | Node.js 24 and npm cache
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Prepare local-only test dependencies
-        run: npm --prefix web ci --no-audit --no-fund
-      - name: Bootstrap disposable 9.5.6 services and validate fictional records/permissions
-        run: bash lab/ux13/lab.sh up
-      - name: Install isolated Chromium
-        working-directory: web
-        run: npx playwright install --with-deps chromium
-      - name: Capture genuine Kibana UI, viewport, forced-colors and native zoom evidence
-        working-directory: web
-        shell: bash
-        run: |
-          set -a
-          source ../lab/ux13/secrets.env
-          set +a
-          node scripts/ux13/kibana-browser.mjs
-      - name: Upload fictional lab evidence only
+      - name: Test | Provision, compare and clean up UX-13 lab
+        run: bash ./scripts/ci/verify-ux13-lab.sh
+      - name: Evidence | Upload fictional UX-13 artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ux13-fictional-lab
           path: lab/ux13/evidence/
           if-no-files-found: warn
           retention-days: 7
-      - name: Destroy exact disposable lab resources
-        if: always()
-        run: |
-          if test -f lab/ux13/secrets.env; then bash lab/ux13/lab.sh down; fi

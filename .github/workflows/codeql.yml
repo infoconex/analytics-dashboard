@@ -1,4 +1,4 @@
-name: CodeQL
+name: Security | CodeQL
 
 on:
   pull_request:
@@ -6,33 +6,89 @@ on:
     branches: [main]
   schedule:
     - cron: '23 12 * * 1'
+  workflow_dispatch:
 
-# New PR commits replace obsolete analysis; main and scheduled scans stay intact.
 concurrency:
   group: codeql-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
+  impact:
+    name: Plan | Security impact
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      csharp: ${{ steps.detect.outputs.csharp }}
+      javascript: ${{ steps.detect.outputs.javascript }}
+      languages: ${{ steps.detect.outputs.languages }}
+    steps:
+      - name: Checkout | Full history for PR comparison
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Plan | Select affected languages
+        id: detect
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/ci/change-impact.py --event "$CI_EVENT" --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT" --summary "$GITHUB_STEP_SUMMARY"
+
   analyze:
-    name: Analyze ${{ matrix.language }}
+    name: CodeQL | ${{ matrix.language }}
+    needs: impact
+    if: needs.impact.outputs.csharp == 'true' || needs.impact.outputs.javascript == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
+      security-events: write
     strategy:
       fail-fast: false
       matrix:
-        language: [csharp, javascript-typescript]
+        language: ${{ fromJSON(needs.impact.outputs.languages) }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
-        if: matrix.language == 'csharp'
+      - name: Checkout | Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | .NET 10 for C# analysis
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
-      - uses: github/codeql-action/init@v4
+      - name: Cache | Restore NuGet packages for C# analysis
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json') }}
+      - name: Security | Initialize CodeQL
+        uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
         with:
           languages: ${{ matrix.language }}
-      - uses: github/codeql-action/autobuild@v4
-      - uses: github/codeql-action/analyze@v4
+      - name: Security | Build code for analysis
+        uses: github/codeql-action/autobuild@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
+      - name: Security | Analyze language
+        uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
+
+  gate:
+    name: Gate | Security analysis
+    if: always()
+    needs: [impact, analyze]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout | Security gate policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Gate | Validate required language analyses
+        env:
+          IMPACT_RESULT: ${{ needs.impact.result }}
+          CSHARP_EXPECTED: ${{ needs.impact.outputs.csharp }}
+          JAVASCRIPT_EXPECTED: ${{ needs.impact.outputs.javascript }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+        run: python3 scripts/ci/verify-codeql-gate.py

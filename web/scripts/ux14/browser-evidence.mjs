@@ -209,7 +209,7 @@ async function runAnalyticsTaskChecks() {
       assert.ok(await revenue.getByRole('table').getByText('$18,400').isVisible());
       assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), 'Direct');
       summary.paths.push({ product: 'analytics', task: 'T06', completed: true, endpoint: 'jan-dec-and-direct', initial: 'verified-T05-state' });
-      await page.getByRole('button', { name: 'Reset filters' }).click();
+      await page.getByRole('button', { name: 'Clear channel filter' }).click();
       assert.equal(await page.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
       summary.paths.push({ product: 'analytics', task: 'T07', completed: true, endpoint: 'all-sample-records', initial: 'verified-T06-state' });
     });
@@ -321,7 +321,7 @@ async function runAnalyticsSpecialStates() {
     assert.ok(await frame.getByRole('table').getByText('$41,400').isVisible());
     await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
     assert.equal(await frame.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), 'Direct');
-    await frame.getByRole('button', { name: 'Reset filters' }).click();
+    await frame.getByRole('button', { name: 'Clear channel filter' }).click();
     assert.equal(await frame.getByRole('combobox', { name: 'Marketing channel' }).inputValue(), '');
     await frame.getByRole('row').filter({ hasText: 'Oct' }).scrollIntoViewIfNeeded();
     // The embedded contract deliberately has no page-level Share button:
