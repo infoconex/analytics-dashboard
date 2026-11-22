@@ -25,8 +25,9 @@
       h1 { font-size:clamp(1.5rem,3vw,2rem); margin:6px 0; }
       .host-description { margin:0 0 22px; color:#50637b; }
       .host-intro { margin:0 0 22px; }
-      .host-frame-shell { border:1px solid #cad8df; background:white; border-radius:14px; padding:clamp(4px,1vw,12px); box-shadow:0 10px 34px #0b31440e; }
-      .host-frame { display:block; width:100%; height:900px; border:0; border-radius:8px; background:#f7f9fd; }
+      .host-frame-shell { position:relative; border:1px solid #cad8df; background:white; border-radius:14px; padding:clamp(4px,1vw,12px); box-shadow:0 10px 34px #0b31440e; }
+      .host-frame-loading { position:absolute; inset:clamp(4px,1vw,12px); z-index:1; display:flex; align-items:flex-start; justify-content:center; padding:90px 12px 12px; border-radius:8px; color:#36566a; background:#f7f9fd; font-weight:650; }
+      .host-frame { display:block; width:100%; height:360px; border:0; border-radius:8px; background:#f7f9fd; }
       .host-dashboard-picker { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
       .host-dashboard-link { display:inline-flex; min-height:44px; align-items:center; padding:9px 14px; border:1px solid #9fb5c1; border-radius:9px; background:white; color:#154861; font-size:.9rem; text-decoration:none; font-weight:700; }
       .host-dashboard-link[aria-current] { background:#123d50; color:white; border-color:#123d50; }
@@ -40,15 +41,15 @@
       @media(max-width:720px) {
         .host-header { gap:10px; }
         .host-main { padding:12px; }
-        .host-frame { height:760px; }
       }
       @media(forced-colors:active) {
         .host-header,.host-frame-shell { background:Canvas; color:CanvasText; border:1px solid CanvasText; }
         .host-logo { background:Canvas; color:CanvasText; border:1px solid CanvasText; }
         .host-nav a[aria-current] { outline:2px solid Highlight; }
         .host-frame { border:1px solid CanvasText; }
+        .host-frame-loading { background:Canvas; color:CanvasText; border:1px solid CanvasText; }
         .host-dashboard-link { background:Canvas; color:LinkText; border:1px solid CanvasText; }
-        .host-dashboard-link[aria-current] { background:Highlight; color:HighlightText; }
+        .host-dashboard-link[aria-current] { background:Canvas; color:CanvasText; border:2px solid Highlight; outline:2px solid Highlight; outline-offset:2px; }
       }
     </style>
   </head>
@@ -74,9 +75,10 @@
         <nav id="host-dashboard-picker" class="host-dashboard-picker" aria-label="Customer dashboards"></nav>
         <p id="host-status" class="host-status" role="status" aria-live="polite">Loading accessible dashboards…</p>
         <button id="host-retry" class="host-retry" type="button" hidden>Retry loading dashboards</button>
-        <div class="host-frame-shell">
-          <iframe class="host-frame" title="Business performance analytics — Northstar Commerce sample" loading="eager" referrerpolicy="no-referrer"
-            src="/embed.html#/organization/northstar/dashboard/a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3441"></iframe>
+        <div class="host-frame-shell" aria-busy="true" hidden>
+          <p id="host-frame-loading" class="host-frame-loading" role="status">Loading customer analytics…</p>
+          <iframe class="host-frame" title="Customer analytics — Northstar Commerce sample" loading="eager" referrerpolicy="no-referrer"
+            src="about:blank"></iframe>
         </div>
       </section>
       <nav class="host-exit" aria-label="After the embedded dashboard"><a class="host-return-account" href="#account-summary">Return to account overview</a><a href="#analytics-section">Back to analytics</a></nav>

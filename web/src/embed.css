@@ -8,7 +8,7 @@
   --color-selected-border:#1b7180;
 }
 body:has(.embedded-shell) { min-width:0; background:var(--color-canvas); }
-.embedded-shell { min-width:0; min-height:100vh; color:var(--color-text); font-family:var(--font-body); }
+.embedded-shell { min-width:0; min-height:0; color:var(--color-text); font-family:var(--font-body); }
 .embedded-main { max-width:1500px; padding:clamp(var(--space-3),3vw,var(--space-6)); margin:auto; min-width:0; }
 .embedded-heading { display:flex; align-items:flex-start; gap:var(--space-4); padding:var(--space-5); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-card); margin-bottom:var(--space-4); }
 .embedded-heading-mark,.embedded-state-icon { flex:none; width:44px; height:44px; border-radius:var(--radius-control); color:var(--color-primary); background:var(--color-surface-muted); display:grid; place-items:center; }
@@ -26,6 +26,17 @@ body:has(.embedded-shell) { min-width:0; background:var(--color-canvas); }
 .embedded-state p { font-size:var(--type-label); line-height:1.6; color:var(--color-muted); max-width:500px; margin:0; }
 .embedded-retry { background:var(--color-primary); color:var(--color-on-primary); min-height:44px; }
 .embedded-retry:hover { background:var(--color-primary-hover); }
+/* Only the same-origin sample host supplies the visible window inside a tall iframe.
+   Standalone embedding retains the native dialog placement. */
+.same-origin-sample-host .share-context-modal[open] {
+  position:fixed;
+  inset:auto auto auto 50%;
+  top:var(--host-visible-center, 50vh);
+  width:min(570px, calc(100% - 32px));
+  max-height:min(850px, calc(var(--host-visible-height, 100vh) - 24px));
+  margin:0;
+  transform:translate(-50%, -50%);
+}
 @media(max-width:720px) {
   .embedded-heading { flex-wrap:wrap; padding:var(--space-4); gap:var(--space-3); }
   .embedded-sample-badge { margin-left:auto; }

@@ -113,7 +113,9 @@ test('host integration preserves context, filtering, keyboard exit and standalon
   await expect(after.getByRole('link', { name: 'Return to account overview' })).toBeFocused();
   await assertNoOverflow(page);
   expect(mutations).toEqual([]);
-  await info.attach('ux6-host-integration.json', { body: JSON.stringify({ title: await frameElement.getAttribute('title'), sameOrigin: new URL(await frameElement.getAttribute('src') ?? '', page.url()).origin === new URL(page.url()).origin, mutations }, null, 2), contentType: 'application/json' });
+  const activeFrameUrl = await frameElement.evaluate((node: HTMLIFrameElement) => node.contentWindow?.location.href ?? '');
+  expect(new URL(activeFrameUrl).origin).toBe(new URL(page.url()).origin);
+  await info.attach('ux6-host-integration.json', { body: JSON.stringify({ title: await frameElement.getAttribute('title'), sameOrigin: new URL(activeFrameUrl).origin === new URL(page.url()).origin, mutations }, null, 2), contentType: 'application/json' });
 });
 
 test('dense embed: direct navigation to visualization 12, exact index return and no write', async ({ page }, info) => {
