@@ -23,6 +23,7 @@ let currentId: string | null = null;
 let lastId: string | null = null;
 let loaded = false;
 let loadError = '';
+let lastRenderedPage: 'account' | 'insights' | null = null;
 
 function snapshotCurrent() {
   if (!currentId) return;
@@ -82,9 +83,11 @@ function render() {
   if (!loaded) return;
   const view = parseHostView(location.hash);
   const isAccount = view?.page === 'account';
-  const focusWasInAnalytics = insights.contains(document.activeElement)
-    || afterAnalytics.contains(document.activeElement);
-  const focusWasInAccount = account.contains(document.activeElement);
+  // Hash navigation can blur a link before hashchange fires; derive focus
+  // recovery from the host view transition, not document.activeElement.
+  const nextPage = isAccount ? 'account' : 'insights';
+  const pageChanged = lastRenderedPage !== null && lastRenderedPage !== nextPage;
+  lastRenderedPage = nextPage;
   account.hidden = !isAccount;
   introduction.hidden = isAccount;
   insights.hidden = isAccount;
@@ -101,7 +104,7 @@ function render() {
     status.textContent = 'Account overview. Your embedded analytics view is preserved.';
     // Returning from a link that is now hidden must not leave keyboard
     // focus on the document body or inside an inaccessible frame.
-    if (focusWasInAnalytics) accountHeading.focus();
+    if (pageChanged) accountHeading.focus();
     return;
   }
   if (loadError) {
@@ -130,7 +133,7 @@ function render() {
   showDashboard(dashboard);
   // The account return link disappears on navigation. Place focus on the
   // authorized dashboard choice without disturbing focus in the host header.
-  if (focusWasInAccount) picker.querySelector<HTMLAnchorElement>('[aria-current="page"]')?.focus();
+  if (pageChanged) picker.querySelector<HTMLAnchorElement>('[aria-current="page"]')?.focus();
 }
 
 async function loadDashboards() {
