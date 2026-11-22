@@ -177,7 +177,10 @@ test('tables preserve headings and full numeric values at 390/320px with horizon
 
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
   const focus = frame.getByRole('button', { name: 'Jump to visualization index from Channel details 6' });
+  // Exercise keyboard modality; programmatic .focus() alone need not match :focus-visible.
   await focus.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
   await expect(focus).toBeFocused();
   const outline = await focus.evaluate(element => getComputedStyle(element).outlineStyle);
   expect(outline).not.toBe('none');
