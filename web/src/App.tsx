@@ -1147,6 +1147,7 @@ export default function App() {
         {widgetDraftIssue && <section className="visualization-repair-summary" data-repair-summary tabIndex={-1} role="group" aria-label="Configuration needs review">
           <strong>Configuration needs review</strong>
           <p id="visualization-repair-problem">{widgetDraftIssue.explanation} The original saved values are retained until you choose replacements. Preview is unavailable and Update visualization is disabled until the configuration is valid.</p>
+          {widgetDraftIssue.field === 'kind' && <p>Saved chart type: <code>{widgetDraft.kind}</code>. Changing the chart type is optional if the metric can instead be made compatible.</p>}
         </section>}
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
         {libraryEditing && <label className="form-label">Template description<textarea maxLength={500} rows={2}
