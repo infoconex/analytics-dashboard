@@ -45,8 +45,11 @@ export function VisualizationLibraryPicker({ context, onContextChange, organizat
   // its heading without stealing keyboard focus from the Preview toggle.
   useEffect(() => {
     if (!previewId) return;
+    // Scroll just the preview heading, not the entire (potentially tall)
+    // chart panel. Scrolling the whole panel pushes the focused Preview toggle
+    // and the dialog's Close control out of view on narrow screens.
     const frame = window.requestAnimationFrame(() =>
-      previewPanel.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' }));
+      previewPanel.current?.querySelector('h3')?.scrollIntoView({ block: 'nearest', behavior: 'instant' }));
     return () => window.cancelAnimationFrame(frame);
   }, [previewId]);
   // The API returns only authorized organization-scoped items. Recheck scope in
