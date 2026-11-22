@@ -47,7 +47,7 @@ export function VisualizationLibraryPicker({ organizationId, items, loading, err
       <p>Only visualizations saved in this organization are listed.</p>
     </div>
     {error && <div role="alert" className="error-banner">{error} <button type="button" onClick={onRetry} disabled={busy}>Retry</button></div>}
-    {loading ? <p role="status">Loading saved visualizations…</p> : !error && <>
+    {loading ? <p role="status">Loading saved visualizations…</p> : <>
       <div className="library-filters">
         <label className="form-label">Search saved visualizations
           <input ref={searchInput} value={search} onChange={event => { setSearch(event.target.value); setPreviewId(null); }} placeholder="Search by name or description" /></label>
@@ -63,11 +63,11 @@ export function VisualizationLibraryPicker({ organizationId, items, loading, err
             <option value="name-desc">Name Z–A</option>
           </select></label>
       </div>
-      <div className="library-results-summary">
+      {(!error || scoped.length > 0) && <div className="library-results-summary">
         <p role="status">Showing {visible.length} of {scoped.length} saved {scoped.length === 1 ? 'visualization' : 'visualizations'}</p>
         {filtersActive && <button type="button" className="text-link" onClick={resetFilters}>Clear filters</button>}
-      </div>
-      {scoped.length === 0 && <div className="library-empty"><strong>No saved visualizations yet</strong><p>Create a chart on a dashboard, then choose Save to library to make it reusable.</p><Button onClick={onCreate}>Create visualization</Button></div>}
+      </div>}
+      {scoped.length === 0 && !error && <div className="library-empty"><strong>No saved visualizations yet</strong><p>Create a chart on a dashboard, then choose Save to library to make it reusable.</p><Button onClick={onCreate}>Create visualization</Button></div>}
       {scoped.length > 0 && visible.length === 0 && <div className="library-empty"><strong>No matching saved visualizations</strong><p>Try another name or visualization type, or clear the filters to see all templates.</p><button type="button" className="button button-light" onClick={resetFilters}>Show all visualizations</button></div>}
       {visible.length > 0 && <div className="library-items" aria-label="Saved visualization choices">
         {visible.map(item => <div className="library-result" key={item.id}>
