@@ -4,6 +4,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
+if [[ -e lab/ux13/secrets.env ]]; then
+  echo "A comparison lab already exists. Tear it down explicitly before running this script." >&2
+  exit 1
+fi
+
 vite_pid=''
 cleanup() {
   local status=$?
@@ -13,7 +18,10 @@ cleanup() {
     wait "$vite_pid" >/dev/null 2>&1 || true
   fi
   if [[ -f lab/ux13/secrets.env ]]; then
-    bash lab/ux13/lab.sh down || true
+    if ! bash lab/ux13/lab.sh down; then
+      echo "Comparison lab cleanup failed; inspect disposable containers and local credentials." >&2
+      status=1
+    fi
   fi
   exit "$status"
 }

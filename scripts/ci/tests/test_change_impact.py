@@ -68,6 +68,24 @@ class ChangeImpactTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(impact.classify([path]), set(impact.SUITES))
 
+    def test_invalid_or_traversing_paths_fail_closed(self):
+        for path in ("../docs/guide.md", "./../docs/guide.md",
+                     "/docs/guide.md", "docs//guide.md",
+                     "docs/../docs/guide.md", "docs/.hidden/../guide.md"):
+            with self.subTest(path=path):
+                self.assertEqual(impact.classify([path]), set(impact.SUITES))
+        self.assertEqual(impact.classify(["./docs/guide.md"]), set())
+
+    def test_compose_failure_rejects_required_integration(self):
+        expected = dict.fromkeys(gate.SUITES, "false")
+        actual = dict.fromkeys(gate.SUITES, "skipped")
+        expected["integration"] = "true"
+        self.assertTrue(gate.evaluate("success", expected, actual))
+        actual["integration"] = "failure"
+        self.assertTrue(gate.evaluate("success", expected, actual))
+        actual["integration"] = "success"
+        self.assertFalse(gate.evaluate("success", expected, actual))
+
     def test_missing_diff_fails_safe(self):
         self.assertEqual(impact.classify([]), set(impact.SUITES))
 

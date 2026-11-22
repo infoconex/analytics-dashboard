@@ -177,7 +177,7 @@ jobs:
           retention-days: 14
 
   providers:
-    name: Database | SQL Server and PostgreSQL
+    name: Database | Provider conformance
     needs: impact
     if: needs.impact.outputs.providers == 'true'
     runs-on: ubuntu-latest

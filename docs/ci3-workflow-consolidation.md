@@ -36,6 +36,8 @@ PowerShell scripts `scripts/ci/verify-backend.ps1`, `verify-frontend.ps1` and `v
 
 The active `main` ruleset (ID `27303915`) requires pull requests and squash merges but currently does **not** declare mandatory status checks. An administrator must add `Gate | Required verification` and `Gate | Security analysis` as required status checks; the connected GitHub App lacks repository administration permissions. Do not claim that merge enforcement is enabled until an administrator confirms it.
 
+In GitHub, open **Settings → Rules → Rulesets → main → Edit** (the ruleset at `https://github.com/infoconex/analytics-dashboard/rules/27303915`). Under **Branch rules**, enable **Require status checks to pass**; add exactly the two always-present check names above, selecting **GitHub Actions** as the source if offered. Save the active ruleset, then inspect its effective rules again and confirm a fresh PR cannot merge while either gate fails or is pending. Do not require any optional path-filtered evaluation workflow or individual matrix shard. Document the enforcement verification separately from successful workflow runs.
+
 ### Step-level review
 
 - Eliminated the unnecessary .NET SDK setup and NuGet restore from **JavaScript/TypeScript CodeQL**; both are conditional on the C# matrix entry. Native GitHub setup, cache, artifact and code-analysis actions remain YAML primitives, while local test execution and fixture lifecycle stay in runnable scripts.

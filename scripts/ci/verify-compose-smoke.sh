@@ -8,7 +8,12 @@ cleanup() {
     docker compose -f compose.ux16-owner.yml ps || true
     docker compose -f compose.ux16-owner.yml logs --tail 60 api web || true
   fi
-  docker compose -f compose.ux16-owner.yml down || true
+  trap - EXIT
+  if ! docker compose -f compose.ux16-owner.yml down; then
+    echo "Sample-host Compose cleanup failed." >&2
+    code=1
+  fi
+  exit "$code"
 }
 trap cleanup EXIT
 docker compose -f compose.ux16-owner.yml config --quiet
@@ -35,4 +40,4 @@ if curl --silent --fail --max-time 2 http://127.0.0.1:5055/api/organizations >/d
   echo 'The API must not be published on the host.' >&2
   exit 1
 fi
-echo 'Local owner Compose smoke succeeded.'
+echo 'Sample-host Compose integration smoke succeeded.'

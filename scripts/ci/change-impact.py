@@ -23,8 +23,12 @@ def classify(paths: list[str]) -> set[str]:
     if not paths:
         return set(SUITES)  # A missing diff is not proof that nothing changed.
     for raw in paths:
-        path = raw.replace("\\", "/").lstrip("./")
-        if not path or path.startswith("../"):
+        path = raw.replace("\\", "/")
+        while path.startswith("./"):
+            path = path[2:]
+        # Never normalize traversal or malformed paths into a safe documentation-only change.
+        if (not path or path.startswith("/") or
+                any(part in ("", ".", "..") for part in path.split("/"))):
             return set(SUITES)
         if path.startswith("docs/") or path in DOCUMENTATION:
             continue
