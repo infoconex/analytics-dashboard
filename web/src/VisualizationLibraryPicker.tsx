@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import type { SavedVisualization, WidgetKind } from './model';
 import { visualizations } from './demoData';
 import { discoverVisualizations, savedDateLabel, type DiscoveryOrder } from './contentDiscovery';
@@ -6,7 +6,20 @@ import { ModalDialog } from './ui/ModalDialog';
 import { WidgetTile } from './WidgetTile';
 import { Button } from './ui/Button';
 
+export interface LibraryDiscoveryContext {
+  search: string;
+  kind: WidgetKind | 'all';
+  order: DiscoveryOrder;
+  previewId: string | null;
+}
+
+export const initialLibraryDiscoveryContext: LibraryDiscoveryContext = {
+  search: '', kind: 'all', order: 'recent', previewId: null,
+};
+
 interface Props {
+  context: LibraryDiscoveryContext;
+  onContextChange: (next: LibraryDiscoveryContext) => void;
   organizationId: string;
   items: SavedVisualization[];
   loading: boolean;
@@ -20,11 +33,8 @@ interface Props {
   onDelete: (saved: SavedVisualization) => void;
 }
 
-export function VisualizationLibraryPicker({ organizationId, items, loading, error, busy, onDismiss, onRetry, onCreate, onUse, onEdit, onDelete }: Props) {
-  const [search, setSearch] = useState('');
-  const [kind, setKind] = useState<WidgetKind | 'all'>('all');
-  const [order, setOrder] = useState<DiscoveryOrder>('recent');
-  const [previewId, setPreviewId] = useState<string | null>(null);
+export function VisualizationLibraryPicker({ context, onContextChange, organizationId, items, loading, error, busy, onDismiss, onRetry, onCreate, onUse, onEdit, onDelete }: Props) {
+  const { search, kind, order, previewId } = context;
   const searchInput = useRef<HTMLInputElement>(null);
   // The API returns only authorized organization-scoped items. Recheck scope in
   // the client to prevent a stale/malformed response from being shown or used.
@@ -33,9 +43,7 @@ export function VisualizationLibraryPicker({ organizationId, items, loading, err
   const filtersActive = Boolean(search.trim()) || kind !== 'all';
 
   function resetFilters() {
-    setSearch('');
-    setKind('all');
-    setPreviewId(null);
+    onContextChange({ ...context, search: '', kind: 'all', previewId: null });
     searchInput.current?.focus();
   }
 
@@ -50,14 +58,14 @@ export function VisualizationLibraryPicker({ organizationId, items, loading, err
     {loading ? <p role="status">Loading saved visualizations…</p> : <>
       <div className="library-filters">
         <label className="form-label">Search saved visualizations
-          <input ref={searchInput} value={search} onChange={event => { setSearch(event.target.value); setPreviewId(null); }} placeholder="Search by name or description" /></label>
+          <input ref={searchInput} value={search} onChange={event => onContextChange({ ...context, search: event.target.value, previewId: null })} placeholder="Search by name or description" /></label>
         <label className="form-label">Visualization type
-          <select value={kind} onChange={event => { setKind(event.target.value as WidgetKind | 'all'); setPreviewId(null); }}>
+          <select value={kind} onChange={event => onContextChange({ ...context, kind: event.target.value as WidgetKind | 'all', previewId: null })}>
             <option value="all">All types</option>
             {visualizations.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}
           </select></label>
         <label className="form-label">Sort saved visualizations
-          <select value={order} onChange={event => { setOrder(event.target.value as DiscoveryOrder); setPreviewId(null); }}>
+          <select value={order} onChange={event => onContextChange({ ...context, order: event.target.value as DiscoveryOrder, previewId: null })}>
             <option value="recent">Recently updated</option>
             <option value="name-asc">Name A–Z</option>
             <option value="name-desc">Name Z–A</option>
@@ -80,7 +88,7 @@ export function VisualizationLibraryPicker({ organizationId, items, loading, err
             </div>
             <div className="library-item-actions">
               <Button disabled={busy} onClick={() => onUse(item)}>Add copy</Button>
-              <button type="button" onClick={() => setPreviewId(previewId === item.id ? null : item.id)}
+              <button type="button" onClick={() => onContextChange({ ...context, previewId: previewId === item.id ? null : item.id })}
                 aria-expanded={previewId === item.id} disabled={busy}>Preview</button>
               <button type="button" onClick={() => onEdit(item)} disabled={busy}>Edit template</button>
               <button type="button" onClick={() => onDelete(item)} disabled={busy}>Delete template</button>
