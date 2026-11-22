@@ -78,6 +78,18 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Publish focused UX-30 navigation evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux30-navigation-evidence
+          path: |
+            web/test-results/ux30Navigation-*/**/*.png
+            web/test-results/ux30Navigation-*/**/*.json
+            web/test-results/ux30Navigation-*/**/trace.zip
+          if-no-files-found: warn
+          retention-days: 14
+
   provider-conformance:
     name: Real SQL Server and PostgreSQL adapter tests
     runs-on: ubuntu-latest
