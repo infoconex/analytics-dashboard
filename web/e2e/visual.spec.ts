@@ -562,8 +562,10 @@ test('dense keyboard journey returns to the index and compares filtered chart fa
   await expect(lastCard.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
 
   const returnAction = lastCard.getByRole('button', { name: 'Back to visualization list from Channel details — regional' });
-  // From a focused heading, traverse the scrollable table, five row
-  // selectors, and the new metric-definition disclosure with real Tab keys.
+  // The heading-level Index shortcut is intentionally the first Tab stop.
+  // Traverse it, the scrollable table, five row selectors and the disclosure.
+  await page.keyboard.press('Tab');
+  await expect(lastCard.getByRole('button', { name: 'Jump to visualization index from Channel details — regional' })).toBeFocused();
   for (let step = 0; step < 7; step++) await page.keyboard.press('Tab');
   await expect(lastCard.locator('.insight-context > summary')).toBeFocused();
   await page.keyboard.press('Tab');
@@ -984,6 +986,8 @@ test('browser-native zoom at 200% and 400% preserves the 12-widget keyboard and 
 
       const index = page.locator('details.dashboard-index');
       await expect(lastCard.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
+      await page.keyboard.press('Tab');
+      await expect(lastCard.getByRole('button', { name: 'Jump to visualization index from Channel details — regional' })).toBeFocused();
       for (let step = 0; step < 7; step++) await page.keyboard.press('Tab');
       await expect(lastCard.locator('.insight-context > summary')).toBeFocused();
       await page.keyboard.press('Tab');
