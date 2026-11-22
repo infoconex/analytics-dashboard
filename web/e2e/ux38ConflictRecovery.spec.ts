@@ -153,7 +153,7 @@ test('remote reorder plus local deletion requires manual reordering; explicit di
   await region.getByRole('button', { name: 'Recover selected edits (1)' }).click();
   await expect(page.getByRole('article', { name: 'Sessions' })).toHaveCount(0);
   await expect(page.getByRole('article', { name: 'New remotely' })).toBeVisible();
-  expect(page.locator('.canvas-item .widget-title').allTextContents()).resolves.toEqual(['Revenue', 'Orders', 'New remotely']);
+  expect(await page.locator('.canvas-item .widget-title').allTextContents()).toEqual(['Revenue', 'Orders', 'New remotely']);
 });
 
 test('newer revision during recovery forces renewed review; another stale save is still rejected', async ({ page }) => {
