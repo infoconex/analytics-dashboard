@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
-import type { Dashboard } from '../src/model';
+import type { Dashboard, SavedVisualization } from '../src/model';
 
 const date = '2026-11-20T15:00:00Z';
 const own: Dashboard[] = Array.from({ length: 27 }, (_, index) => ({
@@ -13,6 +13,20 @@ const own: Dashboard[] = Array.from({ length: 27 }, (_, index) => ({
   }] : [],
   revision: 1, createdBy: 'fictional-owner', createdAt: date, updatedAt: date,
 }));
+const templates: SavedVisualization[] = [
+  {
+    id: 'template-western', organizationId: 'northstar', description: 'Western channel sample',
+    definition: { id: 'template-revenue', title: 'Western channel revenue', kind: 'bar',
+      datasetKey: 'channels', metricKey: 'orders', dimensionKey: 'channel' },
+    revision: 1, createdBy: 'fictional-owner', createdAt: date, updatedAt: date,
+  },
+  {
+    id: 'template-eastern', organizationId: 'northstar', description: 'Eastern channel sample',
+    definition: { id: 'template-orders', title: 'Eastern channel orders', kind: 'bar',
+      datasetKey: 'channels', metricKey: 'orders', dimensionKey: 'channel' },
+    revision: 1, createdBy: 'fictional-owner', createdAt: date, updatedAt: date,
+  },
+];
 const isolated: Dashboard = {
   ...own[0]!, id: 'isolated-dashboard', organizationId: 'isolated',
   name: 'Isolated quarterly business', widgets: [],
@@ -36,6 +50,9 @@ async function fixture(page: Page, role: 'owner' | 'viewer' = 'owner') {
     }
     if (path === '/api/organizations/isolated/dashboards' && route.request().method() === 'GET') {
       return route.fulfill({ json: [isolated] });
+    }
+    if (path === '/api/organizations/northstar/visualizations' && route.request().method() === 'GET') {
+      return route.fulfill({ json: templates });
     }
     return route.fulfill({ status: 403, json: { error: 'Fixture operation not available' } });
   });
@@ -151,4 +168,23 @@ test('UX-30 question context survives return; viewer and organization boundaries
   await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();
   const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(audit.violations.map(item => item.id)).toEqual([]);
+});
+
+test('UX-30 reusable library search and sorting survive an edit-and-return transition', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/#/organization/northstar/dashboard/quarterly-business-23');
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('button', { name: 'Add saved visualization' }).click();
+  let library = page.getByRole('dialog', { name: 'Add saved visualization' });
+  await library.getByRole('textbox', { name: 'Search saved visualizations' }).fill('western');
+  await library.getByRole('combobox', { name: 'Sort saved visualizations' }).selectOption('name-desc');
+  await expect(library.getByRole('status')).toContainText('1 of 2');
+  await library.getByRole('button', { name: 'Edit template' }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit saved visualization' });
+  await expect(editor).toBeVisible();
+  await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
+  library = page.getByRole('dialog', { name: 'Add saved visualization' });
+  await expect(library.getByRole('textbox', { name: 'Search saved visualizations' })).toHaveValue('western');
+  await expect(library.getByRole('combobox', { name: 'Sort saved visualizations' })).toHaveValue('name-desc');
+  await expect(library.getByRole('status')).toContainText('1 of 2');
 });
