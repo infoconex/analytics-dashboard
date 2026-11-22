@@ -100,11 +100,11 @@ test('long host embed owns scrolling at desktop, tablet, mobile and narrow width
     expect(before.frameHeight).toBeGreaterThan(900);
     expect(before.hostDocumentHeight).toBeGreaterThan(900);
     await frame.getByRole('article', { name: 'Revenue over time' }).locator('summary').filter({ hasText: 'View data table' }).click();
+    await expect.poll(async () => (await layout(page)).frameHeight).toBeGreaterThan(before.frameHeight + 20);
     const expanded = await expectContentSized(page);
-    expect(expanded.frameHeight).toBeGreaterThan(before.frameHeight);
     await frame.getByRole('article', { name: 'Revenue over time' }).locator('summary').filter({ hasText: 'View data table' }).click();
+    await expect.poll(async () => (await layout(page)).frameHeight).toBeLessThan(expanded.frameHeight - 20);
     const closed = await expectContentSized(page);
-    expect(closed.frameHeight).toBeLessThan(expanded.frameHeight);
     const after = page.getByRole('navigation', { name: 'After the embedded dashboard' });
     await after.getByRole('link', { name: 'Return to account overview' }).scrollIntoViewIfNeeded();
     await expect(after).toBeInViewport();
