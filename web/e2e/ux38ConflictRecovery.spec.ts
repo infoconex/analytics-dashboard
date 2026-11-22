@@ -169,10 +169,11 @@ test('newer revision during recovery forces renewed review; another stale save i
   await expect(region).toContainText('latest saved revision 3');
   await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Local name');
   await expect(region.getByRole('button', { name: 'Recover selected edits (0)' })).toBeDisabled();
-  await region.getByText('Review differences and choose edits to recover').click();
   await region.getByRole('checkbox', { name: /Dashboard name/ }).check();
   page.once('dialog', dialog => void dialog.accept());
   await region.getByRole('button', { name: 'Recover selected edits (1)' }).click();
+  await expect(region).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   server.otherEditor(current => ({ ...current, description: 'Remote third' }));
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('region', { name: 'Dashboard conflict recovery' })).toContainText('latest saved revision 4');
