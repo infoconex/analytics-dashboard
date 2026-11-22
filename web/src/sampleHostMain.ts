@@ -69,7 +69,8 @@ function showDashboard(dashboard: HostDashboard) {
     }));
   }
   picker.querySelectorAll<HTMLAnchorElement>('.host-dashboard-link').forEach(link => {
-    link.toggleAttribute('aria-current', link.dataset.dashboardId === dashboard.id);
+    if (link.dataset.dashboardId === dashboard.id) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
   });
   status.textContent = `Viewing ${dashboard.name}. Filters are kept when you switch dashboards or return from Account.`;
 }
@@ -80,8 +81,13 @@ function render() {
   const isAccount = view?.page === 'account';
   account.hidden = !isAccount;
   insights.hidden = isAccount;
-  accountLink.toggleAttribute('aria-current', isAccount);
-  insightsLink.toggleAttribute('aria-current', !isAccount);
+  if (isAccount) {
+    accountLink.setAttribute('aria-current', 'page');
+    insightsLink.removeAttribute('aria-current');
+  } else {
+    insightsLink.setAttribute('aria-current', 'page');
+    accountLink.removeAttribute('aria-current');
+  }
   returnLinks.forEach(link => { link.hidden = isAccount; });
   if (isAccount) {
     status.textContent = 'Account overview. Your embedded analytics view is preserved.';
