@@ -88,6 +88,36 @@ describe('donut legend filter controls', () => {
 });
 
 describe('contextual filter controls', () => {
+  it('shows a removable period on commerce and identifies undated channels as unaffected', () => {
+    const revenue: DashboardWidget = { ...channelTable, title: 'Total revenue', datasetKey: 'commerce',
+      metricKey: 'revenue', dimensionKey: 'month', kind: 'metric' };
+    const narrowed = { period: '3m' as const, channel: null };
+    const html = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: revenue, period: '3m', filters: narrowed, onPeriodReset: () => {},
+    }));
+    expect(html).toContain('Remove Final 3 sample months filter from Total revenue');
+    expect(html).toContain('$128.3K');
+    const marketing = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: channelTable, period: '3m', filters: narrowed,
+    }));
+    expect(marketing).toContain('marketing channel records have no dates');
+    expect(marketing).toContain('1,820');
+  });
+
+  it('distinguishes no matching sample channel from a missing metric', () => {
+    const noMatch = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: channelTable, period: '12m',
+      filters: { period: '12m', channel: 'Not in the fictional sample' },
+    }));
+    expect(noMatch).toContain('No matching sample data.');
+    expect(noMatch).not.toContain('Insight unavailable.</strong>');
+    const unavailable = renderToStaticMarkup(createElement(WidgetTile, {
+      widget: { ...channelTable, metricKey: 'unsupported_metric' }, period: '12m',
+      filters: defaultConsumerFilters,
+    }));
+    expect(unavailable).toContain('Insight unavailable.');
+    expect(unavailable).not.toContain('No matching sample data.');
+  });
   it('makes active channel filters removable within every affected widget', () => {
     const html = renderToStaticMarkup(createElement(WidgetTile, {
       widget: channelDonut, period: '12m', filters: { period: '12m', channel: 'Referral' },

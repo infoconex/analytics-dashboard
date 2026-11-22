@@ -14,8 +14,8 @@ test('dashboard consumers coordinate date and channel filters and reset independ
   await expect(channelTable.locator('tbody tr')).toHaveCount(5);
 
   await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
-  await expect(page.getByText('Reporting period: Final 3 sample months').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Remove Final 3 sample months filter', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Remove Final 3 sample months filter', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Filter impact across visualizations')).toContainText('Reporting period:');
   await expect(channels.locator('.donut-legend')).toHaveText(initialChannelRows?.trim() ?? '');
   await expect(revenue).toBeVisible();
   expect(await revenue.locator('.metric-number').allTextContents()).not.toEqual(revenueTotal);
