@@ -194,6 +194,7 @@ test('responsive authoring and forced-colors repair controls remain navigable wi
     await page.getByRole('article', { name: 'Legacy metric' }).getByRole('button', { name: /Review configuration/ }).click();
     const dialog = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
     await expect(dialog.getByRole('combobox', { name: 'Metric' })).toHaveAttribute('aria-invalid', 'true');
+    await expect(dialog.locator('.visualization-saved-key')).toContainText('Original saved metric key: unrecognized');
     await dialog.getByRole('combobox', { name: 'Metric' }).scrollIntoViewIfNeeded();
     await screenshot(page, info, `repair-editor-${width}`);
     await dialog.getByRole('button', { name: 'Cancel' }).click();
