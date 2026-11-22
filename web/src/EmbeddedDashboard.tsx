@@ -10,7 +10,7 @@ import type { DashboardWidget } from './model';
 
 type ReadyResult = {
   state: 'ready'; targetKey: string; dashboard: Dashboard; organizationName: string;
-  refreshing: boolean; previousDefinition: boolean;
+  refreshing: boolean;
 };
 type Result = { state: 'loading' } | { state: 'error'; message: string; retryable: boolean } | ReadyResult;
 
@@ -28,8 +28,12 @@ export function EmbeddedDashboard() {
   const [hash, setHash] = useState(window.location.hash);
   const [attempt, setAttempt] = useState(0);
   const lastReady = useRef<ReadyResult | null>(null);
+  const reloadAttempted = useRef(false);
+  const reloadButton = useRef<HTMLButtonElement>(null);
+  const retryButton = useRef<HTMLButtonElement>(null);
+  const errorHeading = useRef<HTMLHeadingElement>(null);
   const [shareRequest, setShareRequest] = useState<{ widget: DashboardWidget; filters: ConsumerFilters } | null>(null);
-  const refresh = useCallback(() => setAttempt(value => value + 1), []);
+  const refresh = useCallback(() => { reloadAttempted.current = true; setAttempt(value => value + 1); }, []);
   const target = parseEmbedTarget(hash);
   const targetKey = target ? `${target.organizationId}:${target.dashboardId.toLowerCase()}` : null;
   const preserveFilters = useCallback((filters: ConsumerFilters) => {
@@ -39,6 +43,12 @@ export function EmbeddedDashboard() {
     window.history.replaceState(window.history.state, '',
       window.location.pathname + formatEmbedTarget({ ...current, filters }));
   }, []);
+
+  useEffect(() => {
+    if (!reloadAttempted.current) return;
+    if (result.state === 'error') (result.retryable ? retryButton.current : errorHeading.current)?.focus({ preventScroll: true });
+    else if (result.state === 'ready' && !result.refreshing) reloadButton.current?.focus({ preventScroll: true });
+  }, [result]);
 
   useEffect(() => {
     const update = () => { setShareRequest(null); setHash(window.location.hash); };
@@ -57,9 +67,9 @@ export function EmbeddedDashboard() {
     const key = `${current.organizationId}:${current.dashboardId.toLowerCase()}`;
     const previous = lastReady.current?.targetKey === key ? lastReady.current : null;
     if (!previous) lastReady.current = null; // Never reuse a snapshot across dashboard or organization boundaries.
-    setResult(previous ? { ...previous, refreshing: true, previousDefinition: false } : { state: 'loading' });
-    // Only retain an earlier definition if the current membership check succeeded.
-    // A rejected or failed permissions check always removes previously loaded content.
+    setResult(previous ? { ...previous, refreshing: true } : { state: 'loading' });
+    // Keep the last view only while rechecking. Any failed dashboard lookup must
+    // fail closed: organization membership does not grant dashboard permission.
     void Promise.allSettled([
       dashboardApi.find(current.organizationId, current.dashboardId),
       dashboardApi.organizations(),
@@ -78,12 +88,8 @@ export function EmbeddedDashboard() {
       }
       if (dashboardResult.status !== 'fulfilled') {
         const error = loadError(dashboardResult.reason);
-        if (previous && error.retryable) {
-          setResult({ ...previous, refreshing: false, previousDefinition: true });
-        } else {
-          lastReady.current = null;
-          setResult(error);
-        }
+        lastReady.current = null;
+        setResult(error);
         return;
       }
       const dashboard = dashboardResult.value;
@@ -93,7 +99,7 @@ export function EmbeddedDashboard() {
         return;
       }
       const ready: ReadyResult = { state: 'ready', targetKey: key, dashboard, organizationName: organization.name,
-        refreshing: false, previousDefinition: false };
+        refreshing: false };
       lastReady.current = ready;
       setResult(ready);
     });
@@ -111,9 +117,9 @@ export function EmbeddedDashboard() {
       {visible.state === 'loading' ? <div className="embedded-status" role="status"><div className="loading-spinner" aria-hidden="true" />Loading customer analytics…</div>
         : visible.state === 'error' ? <section className="embedded-state" aria-labelledby="embedded-error-title">
           <div className="embedded-state-icon"><BarChart3 aria-hidden="true" size={26} /></div>
-          <h1 id="embedded-error-title">Dashboard unavailable</h1>
+          <h1 id="embedded-error-title" ref={errorHeading} tabIndex={-1}>Dashboard unavailable</h1>
           <p role="alert">{visible.message}</p>
-          {visible.retryable && <button type="button" className="button embedded-retry" onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Try again</button>}
+          {visible.retryable && <button type="button" className="button embedded-retry" ref={retryButton} onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Try again</button>}
         </section>
         : <>
           <header className="embedded-heading">
@@ -125,18 +131,15 @@ export function EmbeddedDashboard() {
             </div>
             <div className="embedded-heading-actions">
               <span className="embedded-sample-badge"><ShieldCheck size={15} aria-hidden="true" /> Sample data</span>
-              <button type="button" className="button embedded-definition-refresh" aria-disabled={visible.refreshing}
+              <button type="button" className="button embedded-definition-refresh" ref={reloadButton} aria-disabled={visible.refreshing}
                 onClick={() => { if (!visible.refreshing) refresh(); }}>
                 <RefreshCw size={15} aria-hidden="true" />
-                {visible.refreshing ? 'Checking dashboard…' : visible.previousDefinition ? 'Retry dashboard reload' : 'Reload dashboard definition'}
+                {visible.refreshing ? 'Checking dashboard…' : 'Reload dashboard definition'}
               </button>
             </div>
           </header>
-          {visible.previousDefinition && <p className="embedded-recovery" role="status">
-            A newer dashboard definition could not be loaded. This is the previously loaded fictional sample view; current dashboard changes and data freshness are unknown. Use Retry dashboard reload to check again.
-          </p>}
           <DashboardConsumer key={`${visible.dashboard.organizationId}:${visible.dashboard.id}:${hash}`} widgets={visible.dashboard.widgets}
-            initialFilters={target?.filters} onFiltersChange={preserveFilters}
+            initialFilters={parseEmbedTarget(window.location.hash)?.filters ?? target?.filters} onFiltersChange={preserveFilters}
             updatedAt={visible.dashboard.updatedAt} editing={false} canEdit={false} onStartEdit={() => {}}
             onChange={() => {}} onEdit={() => {}} onAdd={() => {}}
             onAddSaved={() => {}} onDuplicate={() => {}} onSaveToLibrary={() => {}}
