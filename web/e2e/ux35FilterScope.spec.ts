@@ -79,7 +79,7 @@ test('mixed 18-widget dashboard shows precise filter eligibility, unchanged sour
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/sample-host.html');
     await expect(frame.locator('.canvas-item')).toHaveCount(18);
-    const revenue = frame.getByRole('article', { name: 'Total revenue 1' });
+    const revenue = frame.getByRole('article', { name: 'Total revenue 1', exact: true });
     const table = frame.getByRole('article', { name: 'Channel details 6' }).getByRole('table');
     const before = await revenue.locator('.metric-number').textContent();
     const channelBefore = await table.locator('tbody tr').count();
@@ -100,7 +100,7 @@ test('mixed 18-widget dashboard shows precise filter eligibility, unchanged sour
     await expect(frame.getByLabel('Active filters')).toContainText('2 active filters');
     await expect(frame.locator('.widget-filter-applied')).toHaveCount(18);
     await expect(frame.locator('.widget-filter-unaffected')).toHaveCount(18);
-    await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Total revenue 1' })).toBeVisible();
+    await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Total revenue 1', exact: true })).toBeVisible();
     await expect(revenue.getByText('Direct does not apply; commerce records have no channel attribution.')).toBeVisible();
     await expect(frame.getByRole('article', { name: 'Traffic sources 4' }).getByText('marketing channel records have no dates.')).toBeVisible();
     const size = await measurements(page);
@@ -140,10 +140,10 @@ test('keyboard recovery, per-card resets, full defaults and host reload preserve
   const frame = page.frameLocator('.host-frame');
   const date = frame.getByRole('combobox', { name: 'Date range (commerce only)' });
   const channel = frame.getByRole('combobox', { name: 'Marketing channel' });
-  const revenue = frame.getByRole('article', { name: 'Total revenue 1' });
+  const revenue = frame.getByRole('article', { name: 'Total revenue 1', exact: true });
   await date.selectOption('3m');
   await channel.selectOption('Direct');
-  const localClear = revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Total revenue 1' });
+  const localClear = revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Total revenue 1', exact: true });
   await localClear.focus();
   await page.keyboard.press('Enter');
   await expect(revenue.getByRole('heading', { name: 'Total revenue 1' })).toBeFocused();
