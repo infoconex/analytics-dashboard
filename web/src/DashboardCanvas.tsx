@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, GripVertical, Plus } from 'lucide-react';
 import { layoutForWidget, moveWidget, reorderWidgets, resizeWidget, type WidgetLayout } from './composition';
 import type { DashboardWidget } from './model';
 import { WidgetTile } from './WidgetTile';
+import { sampleAvailability } from './sampleAvailability';
 import type { ConsumerFilters } from './consumerFilters';
 import { Button } from './ui/Button';
 import { resolveNavigationSelection } from './dashboardNavigation';
@@ -13,6 +14,7 @@ interface Props {
   editing: boolean;
   canEdit: boolean;
   onStartEdit: () => void;
+  onRepair: (widget: DashboardWidget) => void;
   onChange: (widgets: DashboardWidget[]) => void;
   onEdit: (widget: DashboardWidget) => void;
   onAdd: () => void;
@@ -24,7 +26,7 @@ interface Props {
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onChannelSelect, onPeriodReset, onShareInsight }: Props) {
+export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdit, onRepair, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onChannelSelect, onPeriodReset, onShareInsight }: Props) {
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -105,7 +107,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
           <div className="dashboard-navigator-actions">
             <select id="dashboard-navigator-selection" aria-label="Find a visualization" value={selectedTarget ?? ''} onChange={event => setNavigationSelection(event.target.value)}>
               <option value="">Choose a visualization…</option>
-              {widgets.map((widget, index) => <option key={widget.id} value={widget.id}>{index + 1}. {widget.title}</option>)}
+              {widgets.map((widget, index) => <option key={widget.id} value={widget.id}>{index + 1}. {widget.title}{sampleAvailability(widget, filters).state === 'unavailable' ? ' — Unavailable' : sampleAvailability(widget, filters).state === 'no-match' ? ' — No matching records' : ''}</option>)}
             </select>
             <Button type="submit" disabled={!selectedTarget}>Go to visualization</Button>
           </div>
@@ -122,7 +124,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
               if (node) indexButtons.current.set(widget.id, node);
               else indexButtons.current.delete(widget.id);
             }} onClick={() => focusWidget(widget.id)} aria-label={`${index + 1}. ${widget.title}`}>
-              <span aria-hidden="true">{index + 1}.</span> {widget.title}
+              <span aria-hidden="true">{index + 1}.</span> {widget.title}{sampleAvailability(widget, filters).state === 'unavailable' ? ' — Unavailable' : sampleAvailability(widget, filters).state === 'no-match' ? ' — No matching records' : ''}
             </button>
           </li>)}</ol>
         </nav>
@@ -170,7 +172,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
             <button className="icon-button" aria-label={`Move ${widget.title} earlier`} title="Move earlier" disabled={index === 0} onClick={() => announceMove(moveWidget(widgets, widget.id, -1), widget.id)}><ArrowUp size={17} /></button>
             <button className="icon-button" aria-label={`Move ${widget.title} later`} title="Move later" disabled={index === widgets.length - 1} onClick={() => announceMove(moveWidget(widgets, widget.id, 1), widget.id)}><ArrowDown size={17} /></button>
           </div>}
-          <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined} onPeriodReset={!editing && widget.datasetKey === 'commerce' ? onPeriodReset : undefined}
+          <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onRepair={!editing && canEdit ? onRepair : undefined} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined} onPeriodReset={!editing && widget.datasetKey === 'commerce' ? onPeriodReset : undefined}
             onReturnToIndex={!editing && widgets.length >= 8 ? () => returnToIndex(widget.id) : undefined}
             onShareInsight={!editing ? onShareInsight : undefined} />
           {editing && <details className="canvas-size-tools">
