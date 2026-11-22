@@ -138,16 +138,13 @@ function showDashboard(dashboard: HostDashboard) {
     observedChild = null;
     frameLoading.hidden = false;
     frameShell.setAttribute('aria-busy', 'true');
-    // The first frame navigation occurs only AFTER the authenticated host
-    // collection authorized this dashboard. Later switches replace history.
-    if (currentId === null) {
+    // Navigate only AFTER an authorized list, always replacing child
+    // history (including the first about:blank navigation).
+    try {
+      if (!frame.contentWindow) throw new Error('Frame not initialized');
+      frame.contentWindow.location.replace(desired);
+    } catch {
       frame.src = desired;
-    } else {
-      try {
-        frame.contentWindow?.location.replace(desired);
-      } catch {
-        frame.src = desired;
-      }
     }
     currentId = dashboard.id;
   }
