@@ -86,7 +86,7 @@ export function VisualizationLibraryPicker({ organizationId, items, loading, err
               <button type="button" onClick={() => onDelete(item)} disabled={busy}>Delete template</button>
             </div>
           </article>
-          {previewId === item.id && <section className="library-preview" aria-label={`Preview of ${item.definition.title}`}>
+          {previewId === item.id && <section className="library-preview" aria-label="Saved visualization preview">
             <h3>Preview: {item.definition.title}</h3>
             <WidgetTile widget={item.definition} period="12m" preview />
             <p>Preview of this library template using fictional sample records. Add copy creates an independent dashboard instance.</p>
