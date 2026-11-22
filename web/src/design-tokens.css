@@ -1,0 +1,41 @@
+/* Semantic light-theme contract; minimum readable informational text is 0.75rem. */
+:root {
+  --font-body: 'DM Sans', 'Segoe UI', sans-serif;
+  --font-heading: 'Manrope', 'Segoe UI', sans-serif;
+  --type-body: 1rem;
+  --type-label: 0.875rem;
+  --type-caption: 0.75rem;
+  --type-heading-sm: 1.125rem;
+  --color-canvas: #f7f9fd;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f4fb;
+  --color-text: #25324a;
+  --color-muted: #566780;
+  --color-subtle: #63748d;
+  --color-heading: #19253b;
+  --color-border: #dce4f0;
+  /* Interactive outlines are not decorative card dividers: their edge must be perceptible. */
+  --color-control-border: #7b8ba4;
+  --color-selected-border: #657cca;
+  --color-primary: #435bc9;
+  --color-primary-hover: #3048b5;
+  --color-on-primary: #ffffff;
+  --color-focus: #3156d3;
+  --color-focus-on-dark: #c4d2ff;
+  --color-danger: #a82b48;
+  --color-danger-surface: #fff0f3;
+  --color-danger-border: #edafbd;
+  --color-nav: #101828;
+  --color-nav-text: #e5ecff;
+  --color-success: #177b65;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+  --shadow-card: 0 6px 24px #253a6c0b;
+  --shadow-dialog: 0 24px 80px #121d3b40;
+}

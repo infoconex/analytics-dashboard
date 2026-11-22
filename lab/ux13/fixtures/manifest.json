@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "source": "web/src/demoData.ts",
+  "sourceSha256": "6316f43c4b3b0bd06c9a71d6bd7e3c1d5a62241b1a7aa6e7a4cc0e062a8c11b7",
+  "synthetic": true,
+  "observationYear": null,
+  "observationDates": null,
+  "commerce": {
+    "index": "ux13-northstar-commerce",
+    "count": 12,
+    "monthOrdinal": "1=Jan … 12=Dec; not a calendar date",
+    "sentinelRevenue": {
+      "Jan": 18400,
+      "Oct": 41400,
+      "Dec": 48300
+    }
+  },
+  "channels": {
+    "index": "ux13-northstar-channels",
+    "count": 5,
+    "observationDates": null,
+    "sentinelOrders": {
+      "Organic search": 1820,
+      "Direct": 1530,
+      "Paid search": 1120,
+      "Social": 890,
+      "Referral": 615
+    },
+    "conversionMeaning": "illustrative; not derived from orders / sessions"
+  },
+  "files": {
+    "commerce.json": "32f99004f94560abc5dcf36c0c92113b3c7e48f9ee99403e14854d18d324f3ed",
+    "channels.json": "e1d5a98ff49af93d4da99256faeb5a0b94b1e4342463e4d32cd17918eff0852b",
+    "elasticsearch-bulk.ndjson": "1edf724eb22962b36dc24c0ebd6bb883db733cd7033262bd8d959099642bff4e"
+  }
+}

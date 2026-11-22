@@ -1,0 +1,112 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: .NET, web and browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Run locally reproducible verification
+        shell: pwsh
+        run: ./scripts/verify.ps1 -IncludeBrowserTests
+      - name: Publish sample-only UX screenshots and browser recordings
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux-visual-evidence
+          path: |
+            web/test-results/visual-*/**/*.png
+            web/test-results/visual-*/**/*.webm
+            web/test-results/visual-*/**/*.json
+            web/test-results/visual-*/**/trace.zip
+            web/test-results/visualizationAuthoring-*/**/*.png
+            web/test-results/visualizationAuthoring-*/**/*.json
+            web/test-results/visualizationAuthoring-*/**/trace.zip
+            web/test-results/visualizationReuse-*/**/*.png
+            web/test-results/visualizationReuse-*/**/*.json
+            web/test-results/visualizationReuse-*/**/trace.zip
+            web/test-results/dashboardActivation-*/**/*.png
+            web/test-results/dashboardActivation-*/**/*.json
+            web/test-results/dashboardActivation-*/**/trace.zip
+            web/test-results/ux29Discovery-*/**/*.png
+            web/test-results/ux29Discovery-*/**/*.json
+            web/test-results/ux29Discovery-*/**/trace.zip
+            web/test-results/ux30Navigation-*/**/*.png
+            web/test-results/ux30Navigation-*/**/*.json
+            web/test-results/ux30Navigation-*/**/trace.zip
+            web/test-results/embed-*/**/*.png
+            web/test-results/embed-*/**/*.webm
+            web/test-results/embed-*/**/*.json
+            web/test-results/embed-*/**/trace.zip
+            web/test-results/organization-*/**/*.png
+            web/test-results/organization-*/**/*.webm
+            web/test-results/organization-*/**/*.json
+            web/test-results/organization-*/**/trace.zip
+            web/test-results/discovery-*/**/*.png
+            web/test-results/discovery-*/**/*.webm
+            web/test-results/discovery-*/**/*.json
+            web/test-results/discovery-*/**/trace.zip
+            web/test-results/interpretation-*/**/*.png
+            web/test-results/interpretation-*/**/*.webm
+            web/test-results/interpretation-*/**/*.json
+            web/test-results/interpretation-*/**/trace.zip
+            web/test-results/handoff-*/**/*.png
+            web/test-results/handoff-*/**/*.webm
+            web/test-results/handoff-*/**/*.json
+            web/test-results/handoff-*/**/trace.zip
+            web/test-results/customerTasks-*/**/*.png
+            web/test-results/customerTasks-*/**/*.webm
+            web/test-results/customerTasks-*/**/*.json
+            web/test-results/customerTasks-*/**/trace.zip
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish focused UX-30 navigation evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux30-navigation-evidence
+          path: |
+            web/test-results/ux30Navigation-*/**/*.png
+            web/test-results/ux30Navigation-*/**/*.json
+            web/test-results/ux30Navigation-*/**/trace.zip
+          if-no-files-found: warn
+          retention-days: 14
+
+  provider-conformance:
+    name: Real SQL Server and PostgreSQL adapter tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Start isolated provider fixtures with ephemeral passwords
+        shell: bash
+        run: bash ./scripts/start-provider-fixtures.sh
+      - name: Run mandatory real-provider conformance tests
+        shell: pwsh
+        run: ./scripts/verify-provider-adapters.ps1
+      - name: Remove disposable provider containers
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f analytics-sqlserver-fixture analytics-postgres-fixture 2>/dev/null || true
