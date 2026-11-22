@@ -1019,3 +1019,8 @@ button:disabled { opacity:.6; }
   .visualization-repair-summary { background:Canvas; border:2px solid Highlight; color:CanvasText; }
   .visualization-data-fields select[aria-invalid="true"] { border:2px solid Highlight; }
 }
+
+/* Keep original unsupported legacy keys inspectable when native select text clips on narrow screens. */
+.visualization-saved-key { color:#475c78; font-size:11px; line-height:1.5; margin:-10px 0 16px; overflow-wrap:anywhere; }
+.visualization-saved-key code { font-family:ui-monospace, SFMono-Regular, Consolas, monospace; white-space:normal; overflow-wrap:anywhere; color:inherit; }
+@media (forced-colors:active) { .visualization-saved-key, .visualization-saved-key code { color:CanvasText; } }
