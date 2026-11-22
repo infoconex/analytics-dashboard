@@ -110,6 +110,7 @@ export default function App() {
   const navigationIndex = useRef(readNavigationIndex(window.history.state) ?? 0);
   const acceptedNavigationIndex = useRef(navigationIndex.current);
   const reversingHistory = useRef(false);
+  const focusAfterEditTransition = useRef<'edit' | 'view' | null>(null);
 
   // Mark visited hash entries without changing the URL or overwriting unrelated history state.
   // A declined Back/Forward confirmation can then reverse the traversal rather than
@@ -259,6 +260,7 @@ export default function App() {
   function stopEditing() {
     if (!confirmDiscard()) return;
     widgetBaseline.current = null;
+    focusAfterEditTransition.current = 'view';
     setEditMode(false);
     setDraft(null);
     resetWidgetUndo();
@@ -280,6 +282,7 @@ export default function App() {
       widgets: activeDashboard.widgets.map(item => ({ ...item })) });
     setSaveError('');
     setDashboardConflict(null);
+    focusAfterEditTransition.current = openGallery ? null : 'edit';
     setEditMode(true);
     if (openGallery) beginWidgetEditor(createWidget());
   }
@@ -364,6 +367,23 @@ export default function App() {
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, [organizations, hasPendingWork]);
+
+  // Changing between viewing and editing replaces the invoking toolbar button.
+  // Keep keyboard users at the equivalent action rather than dropping focus to body.
+  useEffect(() => {
+    const targetMode = focusAfterEditTransition.current;
+    if (!targetMode || loading || !view.id) return;
+    if (targetMode === 'edit' && !editMode) return;
+    if (targetMode === 'view' && editMode) return;
+    focusAfterEditTransition.current = null;
+    const frame = window.requestAnimationFrame(() => {
+      const target = targetMode === 'edit'
+        ? mainContent.current?.querySelector<HTMLInputElement>('.dashboard-heading .title-edit')
+        : mainContent.current?.querySelector<HTMLButtonElement>('.dashboard-heading .heading-actions .button-primary');
+      target?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [editMode, loading, view]);
 
   // Navigation replaces the previous control; place keyboard focus on the new
   // page heading instead of leaving it on a detached element. The question
@@ -499,6 +519,7 @@ export default function App() {
       && organizationId === origin.organizationId && nextOrganizationId === origin.organizationId
       && next === 'dashboards' && !id);
     focusOnNavigation.current = true;
+    focusAfterEditTransition.current = null;
     skipNextHashPrompt.current = window.location.hash !== nextHash;
     if (window.location.hash !== nextHash) {
       window.location.hash = nextHash;
@@ -598,6 +619,7 @@ export default function App() {
       setDashboardList(current => current?.organizationId === targetOrganizationId
         ? { ...current, items: current.items.map(item => item.id === updated.id ? updated : item) } : current);
       setDraft(null);
+      focusAfterEditTransition.current = 'view';
       setEditMode(false);
       resetWidgetUndo();
       setDashboardConflict(null);
@@ -632,6 +654,7 @@ export default function App() {
       setDashboardList(current => current?.organizationId === org
         ? { ...current, items: current.items.map(item => item.id === latest.id ? latest : item) } : current);
       setDraft(null);
+      focusAfterEditTransition.current = 'view';
       setEditMode(false);
       resetWidgetUndo();
       setDashboardConflict(null);
