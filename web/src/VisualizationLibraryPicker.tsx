@@ -37,6 +37,10 @@ export function VisualizationLibraryPicker({ context, onContextChange, organizat
   const { search, kind, order, previewId } = context;
   const searchInput = useRef<HTMLInputElement>(null);
   const previewPanel = useRef<HTMLElement>(null);
+  // Data arrives after showModal, so focus Search when the input mounts.
+  useEffect(() => {
+    if (!loading) searchInput.current?.focus();
+  }, [loading]);
   // Expanding a large preview inside a narrow, scrollable dialog must reveal
   // its heading without stealing keyboard focus from the Preview toggle.
   useEffect(() => {
