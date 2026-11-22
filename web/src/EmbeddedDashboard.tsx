@@ -3,7 +3,7 @@ import { Activity, BarChart3, RefreshCw, ShieldCheck } from 'lucide-react';
 import { dashboardApi } from './api';
 import { DashboardConsumer } from './DashboardConsumer';
 import { ApiError, type Dashboard } from './model';
-import { parseEmbedTarget } from './embedRoute';
+import { formatEmbedTarget, parseEmbedTarget } from './embedRoute';
 import { ShareContextDialog } from './ShareContextDialog';
 import type { ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
@@ -17,6 +17,15 @@ export function EmbeddedDashboard() {
   const [attempt, setAttempt] = useState(0);
   const [shareRequest, setShareRequest] = useState<{ widget: DashboardWidget; filters: ConsumerFilters } | null>(null);
   const refresh = useCallback(() => setAttempt(value => value + 1), []);
+  const target = parseEmbedTarget(hash);
+  const preserveFilters = useCallback((filters: ConsumerFilters) => {
+    const current = parseEmbedTarget(window.location.hash);
+    if (!current) return;
+    // Only non-sensitive sample filters go into the locator; never authority.
+    window.history.replaceState(window.history.state, '',
+      window.location.pathname + formatEmbedTarget({ ...current, filters }));
+  }, []);
+
 
   useEffect(() => {
     const update = () => { setShareRequest(null); setHash(window.location.hash); };
@@ -45,8 +54,10 @@ export function EmbeddedDashboard() {
       .catch((error: unknown) => {
         if (!active) return;
         const status = error instanceof ApiError ? error.status : 0;
-        setResult({ state: 'error', retryable: status === 0 || status >= 500, message: status === 401 || status === 403 || status === 404
-          ? 'This dashboard is unavailable to your account. Contact your application administrator if you need access.'
+        setResult({ state: 'error', retryable: status === 0 || status >= 500, message: status === 401
+          ? 'Your session has expired. Sign in through your customer portal to continue.'
+          : status === 403 ? 'You do not have access to this dashboard. Contact your application administrator.'
+          : status === 404 ? 'This dashboard could not be found or is no longer available.'
           : 'We could not load this dashboard. Check your connection and try again.' });
       });
     return () => { active = false; };
@@ -74,7 +85,8 @@ export function EmbeddedDashboard() {
             </div>
             <span className="embedded-sample-badge"><ShieldCheck size={15} aria-hidden="true" /> Sample data</span>
           </header>
-          <DashboardConsumer key={`${result.dashboard.organizationId}:${result.dashboard.id}`} widgets={result.dashboard.widgets}
+          <DashboardConsumer key={`${result.dashboard.organizationId}:${result.dashboard.id}:${hash}`} widgets={result.dashboard.widgets}
+            initialFilters={target?.filters} onFiltersChange={preserveFilters}
             updatedAt={result.dashboard.updatedAt} editing={false} canEdit={false} onStartEdit={() => {}}
             onChange={() => {}} onEdit={() => {}} onAdd={() => {}}
             onAddSaved={() => {}} onDuplicate={() => {}} onSaveToLibrary={() => {}}
