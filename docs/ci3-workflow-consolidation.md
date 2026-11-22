@@ -36,3 +36,8 @@ PowerShell scripts `scripts/ci/verify-backend.ps1`, `verify-frontend.ps1` and `v
 ## Administrative follow-up
 
 The active `main` ruleset (ID `27303915`) requires pull requests and squash merges but currently does **not** declare mandatory status checks. An administrator must add `Gate | Required verification` and `Gate | Security analysis` as required status checks; the connected GitHub App lacks repository administration permissions. Do not claim that merge enforcement is enabled until an administrator confirms it.
+
+### Step-level review
+
+- Eliminated the unnecessary .NET SDK setup and NuGet restore from **JavaScript/TypeScript CodeQL**; both are conditional on the C# matrix entry. Native GitHub setup, cache, artifact and code-analysis actions remain YAML primitives, while local test execution and fixture lifecycle stay in runnable scripts.
+- Preserved npm, NuGet and Chromium cache restoration as required per isolated job. Four Playwright shards intentionally duplicate service setup to prevent shared mutable test state; their successful independent execution is not the same as duplicate test coverage.
