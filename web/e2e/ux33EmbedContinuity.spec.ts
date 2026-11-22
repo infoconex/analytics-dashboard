@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
 import type { Dashboard } from '../src/model';
 
 const firstId = 'a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3441';
@@ -131,7 +132,9 @@ test('long host embed owns scrolling at desktop, tablet, mobile and narrow width
     await screenshot(page, info, `ux33-host-${width}`);
     observations.push({ width, before, expanded, closed });
   }
-  await info.attach('ux33-viewport-evidence.json', { body: JSON.stringify(observations, null, 2), contentType: 'application/json' });
+  const metricsPath = info.outputPath('ux33-viewport-evidence.json');
+  await writeFile(metricsPath, JSON.stringify(observations, null, 2));
+  await info.attach('ux33-viewport-evidence.json', { path: metricsPath, contentType: 'application/json' });
   expect(writes).toEqual([]);
 });
 
