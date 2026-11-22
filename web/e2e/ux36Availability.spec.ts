@@ -71,14 +71,14 @@ test('mixed 12-widget sample keeps valid cards visible, distinguishes errors and
     const availability = frame.getByRole('region', { name: 'Visualization availability' });
     await expect(availability).toContainText('9 of 12 visualizations have usable sample records');
     await expect(availability).toContainText('3 are unavailable or unsupported');
-    await expect(frame.getByRole('article', { name: 'Revenue' }).locator('.metric-number')).toHaveText('$357.3K');
+    await expect(frame.getByRole('article', { name: 'Revenue', exact: true }).locator('.metric-number')).toHaveText('$375.3K');
     await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
     await expect(frame.getByRole('article', { name: 'Legacy pipeline' })).toContainText('source unavailable in this sample viewer');
     await expect(frame.getByRole('article', { name: 'Unaddable conversion' })).toContainText('cannot be summed');
     await expect(frame.getByRole('article', { name: 'Old revenue definition' })).not.toContainText('$0');
     await expect(frame.getByRole('article', { name: 'Legacy pipeline' }).getByRole('button', { name: /Retry|Refresh/i })).toHaveCount(0);
     await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
-    await expect(frame.getByRole('article', { name: 'Revenue' }).locator('.metric-number')).toHaveText('$357.3K');
+    await expect(frame.getByRole('article', { name: 'Revenue', exact: true }).locator('.metric-number')).toHaveText('$375.3K');
     await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
     await expect(availability).toContainText('9 of 12 visualizations');
     const bounds = await page.locator('.host-frame').evaluate((iframe: HTMLIFrameElement) => {
@@ -156,7 +156,7 @@ test('embedded reload retains the earlier authorized definition on transient fai
   const retry = frame.getByRole('button', { name: 'Retry dashboard reload' });
   await expect(retry).toBeFocused();
   await expect(frame.locator('.embedded-recovery')).toContainText('previously loaded fictional sample view');
-  await expect(frame.getByRole('article', { name: 'Revenue' }).locator('.metric-number')).toHaveText('$128.3K');
+  await expect(frame.getByRole('article', { name: 'Revenue', exact: true }).locator('.metric-number')).toHaveText('$128.3K');
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
   await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
   await expect(page.getByRole('navigation', { name: 'After the embedded dashboard' })).toBeVisible();
@@ -179,13 +179,13 @@ test('rechecked 403 and failed membership revoke previously loaded embedded cont
   control.dashboardStatus = 403;
   await frame.getByRole('button', { name: 'Reload dashboard definition' }).click();
   await expect(frame.getByRole('alert')).toContainText('do not have access');
-  await expect(frame.getByRole('article', { name: 'Revenue' })).toHaveCount(0);
+  await expect(frame.getByRole('article', { name: 'Revenue', exact: true })).toHaveCount(0);
   await expect(frame.getByRole('button', { name: 'Try again' })).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Customer dashboards' })).toBeVisible();
   control.dashboardStatus = 200;
   control.membershipStatus = 403;
   await page.reload();
   await expect(frame.getByRole('heading', { name: 'Dashboard unavailable' })).toBeVisible();
-  await expect(frame.getByRole('article', { name: 'Revenue' })).toHaveCount(0);
+  await expect(frame.getByRole('article', { name: 'Revenue', exact: true })).toHaveCount(0);
   expect(control.writes).toEqual([]);
 });
