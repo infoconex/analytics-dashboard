@@ -139,7 +139,7 @@ test('synthetic unmatched channel offers only local clear and returns focus to t
   expect(control.writes).toEqual([]);
 });
 
-test('embedded reload retains the earlier authorized definition on transient failure without losing filters or host navigation', async ({ page }, info) => {
+test('embedded reload preserves visible cards during recheck, fails closed on 503 and restores URL filters on retry', async ({ page }, info) => {
   const control = { dashboardStatus: 200, membershipStatus: 200, requests: [] as string[], writes: [] as string[] };
   await sampleApi(page, control);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -148,25 +148,35 @@ test('embedded reload retains the earlier authorized definition on transient fai
   await expect(frame.getByRole('heading', { name: 'Recovery assessment' })).toBeVisible();
   await frame.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
   await frame.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
-  const before = await page.evaluate(() => window.history.length);
+  const historyBefore = await page.evaluate(() => window.history.length);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const endpoint = `**/api/organizations/northstar/dashboards/${dashboardId}`;
+  await page.route(endpoint, async route => {
+    await gate;
+    return route.fulfill({ status: 503, json: { title: 'Temporarily unavailable' } });
+  });
   const reload = frame.getByRole('button', { name: 'Reload dashboard definition' });
   await reload.focus();
-  control.dashboardStatus = 503;
   await reload.press('Enter');
-  const retry = frame.getByRole('button', { name: 'Retry dashboard reload' });
-  await expect(retry).toBeFocused();
-  await expect(frame.locator('.embedded-recovery')).toContainText('previously loaded fictional sample view');
+  await expect(frame.getByRole('button', { name: 'Checking dashboard…' })).toBeFocused();
   await expect(frame.getByRole('article', { name: 'Revenue', exact: true }).locator('.metric-number')).toHaveText('$128.3K');
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
-  await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
   await expect(page.getByRole('navigation', { name: 'After the embedded dashboard' })).toBeVisible();
-  await capture(page, info, 'ux36-transient-previous-definition-390');
-  control.dashboardStatus = 200;
+  await capture(page, info, 'ux36-definition-check-pending-390');
+  release();
+  await expect(frame.getByRole('alert')).toContainText('could not load');
+  await expect(frame.getByRole('article', { name: 'Revenue', exact: true })).toHaveCount(0);
+  const retry = frame.getByRole('button', { name: 'Try again' });
+  await expect(retry).toBeFocused();
+  await capture(page, info, 'ux36-definition-check-failed-390');
+  await page.unroute(endpoint);
   await retry.press('Enter');
-  await expect(frame.locator('.embedded-recovery')).toHaveCount(0);
+  await expect(frame.getByRole('heading', { name: 'Recovery assessment' })).toBeVisible();
   await expect(frame.getByRole('button', { name: 'Reload dashboard definition' })).toBeFocused();
   await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');
-  expect(await page.evaluate(() => window.history.length)).toBe(before);
+  await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
+  expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);
   expect(control.writes).toEqual([]);
 });
 
