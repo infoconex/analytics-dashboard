@@ -28,6 +28,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const [navigationSelection, setNavigationSelection] = useState('');
+  const [returnTarget, setReturnTarget] = useState<string | null>(null);
   const selectedTarget = resolveNavigationSelection(widgets, navigationSelection);
   const activePointer = useRef<string | null>(null);
   const resizingPointer = useRef<{ id: string; x: number; y: number; columns: WidgetLayout['columns']; height: number; gridWidth: number; next: WidgetLayout } | null>(null);
@@ -76,18 +77,21 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
 
   function focusWidget(id: string) {
     const heading = document.getElementById(`widget-heading-${id}`);
-    // Center the destination in the usable viewport: at high browser zoom the
-    // sticky top bar can obscure a heading aligned to the document's top.
-    heading?.scrollIntoView({ block: 'center', behavior: 'instant' });
-    heading?.focus({ preventScroll: true });
+    if (!heading) return; // A widget may have been removed while editing.
+    setNavigationSelection(id);
+    setReturnTarget(id);
+    // Keep the target in the visible viewport without adding iframe scrolling.
+    heading.scrollIntoView({ block: 'center', behavior: 'instant' });
+    heading.focus({ preventScroll: true });
   }
 
   function returnToIndex(id: string) {
-    if (!indexRef.current) return;
-    indexRef.current.open = true;
     const target = indexButtons.current.get(id);
-    target?.scrollIntoView({ block: 'center', behavior: 'instant' });
-    target?.focus({ preventScroll: true });
+    if (!indexRef.current || !target) return;
+    setReturnTarget(id);
+    indexRef.current.open = true;
+    target.scrollIntoView({ block: 'center', behavior: 'instant' });
+    target.focus({ preventScroll: true });
   }
 
   return (
@@ -108,6 +112,9 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
       </nav>}
       {widgets.length >= 8 && <details className="dashboard-index" ref={indexRef}>
         <summary>Jump to visualization <span className="dashboard-index-count">({widgets.length})</span></summary>
+        {returnTarget && widgets.some(widget => widget.id === returnTarget) && <div className="dashboard-index-return">
+          <button type="button" onClick={() => focusWidget(returnTarget)}>Return to {widgets.find(widget => widget.id === returnTarget)?.title}</button>
+        </div>}
         <nav aria-label="Jump to visualization">
           <ol>{widgets.map((widget, index) => <li key={widget.id}>
             <button type="button" ref={node => {

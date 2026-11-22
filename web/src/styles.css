@@ -953,3 +953,39 @@ button:disabled { opacity:.6; }
 /* UX-31: the library's Clear filters link is visible beside inline previews;
    its former #6478ec on white fails normal text contrast (3.86:1). */
 .visualization-library-modal .text-link { color:#4f65d2; }
+
+
+/* UX-34: dense wayfinding and readable, horizontally scrollable data at reflow. */
+.dashboard-index-return { display:flex; justify-content:flex-start; padding:var(--space-2) 0; }
+.dashboard-index-return button,.widget-index-shortcut {
+  min-height:44px; padding:var(--space-2) var(--space-3);
+  border:1px solid var(--color-control-border); border-radius:var(--radius-control);
+  color:var(--color-primary); background:var(--color-surface);
+  font-size:var(--type-label); font-weight:700; text-align:left;
+}
+.dashboard-index-return button:hover,.widget-index-shortcut:hover { background:var(--color-surface-muted); }
+.dashboard-index-return button:focus,.widget-index-shortcut:focus { outline:3px solid var(--color-focus); outline-offset:2px; }
+.widget-heading-shortcuts { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:var(--space-2); flex-shrink:0; }
+.widget-index-shortcut { padding-inline:var(--space-2); }
+.table-viewport { min-width:0; }
+.widget-table-wrap,.chart-data-scroll,.canvas-item-table .widget-table-wrap {
+  max-height:none; overflow-x:auto; overflow-y:hidden;
+}
+.widget-table-wrap,.chart-data-scroll {
+  border:1px solid var(--color-control-border); border-radius:var(--radius-control);
+  scrollbar-width:thin;
+}
+.widget-table { min-width:380px; font-variant-numeric:tabular-nums; }
+.widget-table th,.widget-table td { white-space:nowrap; }
+.table-scroll-hint { margin:var(--space-2) 0 0; color:var(--color-muted); font-size:var(--type-caption); line-height:1.5; }
+@media(max-width:480px) {
+  .widget-table th,.widget-table td,.chart-data .widget-table th,.chart-data .widget-table td { padding:var(--space-2); }
+  .widget-heading { align-items:flex-start; }
+  .widget-heading-shortcuts { flex-direction:column; align-items:flex-end; }
+}
+@media(forced-colors:active) {
+  .dashboard-index-return button,.widget-index-shortcut { border-color:ButtonText; background:ButtonFace; color:ButtonText; }
+  .dashboard-index-return button:focus,.widget-index-shortcut:focus { outline:3px solid Highlight; }
+  .widget-table-wrap,.chart-data-scroll { border-color:CanvasText; }
+  .table-scroll-hint { color:CanvasText; }
+}

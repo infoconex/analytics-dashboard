@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { BookmarkPlus, CopyPlus, Pencil, Trash2, TrendingUp, X } from 'lucide-react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
@@ -16,6 +16,45 @@ import { describeWidgetFilters } from './widgetFilterContext';
 import { chartAppearance, chartCategoryRows } from './visualizationAppearance';
 
 const axisTick = { fontSize: 12, fill: '#566780' };
+
+// Table regions scroll horizontally when columns need room, never vertically.
+// Measure actual rendered overflow so the cue stays truthful at any width/zoom.
+function ScrollableTable({ className, label, children }: { className: string; label: string; children: ReactNode }) {
+  const regionRef = useRef<HTMLDivElement>(null);
+  const hintId = useId();
+  const [scrollState, setScrollState] = useState({ overflow: false, left: false, right: false });
+
+  useEffect(() => {
+    const region = regionRef.current;
+    if (!region) return;
+    const measure = () => {
+      const maxScroll = Math.max(0, region.scrollWidth - region.clientWidth);
+      const next = { overflow: maxScroll > 1, left: region.scrollLeft > 1, right: region.scrollLeft < maxScroll - 1 };
+      setScrollState(current => current.overflow === next.overflow && current.left === next.left && current.right === next.right ? current : next);
+    };
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(region);
+    const table = region.querySelector('table');
+    if (table) observer?.observe(table);
+    region.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    measure();
+    return () => {
+      observer?.disconnect();
+      region.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
+  return <div className="table-viewport">
+    {scrollState.overflow && <p id={hintId} className="table-scroll-hint">
+      {scrollState.left && scrollState.right ? 'More columns on both sides.' : scrollState.left ? 'More columns to the left.' : 'More columns to the right.'}
+      {' '}Focus the table and use left/right arrow keys, or swipe sideways.
+    </p>}
+    <div ref={regionRef} className={className} role="region" aria-label={label}
+      aria-describedby={scrollState.overflow ? hintId : undefined} tabIndex={0}>{children}</div>
+  </div>;
+}
 
 interface Props {
   widget: DashboardWidget;
@@ -138,7 +177,9 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
   if (!context || problem) {
     return (
       <article className="widget-tile" aria-labelledby={headingId}>
-        <div className="widget-heading"><div><h2 className="widget-title" id={headingId} tabIndex={-1}>{widget.title}</h2></div></div>
+        <div className="widget-heading"><div><h2 className="widget-title" id={headingId} tabIndex={-1}>{widget.title}</h2></div>
+          {onReturnToIndex && <button type="button" className="widget-index-shortcut" onClick={onReturnToIndex} aria-label={`Jump to visualization index from ${widget.title}`}>Index</button>}
+        </div>
         <p className="widget-empty"><strong>Insight unavailable.</strong> {problem ?? (data.length === 0
           ? selectedChannel && widget.datasetKey === 'channels'
             ? 'No sample records match this channel. Remove the channel filter to see all channels.'
@@ -163,7 +204,10 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
           <div className="widget-subtitle">{widget.datasetKey === 'commerce' ? 'Commerce performance' : 'Marketing channels'} · {context.label} ({context.unit})</div>
           <p className="widget-scope">{context.coverage}</p>
         </div>
-        {position && total && !editing && <span className="widget-position"><span aria-hidden="true">{position} / {total}</span><span className="sr-only">Visualization {position} of {total}</span></span>}
+        {!editing && (position && total || onReturnToIndex) && <div className="widget-heading-shortcuts">
+          {position && total && <span className="widget-position"><span aria-hidden="true">{position} / {total}</span><span className="sr-only">Visualization {position} of {total}</span></span>}
+          {onReturnToIndex && <button type="button" className="widget-index-shortcut" onClick={onReturnToIndex} aria-label={`Jump to visualization index from ${widget.title}`}>Index</button>}
+        </div>}
         {editing ? (
           <div className="widget-actions">
             <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
@@ -192,7 +236,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
 
         </div>
       ) : widget.kind === 'table' ? (
-        <div className="widget-table-wrap" role="region" aria-label={`Scrollable ${widget.title} table`} tabIndex={0}>
+        <ScrollableTable className="widget-table-wrap" label={`Scrollable ${widget.title} table`}>
           <table className="widget-table">
             <caption className="sr-only">{widget.title}: sample {metric} values by {axis}</caption>
             <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th><th scope="col">{context.label} ({context.unit})</th>{context.additive && <th scope="col">Share (rounded)</th>}</tr></thead>
@@ -200,7 +244,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
               <tr key={String(row[axis])}><th scope="row">{channelInteraction ? <button type="button" className="table-filter-button" aria-label={selectedChannel === row.channel ? `Show all channels instead of ${row.channel}` : `Show only ${row.channel}`} aria-pressed={selectedChannel === row.channel} onClick={() => onChannelSelect?.(String(row.channel))}>{row[axis]}</button> : row[axis]}</th><td>{formatDetailedMetric(Number(row[metric]), metric)}</td>{context.additive && <td>{value ? Math.round(Number(row[metric]) / value * 100) : 0}%</td>}</tr>
             ))}</tbody>
           </table>
-        </div>
+        </ScrollableTable>
       ) : (
         <div ref={chartContainerRef} className={`widget-chart${chartKeyboardInteraction ? ' widget-chart-keyboard' : ''}${chartKeyboardInteraction && chartFocused && widget.kind === 'bar' ? ` keyboard-bar-${activeKeyboardIndex}` : ''}`} role={chartKeyboardInteraction ? 'group' : 'img'} tabIndex={chartKeyboardInteraction ? 0 : undefined} onPointerDownCapture={chartKeyboardInteraction ? () => { pointerFocusRef.current = true; } : undefined} onPointerUpCapture={chartKeyboardInteraction ? () => { pointerFocusRef.current = false; } : undefined} onPointerCancel={chartKeyboardInteraction ? () => { pointerFocusRef.current = false; } : undefined} onFocus={chartKeyboardInteraction ? event => { if (event.target === event.currentTarget && !pointerFocusRef.current) { setKeyboardIndex(0); setChartFocused(true); } } : undefined} onBlur={chartKeyboardInteraction ? event => { if (event.target === event.currentTarget) setChartFocused(false); } : undefined} onKeyDown={onChartKeyDown} aria-label={`${widget.title} ${widget.kind} chart ${scatter ? `comparing ${context.label} with ${xMeasure} from the same original records` : widget.kind === 'histogram' ? `showing the frequency of ${context.label} values in ${histogram.length} bins` : `showing ${metric} by ${axis}`}${selectedChannel && widget.datasetKey === 'channels' ? `, filtered to ${selectedChannel}` : ''}. A text interpretation and exact data table follow.${chartKeyboardInteraction ? ' Use arrow keys to choose a category, Enter or Space to filter. ' : ''}${channelInteraction ? ' Channel selection is also available from the data table.' : ''}`}>
           <ResponsiveContainer width="100%" height="100%">
@@ -297,7 +341,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
       {channelInteraction && (widget.kind === 'bar' || widget.kind === 'donut' || widget.kind === 'pie') && <p className="chart-interaction-hint">Select a {widget.kind === 'bar' ? 'bar' : 'slice'} to filter, or use the keyboard-accessible channel selector or data table.</p>}
       {widget.kind !== 'table' && <details className="chart-data">
         <summary>View data table <span className="chart-data-count">({data.length} {data.length === 1 ? 'record' : 'records'})</span></summary>
-        <div className="chart-data-scroll" role="region" aria-label={`Scrollable ${widget.title} data`} tabIndex={0}>
+        <ScrollableTable className="chart-data-scroll" label={`Scrollable ${widget.title} data`}>
           <table className="widget-table">
             <caption>{widget.title} — sample values by {axis}</caption>
             <thead><tr><th scope="col">{axis === 'month' ? 'Month' : 'Channel'}</th>{scatter && <th scope="col">{xMeasure}</th>}<th scope="col">{context.label} ({context.unit})</th></tr></thead>
@@ -308,7 +352,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
               <td>{formatDetailedMetric(Number(row[metric]), metric)}</td>
             </tr>)}</tbody>
           </table>
-        </div>
+        </ScrollableTable>
       </details>}
       {onReturnToIndex && <div className="widget-return"><button type="button" onClick={onReturnToIndex} aria-label={`Back to visualization list from ${widget.title}`}>Back to visualization list</button></div>}
     </article>
