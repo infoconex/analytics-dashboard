@@ -61,6 +61,13 @@ class ChangeImpactTests(unittest.TestCase):
     def test_lockfile_adds_lab_validation(self):
         self.assertIn("lab", impact.classify(["web/package-lock.json"]))
 
+    def test_fictional_sample_source_requires_lab_provenance_guard(self):
+        self.assertEqual(
+            impact.classify(["web/src/demoData.ts"]),
+            {"frontend", "browser", "integration", "javascript", "lab"},
+        )
+        self.assertNotIn("lab", impact.classify(["web/src/App.tsx"]))
+
     def test_ci_scripts_and_unknown_paths_fail_safe(self):
         for path in (".github/workflows/verify.yml", "scripts/ci/change-impact.py",
                      "unexpected/build.sh", "Directory.Build.props",
