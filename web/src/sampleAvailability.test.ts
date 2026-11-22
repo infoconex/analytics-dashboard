@@ -36,7 +36,7 @@ describe('fictional widget data availability', () => {
       { ...channels, id: 'unsupported', metricKey: 'broken' },
       { ...channels, id: 'source', datasetKey: 'future' as DashboardWidget['datasetKey'] },
     ], { period: '3m', channel: 'Does not exist' })).toEqual({
-      available: 1, noMatch: 2, unavailable: 1,
+      available: 1, noMatch: 1, unavailable: 2,
     });
   });
 });

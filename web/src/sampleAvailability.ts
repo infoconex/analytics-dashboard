@@ -23,6 +23,13 @@ export function sampleAvailability(widget: DashboardWidget, filters: ConsumerFil
     state: 'unavailable',
     explanation: 'This sample source has no available records. Its values cannot be calculated.',
   };
+  // Check a saved definition against source records *before* applying filters.
+  // An unsupported metric must not be relabeled as a valid empty result.
+  const definitionProblem = visualizationProblem(widget, source);
+  if (definitionProblem) return {
+    state: 'unavailable',
+    explanation: `${definitionProblem} An editor can review this visualization's saved configuration.`,
+  };
   const rows = selectConsumerRows(widget.datasetKey, filters);
   if (rows.length === 0) return {
     state: 'no-match',
