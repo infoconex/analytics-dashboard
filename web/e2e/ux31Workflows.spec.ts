@@ -116,6 +116,7 @@ for (const viewport of sizes) {
     const preview = picker.getByRole('button', { name: 'Preview' });
     await preview.click();
     await expect(preview).toBeFocused();
+    await expect(preview).toBeInViewport({ ratio: 0.5 });
     await expect(picker.getByRole('region', { name: 'Saved visualization preview' })).toBeInViewport({ ratio: 0.05 });
     await capture(page, info, 'library-preview');
     await picker.getByRole('button', { name: 'Add copy' }).click();
