@@ -48,6 +48,9 @@ jobs:
             web/test-results/ux29Discovery-*/**/*.png
             web/test-results/ux29Discovery-*/**/*.json
             web/test-results/ux29Discovery-*/**/trace.zip
+            web/test-results/ux30Navigation-*/**/*.png
+            web/test-results/ux30Navigation-*/**/*.json
+            web/test-results/ux30Navigation-*/**/trace.zip
             web/test-results/embed-*/**/*.png
             web/test-results/embed-*/**/*.webm
             web/test-results/embed-*/**/*.json
