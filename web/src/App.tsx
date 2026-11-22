@@ -658,11 +658,12 @@ export default function App() {
   async function saveDashboard() {
     if (!draft || !activeDashboard || !canEdit || saving || dashboardConflict || !hasChanges || !draft.name.trim()) return;
     const targetOrganizationId = organizationId;
+    const editTarget = `${targetOrganizationId}/${activeDashboard.id}`;
     setSaving(true);
     setSaveError('');
     try {
       const updated = await dashboardApi.update(targetOrganizationId, activeDashboard, draft);
-      if (activeOrganization.current !== targetOrganizationId) return;
+      if (activeOrganization.current !== targetOrganizationId || liveEditingTarget.current !== editTarget) return;
       setDashboardList(current => current?.organizationId === targetOrganizationId
         ? { ...current, items: current.items.map(item => item.id === updated.id ? updated : item) } : current);
       setDraft(null);
@@ -672,16 +673,16 @@ export default function App() {
       setDashboardConflict(null);
       setToast('All changes saved');
     } catch (exception) {
-      if (activeOrganization.current !== targetOrganizationId) return;
+      if (activeOrganization.current !== targetOrganizationId || liveEditingTarget.current !== editTarget) return;
       if (exception instanceof ApiError && exception.status === 409) {
         setSaveError('Another editor saved a newer dashboard revision. Your local draft was not overwritten.');
         setRecoverySelected([]);
         setRecoveryNotice('');
         try {
           const current = await dashboardApi.find(targetOrganizationId, activeDashboard.id);
-          if (activeOrganization.current === targetOrganizationId) setDashboardConflict(current);
+          if (activeOrganization.current === targetOrganizationId && liveEditingTarget.current === editTarget) setDashboardConflict(current);
         } catch {
-          if (activeOrganization.current === targetOrganizationId) setDashboardConflict('unavailable');
+          if (activeOrganization.current === targetOrganizationId && liveEditingTarget.current === editTarget) setDashboardConflict('unavailable');
         }
       } else {
         setSaveError(exception instanceof Error ? exception.message : 'Unable to save dashboard.');
@@ -696,10 +697,11 @@ export default function App() {
     if (!activeDashboard || !dashboardConflict || saving) return;
     if (!window.confirm('Discard your unsaved dashboard edits and load the latest saved version?')) return;
     const org = organizationId;
+    const target = `${org}/${activeDashboard.id}`;
     setSaving(true);
     try {
       const latest = await dashboardApi.find(org, activeDashboard.id);
-      if (activeOrganization.current !== org) return;
+      if (activeOrganization.current !== org || liveEditingTarget.current !== target) return;
       setDashboardList(current => current?.organizationId === org
         ? { ...current, items: current.items.map(item => item.id === latest.id ? latest : item) } : current);
       setDraft(null);
@@ -710,28 +712,30 @@ export default function App() {
       setSaveError('');
       setToast('Latest saved dashboard loaded. Your previous draft was discarded.');
     } catch {
-      if (activeOrganization.current === org) setSaveError('Unable to load the latest authorized dashboard. Your draft is still available.');
+      if (activeOrganization.current === org && liveEditingTarget.current === target)
+        setSaveError('Unable to load the latest authorized dashboard. Your draft is still available.');
     } finally { setSaving(false); }
   }
 
   async function inspectCurrentDashboard() {
     if (!activeDashboard || saving) return;
     const org = organizationId;
+    const target = `${org}/${activeDashboard.id}`;
     setSaving(true);
     try {
       const memberships = await dashboardApi.organizations();
-      if (activeOrganization.current !== org) return;
+      if (activeOrganization.current !== org || liveEditingTarget.current !== target) return;
       setOrganizations(memberships);
       if (!memberships.some(item => item.id === org && (item.role === 'owner' || item.role === 'editor')))
         throw new Error('Editing permission unavailable');
       const latest = await dashboardApi.find(org, activeDashboard.id);
-      if (activeOrganization.current === org) {
+      if (activeOrganization.current === org && liveEditingTarget.current === target) {
         setRecoverySelected([]);
         setDashboardConflict(latest);
         setRecoveryNotice('Latest saved revision checked. Review changes before recovery.');
       }
     } catch {
-      if (activeOrganization.current === org) {
+      if (activeOrganization.current === org && liveEditingTarget.current === target) {
         setDashboardConflict('unavailable');
         setRecoverySelected([]);
         setRecoveryNotice('Latest authorized editing access could not be confirmed. The draft has not changed.');
