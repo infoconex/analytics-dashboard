@@ -61,3 +61,9 @@ Each lifecycle wrapper uses `trap` for disposable resource teardown. The existin
 Before merging, verify **all** impacted suites, both CodeQL languages and optional lab workflows triggered by CI changes. Confirm a docs-only PR suppresses expensive suites (plan and gate still succeed), and an unknown/shared path forces full validation. Validate the full test matrix and CodeQL on `main` after squash merge.
 
 **Naming convention**: workflow `Domain | Purpose`; job `Area | Result`; step `Action | What is performed`. User-facing job names indicate which failure to investigate, without encoding historical UX increments in the general-purpose CI jobs.
+
+### Stable CodeQL reporting
+
+The CodeQL workflow generates a dynamic language matrix with **only impacted languages**, rather than reporting skipped per-step language analyses as green. An always-present `Gate | Security analysis` validates the matrix result (and confirms documentation-only skips). Require this stable security gate separately from the general verification gate when configuring branch rules.
+
+The optional owner Compose script now validates complete HTTP responses before inspecting their contents, avoiding `curl | grep -q` broken pipes under `set -o pipefail`.

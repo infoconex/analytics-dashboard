@@ -23,6 +23,7 @@ jobs:
     outputs:
       csharp: ${{ steps.detect.outputs.csharp }}
       javascript: ${{ steps.detect.outputs.javascript }}
+      languages: ${{ steps.detect.outputs.languages }}
     steps:
       - name: Checkout | Full history for PR comparison
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -40,7 +41,7 @@ jobs:
   analyze:
     name: CodeQL | ${{ matrix.language }}
     needs: impact
-    if: needs.impact.result == 'success'
+    if: needs.impact.outputs.csharp == 'true' || needs.impact.outputs.javascript == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -49,32 +50,45 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [csharp, javascript-typescript]
+        language: ${{ fromJSON(needs.impact.outputs.languages) }}
     steps:
       - name: Checkout | Source
-        if: (matrix.language == 'csharp' && needs.impact.outputs.csharp == 'true') || (matrix.language == 'javascript-typescript' && needs.impact.outputs.javascript == 'true')
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Setup | .NET 10 for C# analysis
-        if: matrix.language == 'csharp' && needs.impact.outputs.csharp == 'true'
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
       - name: Cache | Restore NuGet packages for C# analysis
-        if: matrix.language == 'csharp' && needs.impact.outputs.csharp == 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json') }}
       - name: Security | Initialize CodeQL
-        if: (matrix.language == 'csharp' && needs.impact.outputs.csharp == 'true') || (matrix.language == 'javascript-typescript' && needs.impact.outputs.javascript == 'true')
         uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
         with:
           languages: ${{ matrix.language }}
       - name: Security | Build code for analysis
-        if: (matrix.language == 'csharp' && needs.impact.outputs.csharp == 'true') || (matrix.language == 'javascript-typescript' && needs.impact.outputs.javascript == 'true')
         uses: github/codeql-action/autobuild@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
       - name: Security | Analyze language
-        if: (matrix.language == 'csharp' && needs.impact.outputs.csharp == 'true') || (matrix.language == 'javascript-typescript' && needs.impact.outputs.javascript == 'true')
         uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
+
+  gate:
+    name: Gate | Security analysis
+    if: always()
+    needs: [impact, analyze]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout | Security gate policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Gate | Validate required language analyses
+        env:
+          IMPACT_RESULT: ${{ needs.impact.result }}
+          CSHARP_EXPECTED: ${{ needs.impact.outputs.csharp }}
+          JAVASCRIPT_EXPECTED: ${{ needs.impact.outputs.javascript }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+        run: python3 scripts/ci/verify-codeql-gate.py

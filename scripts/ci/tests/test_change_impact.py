@@ -16,6 +16,7 @@ def load(name, filename):
 
 impact = load("change_impact", "change-impact.py")
 gate = load("verify_gate", "verify-gate.py")
+security_gate = load("security_gate", "verify-codeql-gate.py")
 
 
 class ChangeImpactTests(unittest.TestCase):
@@ -79,6 +80,13 @@ class ChangeImpactTests(unittest.TestCase):
         self.assertTrue(gate.evaluate("failure", expected, actual))
         expected["backend"] = ""
         self.assertTrue(gate.evaluate("success", expected, actual))
+
+    def test_security_gate_is_stable_for_docs_and_language_changes(self):
+        self.assertFalse(security_gate.evaluate("success", "false", "false", "skipped"))
+        self.assertFalse(security_gate.evaluate("success", "false", "true", "success"))
+        self.assertTrue(security_gate.evaluate("success", "true", "false", "skipped"))
+        self.assertTrue(security_gate.evaluate("success", "true", "false", "failure"))
+        self.assertTrue(security_gate.evaluate("failure", "false", "false", "skipped"))
 
 
 if __name__ == "__main__":

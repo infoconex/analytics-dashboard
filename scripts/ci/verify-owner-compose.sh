@@ -24,8 +24,11 @@ for attempt in $(seq 1 120); do
   fi
   sleep 2
 done
-curl --silent --show-error --fail http://127.0.0.1:5173/ | grep -q 'root'
-curl --silent --show-error --fail http://127.0.0.1:5173/sample-host.html | grep -q 'Insights'
+# Avoid curl | grep -q with pipefail: grep may exit early and produce EPIPE.
+index_html=$(curl --silent --show-error --fail http://127.0.0.1:5173/)
+[[ "$index_html" == *root* ]] || { echo 'Vite root was not served.' >&2; exit 1; }
+host_html=$(curl --silent --show-error --fail http://127.0.0.1:5173/sample-host.html)
+[[ "$host_html" == *Insights* ]] || { echo 'Sample host content was not served.' >&2; exit 1; }
 dashboard=$(curl --silent --show-error --fail http://127.0.0.1:5173/api/organizations/northstar/dashboards)
 jq -e 'any(.[]; .name == "Business performance")' <<< "$dashboard"
 if curl --silent --fail --max-time 2 http://127.0.0.1:5055/api/organizations >/dev/null; then

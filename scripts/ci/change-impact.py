@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -92,6 +93,11 @@ def run() -> int:
             fallback = True
 
     result = {name: str(name in selected).lower() for name in SUITES}
+    languages = [language for suite, language in (
+        ("csharp", "csharp"), ("javascript", "javascript-typescript")
+    ) if suite in selected]
+    # Avoid an invalid empty matrix; analyze is skipped if nothing was selected.
+    matrix_json = json.dumps(languages or ["none"], separators=(",", ":"))
     for name, value in result.items():
         print(f"{name}={value}")
     print(f"Changed paths ({len(paths)}): {', '.join(paths[:25])}")
@@ -100,6 +106,7 @@ def run() -> int:
         with Path(args.github_output).open("a", encoding="utf-8") as out:
             for name, value in result.items():
                 out.write(f"{name}={value}\n")
+            out.write(f"languages={matrix_json}\n")
     if args.summary:
         with Path(args.summary).open("a", encoding="utf-8") as summary:
             summary.write("### Change impact selection\n\n")
