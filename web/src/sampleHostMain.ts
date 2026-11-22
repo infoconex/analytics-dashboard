@@ -7,6 +7,9 @@ const frame = document.querySelector<HTMLIFrameElement>('.host-frame')!;
 const frameShell = document.querySelector<HTMLElement>('.host-frame-shell')!;
 const insights = document.getElementById('analytics-section')!;
 const account = document.getElementById('host-account-panel')!;
+const accountHeading = document.getElementById('host-account-heading') as HTMLHeadingElement;
+const introduction = document.getElementById('account-summary')!;
+const afterAnalytics = document.querySelector<HTMLElement>('.host-exit')!;
 const picker = document.getElementById('host-dashboard-picker')!;
 const status = document.getElementById('host-status')!;
 const retry = document.getElementById('host-retry') as HTMLButtonElement;
@@ -79,8 +82,13 @@ function render() {
   if (!loaded) return;
   const view = parseHostView(location.hash);
   const isAccount = view?.page === 'account';
+  const focusWasInAnalytics = insights.contains(document.activeElement)
+    || afterAnalytics.contains(document.activeElement);
+  const focusWasInAccount = account.contains(document.activeElement);
   account.hidden = !isAccount;
+  introduction.hidden = isAccount;
   insights.hidden = isAccount;
+  afterAnalytics.hidden = isAccount;
   if (isAccount) {
     accountLink.setAttribute('aria-current', 'page');
     insightsLink.removeAttribute('aria-current');
@@ -91,6 +99,9 @@ function render() {
   returnLinks.forEach(link => { link.hidden = isAccount; });
   if (isAccount) {
     status.textContent = 'Account overview. Your embedded analytics view is preserved.';
+    // Returning from a link that is now hidden must not leave keyboard
+    // focus on the document body or inside an inaccessible frame.
+    if (focusWasInAnalytics) accountHeading.focus({ preventScroll: true });
     return;
   }
   if (loadError) {
@@ -117,6 +128,9 @@ function render() {
     return;
   }
   showDashboard(dashboard);
+  // The account return link disappears on navigation. Place focus on the
+  // authorized dashboard choice without disturbing focus in the host header.
+  if (focusWasInAccount) picker.querySelector<HTMLAnchorElement>('[aria-current="page"]')?.focus({ preventScroll: true });
 }
 
 async function loadDashboards() {
