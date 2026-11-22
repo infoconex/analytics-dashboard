@@ -79,6 +79,14 @@ test('mixed 18-widget dashboard shows precise filter eligibility, unchanged sour
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/sample-host.html');
     await expect(frame.locator('.canvas-item')).toHaveCount(18);
+    // The sample host intentionally remembers filters across navigation.
+    // Reset explicitly before comparing each viewport's unfiltered baseline.
+    const dateControl = frame.getByRole('combobox', { name: 'Date range (commerce only)' });
+    const channelControl = frame.getByRole('combobox', { name: 'Marketing channel' });
+    if (await dateControl.inputValue() !== '12m') await dateControl.selectOption('12m');
+    if (await channelControl.inputValue() !== '') await channelControl.selectOption('');
+    await expect(dateControl).toHaveValue('12m');
+    await expect(channelControl).toHaveValue('');
     const revenue = frame.getByRole('article', { name: 'Total revenue 1', exact: true });
     const table = frame.getByRole('article', { name: 'Channel details 6' }).getByRole('table');
     const before = await revenue.locator('.metric-number').textContent();
@@ -108,6 +116,8 @@ test('mixed 18-widget dashboard shows precise filter eligibility, unchanged sour
     expect(size.childWidth - size.childViewport, 'embedded document horizontal overflow').toBeLessThanOrEqual(1);
     expect(size.filterScrollWidth - size.filterWidth, 'filter controls horizontal overflow').toBeLessThanOrEqual(2);
     evidence.push({ width, ...size, before, afterPeriod, channelBefore });
+    // Capture the actionable scope explanation, not only the host heading.
+    await frame.locator('.filter-impact').scrollIntoViewIfNeeded();
     await capture(page, info, `ux35-mixed-active-${width}`);
   }
 
@@ -169,6 +179,7 @@ test('keyboard recovery, per-card resets, full defaults and host reload preserve
   await expect(frame.locator('.filter-impact')).toContainText('9 commerce visualizations');
   await expect(page.getByRole('navigation', { name: 'Customer dashboards' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'After the embedded dashboard' })).toBeVisible();
+  await frame.locator('.filter-impact').scrollIntoViewIfNeeded();
   await capture(page, info, 'ux35-host-reload-scope-390');
   expect(writes).toEqual([]);
   expect(requests.some(path => path.includes('/isolated/'))).toBe(false);
