@@ -966,7 +966,7 @@ export default function App() {
       </ModalDialog>}
 
       {libraryOpen && editMode && draft && <VisualizationLibraryPicker
-        key={organizationId} items={library?.organizationId === organizationId ? library.items : []}
+        key={organizationId} organizationId={organizationId} items={library?.organizationId === organizationId ? library.items : []}
         loading={libraryLoading} error={libraryError} busy={libraryBusy}
         onRetry={() => void openSavedLibrary()} onDismiss={() => setLibraryOpen(false)}
         onCreate={() => { setLibraryOpen(false); beginWidgetEditor(createWidget(), null, true); }}
