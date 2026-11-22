@@ -72,6 +72,12 @@ test('UX-30 keeps catalog context, focus and scroll on explicit return at five w
     await expect(page.locator('.dashboard-heading .eyebrow')).toContainText('VIEWING SAVED');
     await expect(page.getByRole('button', { name: 'Back to dashboards' })).toBeVisible();
     await capture(page, info, 'saved-dashboard', width);
+    await page.getByRole('button', { name: 'Edit dashboard' }).click();
+    await expect(page.locator('.dashboard-heading .eyebrow')).toContainText('EDITING DRAFT');
+    await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toBeFocused();
+    await capture(page, info, 'editing-dashboard', width);
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeFocused();
     await page.getByRole('button', { name: 'Back to dashboards' }).click();
     await expect(query).toHaveValue('quarterly business');
     await expect(page.getByRole('combobox', { name: 'Sort dashboards' })).toHaveValue('name-desc');
