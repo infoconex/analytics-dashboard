@@ -75,7 +75,7 @@ test('UX-29 dense dashboard catalog supports recognizable search, sorting, retur
   await page.getByRole('button', { name: 'Show all dashboards' }).click();
   await expect(page.locator('.dashboard-card')).toHaveCount(36);
   await page.getByRole('combobox', { name: 'Sort dashboards' }).selectOption('name-desc');
-  await expect(page.locator('.dashboard-card').first()).toContainText('Western territory');
+  await expect(page.locator('.dashboard-card').first()).toContainText('Sales briefing 36');
 });
 
 test('UX-29 five-width dashboard and library evidence, filtering, preview, permissions and independent copy', async ({ page }, info) => {
