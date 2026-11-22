@@ -99,7 +99,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
   const context = sampleMetricContext(widget.datasetKey, widget.metricKey, axis, data, filters);
   const problem = data.length ? visualizationProblem(widget, data) : null;
   const histogram = widget.kind === 'histogram' ? buildHistogram(data, widget.metricKey, appearance.histogramBins) : [];
-  const xMeasure = metrics[widget.datasetKey]?.find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
+  const xMeasure = (Array.isArray(metrics[widget.datasetKey]) ? metrics[widget.datasetKey] : []).find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
   const tooltipValue = (value: unknown) => formatChartTooltip(Number(value), metric);
   const axisValue = (value: number) => formatChartAxis(value, metric);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
