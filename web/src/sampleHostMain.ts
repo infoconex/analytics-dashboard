@@ -56,14 +56,21 @@ function showDashboard(dashboard: HostDashboard) {
   }
   lastId = dashboard.id;
   frameShell.hidden = false;
-  picker.replaceChildren(...dashboards.map(item => {
-    const link = document.createElement('a');
-    link.href = `#insights/${encodeURIComponent(item.id)}`;
-    link.textContent = item.name;
-    link.className = 'host-dashboard-link';
-    if (item.id === dashboard.id) link.setAttribute('aria-current', 'page');
-    return link;
-  }));
+  // Keep the actual anchor nodes stable during navigation: rebuilding the
+  // picker after a click would otherwise discard keyboard focus.
+  if (picker.childElementCount !== dashboards.length) {
+    picker.replaceChildren(...dashboards.map(item => {
+      const link = document.createElement('a');
+      link.href = `#insights/${encodeURIComponent(item.id)}`;
+      link.textContent = item.name;
+      link.className = 'host-dashboard-link';
+      link.dataset.dashboardId = item.id;
+      return link;
+    }));
+  }
+  picker.querySelectorAll<HTMLAnchorElement>('.host-dashboard-link').forEach(link => {
+    link.toggleAttribute('aria-current', link.dataset.dashboardId === dashboard.id);
+  });
   status.textContent = `Viewing ${dashboard.name}. Filters are kept when you switch dashboards or return from Account.`;
 }
 
