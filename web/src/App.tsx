@@ -11,7 +11,7 @@ import { dashboardApi, visualizationApi } from './api';
 import { copySavedVisualization, duplicateWidget, hasDashboardChanges } from './composition';
 import { captureWidgetChange, emptyWidgetHistory, redoWidgetChange, undoWidgetChange } from './dashboardUndo';
 import { widgetEditorHasChanges } from './authoringWorkflow';
-import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics, selectRows } from './demoData';
+import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics } from './demoData';
 import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
 import { ApiError, type CurrentIdentity, type Dashboard, type DashboardDraft, type DashboardWidget, type DatasetKey, type Membership, type SavedVisualization, type WidgetKind } from './model';
 import { DashboardConsumer } from './DashboardConsumer';
