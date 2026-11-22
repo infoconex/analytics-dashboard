@@ -10,6 +10,7 @@ import {
 import { dashboardApi, visualizationApi } from './api';
 import { copySavedVisualization, duplicateWidget, hasDashboardChanges } from './composition';
 import { captureWidgetChange, emptyWidgetHistory, redoWidgetChange, undoWidgetChange } from './dashboardUndo';
+import { recoverDashboardChanges, reviewDashboardConflict } from './dashboardConflictReview';
 import { widgetEditorHasChanges } from './authoringWorkflow';
 import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics } from './demoData';
 import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
@@ -93,6 +94,8 @@ export default function App() {
   const [saveError, setSaveError] = useState('');
   // Only in memory: stale saves never replace either the user's draft or a newer server revision.
   const [dashboardConflict, setDashboardConflict] = useState<Dashboard | 'unavailable' | null>(null);
+  const [recoverySelected, setRecoverySelected] = useState<string[]>([]);
+  const [recoveryNotice, setRecoveryNotice] = useState('');
   const [templateConflict, setTemplateConflict] = useState<SavedVisualization | 'deleted' | 'unavailable' | null>(null);
   const [createError, setCreateError] = useState('');
   const [creating, setCreating] = useState(false);
@@ -105,6 +108,7 @@ export default function App() {
   const sidebar = useRef<HTMLElement>(null);
   const mainContent = useRef<HTMLElement>(null);
   const saveChangesButton = useRef<HTMLButtonElement>(null);
+  const dashboardConflictRegion = useRef<HTMLElement>(null);
   const skipNextHashPrompt = useRef(false);
   const acceptedHash = useRef(window.location.hash);
   const focusOnNavigation = useRef(false);
@@ -130,6 +134,8 @@ export default function App() {
     ? dashboardList.items.filter(item => item.organizationId === organizationId) : [];
   const activeDashboard = dashboards.find(item => item.id === view.id);
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
+  const conflictReview = dashboardConflict && dashboardConflict !== 'unavailable' && draft && activeDashboard
+    ? reviewDashboardConflict(activeDashboard, draft, dashboardConflict) : null;
   // Configuration edits and a named new dashboard can be lost on refresh even before
   // they are committed to a dashboard draft. Never persist them into browser storage.
   const hasPendingWork = Boolean(hasChanges || widgetDraft || librarySource
@@ -147,6 +153,17 @@ export default function App() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [templateConflict]);
+
+  // A stale-save response can arrive after the editor has scrolled far down a long
+  // dashboard. Move focus to the recovery controls without touching the draft.
+  useEffect(() => {
+    if (!dashboardConflict || !editMode) return;
+    const frame = window.requestAnimationFrame(() => {
+      dashboardConflictRegion.current?.scrollIntoView({ block: 'center' });
+      dashboardConflictRegion.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [dashboardConflict, editMode]);
 
   // Only outside text fields and dialogs: never steal native input undo.
   useEffect(() => {
@@ -288,6 +305,8 @@ export default function App() {
       widgets: activeDashboard.widgets.map(item => ({ ...item })) });
     setSaveError('');
     setDashboardConflict(null);
+    setRecoverySelected([]);
+    setRecoveryNotice('');
     focusAfterEditTransition.current = openGallery ? null : 'edit';
     setEditMode(true);
     if (openGallery) beginWidgetEditor(createWidget());
@@ -633,7 +652,7 @@ export default function App() {
   }
 
   async function saveDashboard() {
-    if (!draft || !activeDashboard || saving || dashboardConflict || !hasChanges || !draft.name.trim()) return;
+    if (!draft || !activeDashboard || !canEdit || saving || dashboardConflict || !hasChanges || !draft.name.trim()) return;
     const targetOrganizationId = organizationId;
     setSaving(true);
     setSaveError('');
@@ -652,6 +671,8 @@ export default function App() {
       if (activeOrganization.current !== targetOrganizationId) return;
       if (exception instanceof ApiError && exception.status === 409) {
         setSaveError('Another editor saved a newer dashboard revision. Your local draft was not overwritten.');
+        setRecoverySelected([]);
+        setRecoveryNotice('');
         try {
           const current = await dashboardApi.find(targetOrganizationId, activeDashboard.id);
           if (activeOrganization.current === targetOrganizationId) setDashboardConflict(current);
@@ -692,12 +713,78 @@ export default function App() {
   async function inspectCurrentDashboard() {
     if (!activeDashboard || saving) return;
     const org = organizationId;
+    setSaving(true);
     try {
+      const memberships = await dashboardApi.organizations();
+      if (activeOrganization.current !== org) return;
+      setOrganizations(memberships);
+      if (!memberships.some(item => item.id === org && (item.role === 'owner' || item.role === 'editor')))
+        throw new Error('Editing permission unavailable');
       const latest = await dashboardApi.find(org, activeDashboard.id);
-      if (activeOrganization.current === org) setDashboardConflict(latest);
+      if (activeOrganization.current === org) {
+        setRecoverySelected([]);
+        setDashboardConflict(latest);
+        setRecoveryNotice('Latest saved revision checked. Review changes before recovery.');
+      }
     } catch {
-      if (activeOrganization.current === org) setDashboardConflict('unavailable');
-    }
+      if (activeOrganization.current === org) {
+        setDashboardConflict('unavailable');
+        setRecoverySelected([]);
+        setRecoveryNotice('Latest authorized editing access could not be confirmed. The draft has not changed.');
+      }
+    } finally { setSaving(false); }
+  }
+
+  // Recovery always rechecks editor permission and obtains a fresh authorized
+  // revision. Any new revision restarts review rather than applying old choices.
+  async function recoverSelectedDashboardChanges() {
+    if (!activeDashboard || !draft || dashboardConflict === null
+      || dashboardConflict === 'unavailable' || saving || !recoverySelected.length || !canEdit) return;
+    const org = organizationId;
+    const reviewed = dashboardConflict;
+    setSaving(true);
+    setRecoveryNotice('');
+    try {
+      const memberships = await dashboardApi.organizations();
+      if (activeOrganization.current !== org) return;
+      setOrganizations(memberships);
+      if (!memberships.some(item => item.id === org && (item.role === 'owner' || item.role === 'editor')))
+        throw new Error('Editing permission unavailable');
+      const latest = await dashboardApi.find(org, activeDashboard.id);
+      if (activeOrganization.current !== org) return;
+      if (latest.revision !== reviewed.revision
+        || JSON.stringify([latest.name, latest.description, latest.widgets])
+          !== JSON.stringify([reviewed.name, reviewed.description, reviewed.widgets])) {
+        setDashboardConflict(latest);
+        setRecoverySelected([]);
+        setRecoveryNotice('A newer revision arrived during review. Your original draft remains intact; review the updated differences.');
+        return;
+      }
+      const recovered = recoverDashboardChanges(activeDashboard, draft, latest, recoverySelected);
+      if (!window.confirm('Recover the selected changes onto the latest saved dashboard? All unselected local changes, including manual reordering, will be left out. You must Save changes separately.')) return;
+      setDashboardList(current => current?.organizationId === org
+        ? { ...current, items: current.items.map(item => item.id === latest.id ? latest : item) } : current);
+      setDraft(recovered);
+      resetWidgetUndo();
+      setDashboardConflict(null);
+      setRecoverySelected([]);
+      setSaveError('');
+      setRecoveryNotice('');
+      setToast('Selected edits recovered locally. Review the draft and choose Save changes to commit.');
+      window.requestAnimationFrame(() => saveChangesButton.current?.focus());
+    } catch (exception) {
+      if (activeOrganization.current !== org) return;
+      if (exception instanceof Error && exception.message.startsWith('Recovery ')) {
+        setRecoveryNotice(exception.message);
+      } else if (exception instanceof Error && exception.message.includes('24-visualization')) {
+        setRecoveryNotice(exception.message);
+      } else {
+        // Cannot treat a local draft as authorization to obtain a new revision.
+        setDashboardConflict('unavailable');
+        setRecoverySelected([]);
+        setRecoveryNotice('Latest authorized editing access could not be confirmed. Your original draft remains available.');
+      }
+    } finally { setSaving(false); }
   }
 
   async function removeDashboard(dashboard: Dashboard) {
@@ -1025,14 +1112,33 @@ export default function App() {
                 </div>
                 {editMode && <>{(Boolean(draft?.widgets.length) || hasChanges) && <div className="composition-status"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Undo and Redo reverse widget edits in this tab. Save changes to keep your dashboard draft; library templates save separately.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}<span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{undoFeedback}</span></>}
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available in this tab.</div>}
-                {dashboardConflict && editMode && <section className="conflict-recovery" aria-label="Dashboard conflict recovery">
+                {dashboardConflict && editMode && <section ref={dashboardConflictRegion} className="conflict-recovery" aria-label="Dashboard conflict recovery" tabIndex={-1}>
+                  <h2>Review newer dashboard changes</h2>
                   {dashboardConflict === 'unavailable'
-                    ? <p>The latest dashboard could not be read with your current access. Keep this draft open and check access or try again.</p>
-                    : <p>Opened at revision {activeDashboard?.revision}; latest saved revision {dashboardConflict.revision}: <strong>{dashboardConflict.name}</strong> ({dashboardConflict.widgets.length} visualizations). Your draft remains unchanged.</p>}
+                    ? <p>The latest dashboard or editing permission could not be confirmed. Your draft is still in this tab. Check access or try again; no recovery or save is allowed yet.</p>
+                    : <><p>Opened at revision {activeDashboard?.revision}; latest saved revision {dashboardConflict.revision}: <strong>{dashboardConflict.name}</strong> ({dashboardConflict.widgets.length} visualizations). Your unsaved draft remains unchanged.</p>
+                      {conflictReview && <><p className="conflict-summary">Your independent edits: {conflictReview.compatible.length}. Changes by another editor: {conflictReview.remote.length}. Overlapping edits: {conflictReview.overlapping.length}. Manual ordering: {conflictReview.manual.length}. Already saved: {conflictReview.alreadySaved.length}.</p>
+                        <details className="conflict-details"><summary>Review differences and choose edits to recover</summary>
+                          <p>Only independent fields or complete dashboard-local visualizations can be reapplied. Remote edits and ordering are preserved; overlapping edits require manual reconciliation.</p>
+                          <div className="conflict-change-list">
+                            {conflictReview.changes.length === 0 && <p>No differences remain. Reload the latest dashboard if you no longer need this draft.</p>}
+                            {conflictReview.changes.map(change => <div className="conflict-change" key={change.key}>
+                              {change.status === 'compatible'
+                                ? <label><input type="checkbox" checked={recoverySelected.includes(change.key)} onChange={event => setRecoverySelected(previous => event.target.checked ? [...previous, change.key] : previous.filter(key => key !== change.key))} /><strong>{change.label}</strong> <span>(available to recover)</span></label>
+                                : <strong>{change.label} <span>({change.status === 'overlapping' ? 'overlapping' : change.status === 'manual' ? 'manual reordering' : change.status === 'remote' ? 'saved remotely' : 'already saved'})</span></strong>}
+                              <p>{change.detail}</p>
+                            </div>)}
+                          </div>
+                        </details></>}
+                    </>}
+                  {recoveryNotice && <p className="conflict-notice" role="status">{recoveryNotice}</p>}
                   <div className="conflict-recovery-actions">
                     {dashboardConflict === 'unavailable'
                       ? <button type="button" className="button button-light" disabled={saving} onClick={() => void inspectCurrentDashboard()}>Check latest version</button>
-                      : <button type="button" className="button button-light" disabled={saving} onClick={() => void reloadCurrentDashboard()}>Reload latest (discard draft)</button>}
+                      : <><button type="button" className="button button-primary" disabled={saving || !canEdit || !recoverySelected.some(key => conflictReview?.compatible.some(change => change.key === key))} onClick={() => void recoverSelectedDashboardChanges()}>Recover selected edits ({recoverySelected.filter(key => conflictReview?.compatible.some(change => change.key === key)).length})</button>
+                        <button type="button" className="button button-light" disabled={saving} onClick={() => { setRecoveryNotice('Your original draft is still open. Save stays blocked until you recover or reload the latest revision.'); mainContent.current?.querySelector<HTMLInputElement>('.dashboard-heading .title-edit')?.focus(); }}>Keep editing original draft</button>
+                        <button type="button" className="button button-light" disabled={saving} onClick={() => void inspectCurrentDashboard()}>Check latest version</button>
+                        <button type="button" className="button button-light" disabled={saving} onClick={() => void reloadCurrentDashboard()}>Reload latest (discard draft)</button></>}
                   </div>
                 </section>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
