@@ -23,6 +23,12 @@ Screenshots: `ux31-discovered`, `ux31-library-preview`, `ux31-added-copy`, `ux31
 
 Existing regression coverage must continue: NUnit, Vitest, frontend production build, evaluation lab, all Playwright, and real SQL Server/PostgreSQL integration. Require both C# and JavaScript/TypeScript CodeQL checks; verify them again on final squash-merged main.
 
+## First CI and browser review findings
+
+Initial PR run [Verify #44976715802](https://github.com/infoconex/analytics-dashboard/actions/runs/44976715802) passed 145 NUnit, 132 Vitest, production build, UX lab, 14 real SQL Server/PostgreSQL integration, and 158/159 Playwright. Both CodeQL languages passed. One older UX-29 responsive accessibility test detected `color-contrast` while an expanded preview was visible: it is a genuine release blocker, not an ignored test.
+
+Actual sample-only UX-31 screenshots at 320, 390, 720, 768 and 1440px were downloaded and inspected. The 320px expanded-preview image showed its top controls scrolled out of view despite Preview retaining DOM focus. The UX-31 correction scrolls the preview heading instead of the entire oversized panel to keep the invoking control visible, adds a positive Playwright in-viewport check for Preview, and increases Clear filters link contrast from approximately 3.86:1 to 5.09:1 on white. The AXE assertion now reports offending element snippets for actionable diagnosis if a remaining violation is exposed. No accessibility failures are waived. Repeat screenshot review on final PR head is mandatory before merge.
+
 ## Security and architecture
 
 No server/API/schema, tenancy, persistence, authentication, data-provider, or embed behavior changes. All templates continue to be scoped to authorized organizations, added copies remain independent, and server-side role/revision checks remain authoritative. Focus restoration uses only transient DOM state and verifies the organization/dashboard; it cannot grant permissions or navigate through authorization. Existing unsaved-work prompts, conflict recovery, and navigation history remain unchanged.
