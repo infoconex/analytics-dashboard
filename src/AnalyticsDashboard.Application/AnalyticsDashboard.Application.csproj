@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="../AnalyticsDashboard.Domain/AnalyticsDashboard.Domain.csproj" />
-  </ItemGroup>
-</Project>

@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-  <ItemGroup>
-    <ProjectReference Include="../AnalyticsDashboard.Application/AnalyticsDashboard.Application.csproj" />
-    <ProjectReference Include="../AnalyticsDashboard.Infrastructure/AnalyticsDashboard.Infrastructure.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
-  </ItemGroup>
-</Project>
