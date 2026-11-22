@@ -19,7 +19,7 @@ import { WidgetTile } from './WidgetTile';
 import { DataSourcesPage } from './DataSourcesPage';
 import { ExplorePage } from './ExplorePage';
 import { VisualizationGallery } from './VisualizationGallery';
-import { VisualizationLibraryPicker } from './VisualizationLibraryPicker';
+import { VisualizationLibraryPicker, initialLibraryDiscoveryContext, type LibraryDiscoveryContext } from './VisualizationLibraryPicker';
 import { Button } from './ui/Button';
 import { ModalDialog } from './ui/ModalDialog';
 import { isSupportedAppHash, organizationHash, parseOrganizationHash } from './organizationRoute';
@@ -78,6 +78,7 @@ export default function App() {
   const widgetBaseline = useRef<{ widget: DashboardWidget; description: string } | null>(null);
   const [library, setLibrary] = useState<{ organizationId: string; items: SavedVisualization[] } | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryDiscovery, setLibraryDiscovery] = useState<LibraryDiscoveryContext>(initialLibraryDiscoveryContext);
   const [libraryBusy, setLibraryBusy] = useState(false);
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [libraryError, setLibraryError] = useState('');
@@ -172,6 +173,7 @@ export default function App() {
   useEffect(() => {
     setSearch(''); setQuestionFilter(''); setDashboardOrder('recent'); setSelectedTask(null);
     setLibrary(null); setLibraryOpen(false); setLibraryEditing(null); setLibrarySource(null);
+    setLibraryDiscovery(initialLibraryDiscoveryContext);
     setLibraryError(''); setLibraryLoading(false);
     widgetBaseline.current = null;
     resetWidgetUndo(); setReturnToLibrary(false);
@@ -702,9 +704,10 @@ export default function App() {
     setShareRequest({ dashboard, organizationName: membership.name, filters: { ...selectedFilters }, widget });
   }
 
-  async function openSavedLibrary() {
+  async function openSavedLibrary(preserveDiscovery = false) {
     const org = organizationId;
     if (!canEdit || !org || !editMode) return;
+    if (!preserveDiscovery) setLibraryDiscovery(initialLibraryDiscoveryContext);
     setLibraryError('');
     setLibraryOpen(true);
     setLibraryLoading(true);
@@ -867,7 +870,7 @@ export default function App() {
       setWidgetDraft(null);
       setTemplateConflict(null);
       setLibraryOpen(true);
-      void openSavedLibrary();
+      void openSavedLibrary(true);
     }
   }
 
@@ -1069,8 +1072,9 @@ export default function App() {
 
       {libraryOpen && editMode && draft && <VisualizationLibraryPicker
         key={organizationId} organizationId={organizationId} items={library?.organizationId === organizationId ? library.items : []}
+        context={libraryDiscovery} onContextChange={setLibraryDiscovery}
         loading={libraryLoading} error={libraryError} busy={libraryBusy}
-        onRetry={() => void openSavedLibrary()} onDismiss={() => setLibraryOpen(false)}
+        onRetry={() => void openSavedLibrary(true)} onDismiss={() => setLibraryOpen(false)}
         onCreate={() => { setLibraryOpen(false); beginWidgetEditor(createWidget(), null, true); }}
         onUse={useSavedVisualization} onEdit={editSavedVisualization} onDelete={saved => void deleteSavedVisualization(saved)} />}
 
