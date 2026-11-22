@@ -176,6 +176,25 @@ document.addEventListener('click', event => {
   }
   render();
 });
+// The host controls its own history. Intercept only its known navigation links
+// so native same-page anchor focusing cannot steal focus back after a view
+// transition hides the original anchor target. Modifier clicks remain native.
+document.addEventListener('click', event => {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey
+      || event.altKey || event.shiftKey) return;
+  const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
+  if (!link || !link.matches('.host-nav a, .host-dashboard-link, .host-return-account, #host-account-panel a, .host-exit a')) return;
+  const destination = link.getAttribute('href');
+  if (!destination || !parseHostView(destination)) return;
+  event.preventDefault();
+  if (window.location.hash !== destination) {
+    window.history.pushState(window.history.state, '', destination);
+  }
+  render();
+  if (destination === '#analytics-section' && lastRenderedPage === 'insights') {
+    insights.scrollIntoView({ block: 'start' });
+  }
+});
 window.addEventListener('hashchange', render);
 window.addEventListener('popstate', render);
 retry.addEventListener('click', () => { void loadDashboards(); });
