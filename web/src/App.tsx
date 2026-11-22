@@ -11,7 +11,7 @@ import { dashboardApi, visualizationApi } from './api';
 import { copySavedVisualization, duplicateWidget, hasDashboardChanges } from './composition';
 import { captureWidgetChange, emptyWidgetHistory, redoWidgetChange, undoWidgetChange } from './dashboardUndo';
 import { widgetEditorHasChanges } from './authoringWorkflow';
-import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics, selectRows } from './demoData';
+import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics } from './demoData';
 import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
 import { ApiError, type CurrentIdentity, type Dashboard, type DashboardDraft, type DashboardWidget, type DatasetKey, type Membership, type SavedVisualization, type WidgetKind } from './model';
 import { DashboardConsumer } from './DashboardConsumer';
@@ -31,7 +31,8 @@ import { DashboardTaskGuide } from './DashboardTaskGuide';
 import { ShareContextDialog } from './ShareContextDialog';
 import { defaultConsumerFilters } from './consumerFilters';
 import type { ConsumerFilters } from './consumerFilters';
-import { suggestedDimension, visualizationProblem } from './visualizationSemantics';
+import { suggestedDimension } from './visualizationSemantics';
+import { sampleConfigurationIssue } from './sampleAvailability';
 import { chartAppearance, compatibleAppearance, layoutForChangedKind, withAppearance } from './visualizationAppearance';
 
 type Page = 'overview' | 'explore' | 'dashboards' | 'sources' | 'settings';
@@ -76,6 +77,7 @@ export default function App() {
   const [returnToLibrary, setReturnToLibrary] = useState(false);
   const [widgetDraft, setWidgetDraft] = useState<DashboardWidget | null>(null);
   const widgetBaseline = useRef<{ widget: DashboardWidget; description: string } | null>(null);
+  const widgetEditorInitialFocus = useRef('.gallery-card');
   const [library, setLibrary] = useState<{ organizationId: string; items: SavedVisualization[] } | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryDiscovery, setLibraryDiscovery] = useState<LibraryDiscoveryContext>(initialLibraryDiscoveryContext);
@@ -229,6 +231,7 @@ export default function App() {
 
   function beginWidgetEditor(widget: DashboardWidget, template: SavedVisualization | null = null, backToLibrary = false) {
     widgetBaseline.current = { widget: structuredClone(widget), description: template?.description ?? '' };
+    widgetEditorInitialFocus.current = sampleConfigurationIssue(widget) ? '[data-repair-summary]' : '.gallery-card';
     setWidgetDraft({ ...widget, appearance: widget.appearance ? { ...widget.appearance } : undefined });
     setLibraryEditing(template);
     setTemplateConflict(null);
@@ -249,6 +252,7 @@ export default function App() {
     setLibraryError('');
     setReturnToLibrary(false);
     if (backToLibrary) setLibraryOpen(true);
+    else if (widgetDraft && draft?.widgets.some(item => item.id === widgetDraft.id)) focusDraftWidget(widgetDraft.id);
   }
 
   function dismissCreateDashboard() {
@@ -287,6 +291,14 @@ export default function App() {
     focusAfterEditTransition.current = openGallery ? null : 'edit';
     setEditMode(true);
     if (openGallery) beginWidgetEditor(createWidget());
+  }
+
+  function beginVisualizationRepair(widget: DashboardWidget) {
+    if (!canEdit || !activeDashboard || editMode || !activeDashboard.widgets.some(item => item.id === widget.id)) return;
+    startEditing();
+    // A modal is about to own focus; do not focus an inert dashboard title.
+    focusAfterEditTransition.current = null;
+    beginWidgetEditor(widget);
   }
 
   useEffect(() => {
@@ -826,7 +838,7 @@ export default function App() {
   }
 
   async function finishWidgetEdit() {
-    if (!widgetDraft || !draft || libraryBusy) return;
+    if (!widgetDraft || !draft || libraryBusy || sampleConfigurationIssue(widgetDraft)) return;
     if (libraryEditing) {
       const org = organizationId;
       if (templateConflict) return; // The user must explicitly reload a newer revision.
@@ -880,7 +892,7 @@ export default function App() {
       // The first empty-state action unmounts when its widget is added.
       // Place focus on the next required action instead of losing it to <body>.
       if (firstVisualization) window.requestAnimationFrame(() => saveChangesButton.current?.focus());
-      else if (changed) focusDraftWidget(widgetDraft.id);
+      else focusDraftWidget(widgetDraft.id);
     }
   }
 
@@ -912,11 +924,14 @@ export default function App() {
   const overviewIcons = [<BarChart3 size={20} />, <FolderKanban size={20} />, <Users size={20} />, <Activity size={20} />];
   const overviewColors = ['blue', 'violet', 'mint', 'peach'];
 
-  const widgetDraftProblem = widgetDraft ? visualizationProblem(widgetDraft, selectRows(widgetDraft.datasetKey, '12m')) : null;
+  const widgetDraftIssue = widgetDraft ? sampleConfigurationIssue(widgetDraft) : null;
+  const widgetDraftProblem = widgetDraftIssue?.explanation ?? null;
+  const supportedMetrics = widgetDraft && Array.isArray(metrics[widgetDraft.datasetKey]) ? metrics[widgetDraft.datasetKey] : [];
+  const supportedDimension = widgetDraft && Object.hasOwn(dimensions, widgetDraft.datasetKey) ? dimensions[widgetDraft.datasetKey] : null;
 
   function selectVisualizationKind(kind: WidgetKind) {
     if (!widgetDraft) return;
-    setWidgetDraft({ ...widgetDraft, kind, ...layoutForChangedKind(widgetDraft, kind), dimensionKey: suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey),
+    setWidgetDraft({ ...widgetDraft, kind, ...layoutForChangedKind(widgetDraft, kind), dimensionKey: supportedMetrics.length ? suggestedDimension(kind, widgetDraft.datasetKey, widgetDraft.metricKey) : widgetDraft.dimensionKey,
       appearance: compatibleAppearance(widgetDraft.appearance, kind, widgetDraft.datasetKey) });
   }
 
@@ -1022,7 +1037,7 @@ export default function App() {
                 </section>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
                   && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onEdit={widget => beginWidgetEditor(widget)} onAdd={() => beginWidgetEditor(createWidget())}
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onRepair={beginVisualizationRepair} onEdit={widget => beginWidgetEditor(widget)} onAdd={() => beginWidgetEditor(createWidget())}
                    onAddSaved={() => void openSavedLibrary()}
                    onDuplicate={widget => { if (draft) commitWidgets(duplicateWidget(draft.widgets, widget.id, crypto.randomUUID())); }}
                    onSaveToLibrary={offerSaveToLibrary} onChange={commitWidgets}
@@ -1119,7 +1134,7 @@ export default function App() {
       {widgetDraft && editMode && draft && <ModalDialog title={libraryEditing ? 'Edit saved visualization' : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Edit dashboard visualization' : 'Configure visualization'}
         eyebrow="VISUALIZATION BUILDER · SAMPLE DATA"
         description={libraryEditing ? 'Save template updates this reusable library definition immediately. Existing dashboard copies remain unchanged.' : 'Apply the preview to this dashboard draft. Then choose Save changes on the dashboard to persist it.'}
-        className="visualization-modal" initialFocus=".gallery-card" busy={libraryBusy}
+        className="visualization-modal" initialFocus={widgetEditorInitialFocus.current} busy={libraryBusy}
         onDismiss={dismissVisualizationEditor}>
         <nav className="authoring-context" aria-label="Authoring location">
           <span>Dashboard draft</span><span aria-hidden="true">›</span>
@@ -1129,6 +1144,11 @@ export default function App() {
         <p className="authoring-persistence-note">{libraryEditing
           ? 'Save template writes to the library now; existing dashboard copies are not modified. Cancel returns to the library.'
           : 'Update visualization / Add to dashboard changes only the current draft. Dashboard Save changes is still required.'}</p>
+        {widgetDraftIssue && <section className="visualization-repair-summary" data-repair-summary tabIndex={-1} role="group" aria-label="Configuration needs review">
+          <strong>Configuration needs review</strong>
+          <p id="visualization-repair-problem" role="alert">{widgetDraftIssue.explanation} The original saved values are retained until you choose replacements. Preview is unavailable and Update visualization is disabled until the configuration is valid.</p>
+          {widgetDraftIssue.field === 'kind' && <p>Saved chart type: <code>{widgetDraft.kind}</code>. Changing the chart type is optional if the metric can instead be made compatible.</p>}
+        </section>}
         <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
         {libraryEditing && <label className="form-label">Template description<textarea maxLength={500} rows={2}
           value={libraryDescription} onChange={event => setLibraryDescription(event.target.value)} /></label>}
@@ -1147,9 +1167,22 @@ export default function App() {
         <section className="visualization-data-fields" aria-label="Data and measures">
           <h2>Data and measures</h2>
           <p>Choose an existing fictional sample dataset and measure. Only supported field combinations are available.</p>
-        <label className="form-label">Dataset<select value={widgetDraft.datasetKey} onChange={event => { const datasetKey = event.target.value as DatasetKey; const metricKey = metrics[datasetKey][0]?.key ?? 'orders'; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey, dimensionKey: suggestedDimension(widgetDraft.kind, datasetKey, metricKey), appearance: compatibleAppearance(widgetDraft.appearance, widgetDraft.kind, datasetKey) }); }}>{datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
-        <label className="form-label">{widgetDraft.kind === 'scatter' ? 'Vertical measure' : 'Metric'}<select value={widgetDraft.metricKey} onChange={event => { const metricKey = event.target.value; setWidgetDraft({ ...widgetDraft, metricKey, dimensionKey: widgetDraft.kind === 'scatter' && widgetDraft.dimensionKey === metricKey ? suggestedDimension('scatter', widgetDraft.datasetKey, metricKey) : widgetDraft.dimensionKey }); }}>{(metrics[widgetDraft.datasetKey] ?? []).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
-        {widgetDraft.kind === 'scatter' && <label className="form-label">Horizontal measure<select value={widgetDraft.dimensionKey} onChange={event => setWidgetDraft({ ...widgetDraft, dimensionKey: event.target.value })}>{metrics[widgetDraft.datasetKey].filter(item => item.key !== widgetDraft.metricKey).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>}
+        <label className="form-label">Dataset<select value={widgetDraft.datasetKey} aria-invalid={widgetDraftIssue?.field === 'dataset' || undefined} aria-describedby={widgetDraftIssue?.field === 'dataset' ? 'visualization-repair-problem' : undefined} onChange={event => { const datasetKey = event.target.value as DatasetKey; const metricKey = metrics[datasetKey][0]?.key ?? 'orders'; setWidgetDraft({ ...widgetDraft, datasetKey, metricKey, dimensionKey: suggestedDimension(widgetDraft.kind, datasetKey, metricKey), appearance: compatibleAppearance(widgetDraft.appearance, widgetDraft.kind, datasetKey) }); }}>
+          {!datasetOptions.some(item => item.key === widgetDraft.datasetKey) && <option value={widgetDraft.datasetKey}>Unsupported saved source: {widgetDraft.datasetKey}</option>}
+          {datasetOptions.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        {!datasetOptions.some(item => item.key === widgetDraft.datasetKey) && <p className="visualization-saved-key">Original saved source key: <code>{widgetDraft.datasetKey}</code></p>}
+        <label className="form-label">{widgetDraft.kind === 'scatter' ? 'Vertical measure' : 'Metric'}<select value={widgetDraft.metricKey} aria-invalid={widgetDraftIssue?.field === 'metric' || undefined} aria-describedby={widgetDraftIssue?.field === 'metric' ? 'visualization-repair-problem' : undefined} onChange={event => { const metricKey = event.target.value; setWidgetDraft({ ...widgetDraft, metricKey, dimensionKey: widgetDraft.kind === 'scatter' && widgetDraft.dimensionKey === metricKey ? suggestedDimension('scatter', widgetDraft.datasetKey, metricKey) : widgetDraft.dimensionKey }); }}>
+          {!supportedMetrics.some(item => item.key === widgetDraft.metricKey) && <option value={widgetDraft.metricKey}>Unsupported saved metric: {widgetDraft.metricKey}</option>}
+          {supportedMetrics.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        {!supportedMetrics.some(item => item.key === widgetDraft.metricKey) && <p className="visualization-saved-key">Original saved metric key: <code>{widgetDraft.metricKey}</code></p>}
+        {widgetDraft.kind === 'scatter' && <><label className="form-label">Horizontal measure<select value={widgetDraft.dimensionKey} aria-invalid={widgetDraftIssue?.field === 'dimension' || undefined} aria-describedby={widgetDraftIssue?.field === 'dimension' ? 'visualization-repair-problem' : undefined} onChange={event => setWidgetDraft({ ...widgetDraft, dimensionKey: event.target.value })}>
+          {!supportedMetrics.some(item => item.key === widgetDraft.dimensionKey && item.key !== widgetDraft.metricKey) && <option value={widgetDraft.dimensionKey}>Unsupported saved horizontal measure: {widgetDraft.dimensionKey}</option>}
+          {supportedMetrics.filter(item => item.key !== widgetDraft.metricKey).map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        {!supportedMetrics.some(item => item.key === widgetDraft.dimensionKey && item.key !== widgetDraft.metricKey) && <p className="visualization-saved-key">Original saved horizontal measure key: <code>{widgetDraft.dimensionKey}</code></p>}</>}
+        {widgetDraft.kind !== 'scatter' && <div className="visualization-dimension">
+          <strong>Dimension:</strong> {widgetDraft.dimensionKey}
+          {widgetDraftIssue?.field === 'dimension' && supportedDimension && <button type="button" className="widget-recovery" aria-describedby="visualization-repair-problem" onClick={() => setWidgetDraft({ ...widgetDraft, dimensionKey: supportedDimension })}>Use supported dimension: {supportedDimension}</button>}
+        </div>}
         </section>
         <details className="visualization-appearance">
           <summary>Appearance (optional)</summary>
@@ -1177,7 +1210,7 @@ export default function App() {
           <WidgetTile widget={widgetDraft} period="12m" preview />
         </section>
         </div>
-        {widgetDraftProblem && <p role="alert" className="error-banner">{widgetDraftProblem}</p>}
+
         <div className="modal-actions"><Button variant="light" disabled={libraryBusy} onClick={dismissVisualizationEditor}>Cancel</Button><Button disabled={libraryBusy || Boolean(templateConflict) || !widgetDraft.title.trim() || Boolean(widgetDraftProblem)} onClick={() => void finishWidgetEdit()}><Check size={16} /> {libraryEditing ? (libraryBusy ? 'Saving…' : 'Save template') : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Update visualization' : 'Add to dashboard'}</Button></div>
       </ModalDialog>}
     </div>

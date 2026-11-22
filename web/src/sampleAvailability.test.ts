@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sampleAvailability, summarizeSampleAvailability } from './sampleAvailability';
+import { sampleAvailability, sampleConfigurationIssue, summarizeSampleAvailability } from './sampleAvailability';
 import type { DashboardWidget } from './model';
 
 const revenue: DashboardWidget = {
@@ -29,6 +29,22 @@ describe('fictional widget data availability', () => {
   it('rejects invalid saved measures and unsafe chart aggregations independently', () => {
     expect(sampleAvailability({ ...revenue, metricKey: 'unrecognized' }, defaults).state).toBe('unavailable');
     expect(sampleAvailability({ ...channels, kind: 'donut', metricKey: 'conversion' }, defaults).state).toBe('unavailable');
+  });
+  it('pinpoints invalid saved source, metric, axis and chart compatibility without changing fields', () => {
+    const missingSource = { ...revenue, datasetKey: 'future-source' as DashboardWidget['datasetKey'] };
+    expect(sampleConfigurationIssue(missingSource)?.field).toBe('dataset');
+    expect(sampleConfigurationIssue({ ...revenue, metricKey: 'legacy' })?.field).toBe('metric');
+    expect(sampleConfigurationIssue({ ...revenue, dimensionKey: 'channel' })?.field).toBe('dimension');
+    expect(sampleConfigurationIssue({ ...channels, kind: 'donut', metricKey: 'conversion' })?.field).toBe('kind');
+    expect(sampleConfigurationIssue({ ...channels, kind: 'not-a-chart' as DashboardWidget['kind'] })?.field).toBe('kind');
+    expect(sampleConfigurationIssue({ ...channels, kind: 'scatter', dimensionKey: 'orders' })?.field).toBe('dimension');
+    expect(sampleConfigurationIssue(channels)).toBeNull();
+    expect(missingSource.datasetKey).toBe('future-source');
+    for (const key of ['__proto__', 'constructor', 'toString']) {
+      const widget = { ...revenue, datasetKey: key as DashboardWidget['datasetKey'] };
+      expect(sampleConfigurationIssue(widget)?.field).toBe('dataset');
+      expect(sampleAvailability(widget, defaults).state).toBe('unavailable');
+    }
   });
   it('summarizes mixed cards without interpreting unmatched records as a zero total', () => {
     expect(summarizeSampleAvailability([

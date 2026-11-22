@@ -65,6 +65,7 @@ interface Props {
   total?: number;
   editing?: boolean;
   onEdit?: (widget: DashboardWidget) => void;
+  onRepair?: (widget: DashboardWidget) => void;
   onRemove?: (id: string) => void;
   onDuplicate?: (widget: DashboardWidget) => void;
   onSaveToLibrary?: (widget: DashboardWidget) => void;
@@ -75,7 +76,7 @@ interface Props {
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function WidgetTile({ widget, period, preview, position, total, editing, onEdit, onRemove, onDuplicate, onSaveToLibrary, filters, onChannelSelect, onPeriodReset, onReturnToIndex, onShareInsight }: Props) {
+export function WidgetTile({ widget, period, preview, position, total, editing, onEdit, onRepair, onRemove, onDuplicate, onSaveToLibrary, filters, onChannelSelect, onPeriodReset, onReturnToIndex, onShareInsight }: Props) {
   const [keyboardIndex, setKeyboardIndex] = useState(0);
   const [chartFocused, setChartFocused] = useState(false);
   const appearance = chartAppearance(widget);
@@ -98,7 +99,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
   const context = sampleMetricContext(widget.datasetKey, widget.metricKey, axis, data, filters);
   const problem = data.length ? visualizationProblem(widget, data) : null;
   const histogram = widget.kind === 'histogram' ? buildHistogram(data, widget.metricKey, appearance.histogramBins) : [];
-  const xMeasure = metrics[widget.datasetKey]?.find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
+  const xMeasure = (Array.isArray(metrics[widget.datasetKey]) ? metrics[widget.datasetKey] : []).find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
   const tooltipValue = (value: unknown) => formatChartTooltip(Number(value), metric);
   const axisValue = (value: number) => formatChartAxis(value, metric);
   const channelInteraction = widget.datasetKey === 'channels' && Boolean(onChannelSelect);
@@ -190,8 +191,11 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
             document.getElementById(headingId)?.focus({ preventScroll: true });
             onChannelSelect(filters.channel!);
           }}>Clear channel filter for {widget.title}</button>}
+        {!editing && availability.state === 'unavailable' && onRepair && <button type="button" className="widget-recovery" onClick={() => onRepair(widget)}>Review configuration for {widget.title}</button>}
         {editing && <div className="widget-actions">
-          <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
+          <button type="button" aria-label={availability.state === 'unavailable' ? `Review configuration for ${widget.title}` : `Edit ${widget.title}`}
+            className={availability.state === 'unavailable' ? 'widget-recovery' : 'icon-button'}
+            onClick={() => onEdit?.(widget)}>{availability.state === 'unavailable' ? 'Review configuration' : <Pencil size={15} />}</button>
             <button aria-label={`Duplicate ${widget.title}`} title="Duplicate on dashboard" className="icon-button" onClick={() => onDuplicate?.(widget)}><CopyPlus size={15} /></button>
             <button aria-label={`Save ${widget.title} to library`} title="Save reusable visualization" className="icon-button" onClick={() => onSaveToLibrary?.(widget)}><BookmarkPlus size={15} /></button>
           <button aria-label={`Remove ${widget.title}`} className="icon-button danger-hover" onClick={() => onRemove?.(widget.id)}><Trash2 size={15} /></button>

@@ -1006,3 +1006,21 @@ button:disabled { opacity:.6; }
   .widget-recovery { color:ButtonText; background:ButtonFace; border:1px solid ButtonText; }
   .widget-recovery:focus-visible { outline:3px solid Highlight; }
 }
+
+/* UX-37: inspection is a focused continuation of the existing builder, not a parallel repair flow. */
+.visualization-repair-summary { border:1px solid #d5a559; background:#fff8e9; color:#694819; border-radius:11px; padding:13px 16px; margin:0 0 16px; overflow-wrap:anywhere; }
+.visualization-repair-summary strong { display:block; font-size:13px; margin-bottom:5px; }
+.visualization-repair-summary p { margin:0; font-size:12px; line-height:1.6; }
+.visualization-repair-summary:focus-visible { outline:3px solid #5b6dca; outline-offset:3px; }
+.visualization-dimension { font-size:12px; line-height:1.6; margin:0 0 12px; color:#4c5d77; overflow-wrap:anywhere; }
+.visualization-dimension > .widget-recovery { display:block; margin-top:7px; text-align:left; white-space:normal; }
+.visualization-data-fields select[aria-invalid="true"] { border:2px solid #ab6032; }
+@media (forced-colors:active) {
+  .visualization-repair-summary { background:Canvas; border:2px solid Highlight; color:CanvasText; }
+  .visualization-data-fields select[aria-invalid="true"] { border:2px solid Highlight; }
+}
+
+/* Keep original unsupported legacy keys inspectable when native select text clips on narrow screens. */
+.visualization-saved-key { color:#475c78; font-size:11px; line-height:1.5; margin:-10px 0 16px; overflow-wrap:anywhere; }
+.visualization-saved-key code { font-family:ui-monospace, SFMono-Regular, Consolas, monospace; white-space:normal; overflow-wrap:anywhere; color:inherit; }
+@media (forced-colors:active) { .visualization-saved-key, .visualization-saved-key code { color:CanvasText; } }
