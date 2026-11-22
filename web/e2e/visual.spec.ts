@@ -89,7 +89,7 @@ async function assertNoDocumentOverflow(page: Page, width: number) {
   }).toBeLessThanOrEqual(width);
 }
 
-test.use({ video: 'on', trace: 'on', reducedMotion: 'reduce' });
+test.use({ video: process.env.CI ? 'retain-on-failure' : 'on', trace: process.env.CI ? 'retain-on-failure' : 'on', reducedMotion: 'reduce' });
 
 test('UX-20 chart has one sequential Tab stop and Space applies selected category', async ({ page }, info) => {
   await fixedDemoApi(page);

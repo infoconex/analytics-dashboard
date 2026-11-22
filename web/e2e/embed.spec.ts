@@ -56,7 +56,7 @@ async function assertNoOverflow(page: Page) {
   expect(sizes.scroll, `Document overflow: ${JSON.stringify(sizes)}`).toBeLessThanOrEqual(sizes.width + 1);
 }
 
-test.use({ trace: 'on', video: 'on', reducedMotion: 'reduce' });
+test.use({ trace: process.env.CI ? 'retain-on-failure' : 'on', video: process.env.CI ? 'retain-on-failure' : 'on', reducedMotion: 'reduce' });
 
 test('host integration preserves context, filtering, keyboard exit and standalone journey', async ({ page }, info) => {
   await page.setViewportSize({ width: 1440, height: 900 });

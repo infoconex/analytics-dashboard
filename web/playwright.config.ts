@@ -15,6 +15,8 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5173',
     browserName: 'chromium',
     headless: true,
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
       args: ['--no-sandbox'],

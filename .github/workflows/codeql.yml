@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: '23 12 * * 1'
 
+# New PR commits replace obsolete analysis; main and scheduled scans stay intact.
+concurrency:
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   security-events: write

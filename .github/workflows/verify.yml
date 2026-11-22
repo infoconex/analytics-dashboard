@@ -5,12 +5,17 @@ on:
   push:
     branches: [main]
 
+# A newer PR head supersedes older checks. Main pushes always run to completion.
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
 jobs:
   verify:
-    name: .NET, web and browser tests
+    name: .NET and web tests
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -23,85 +28,60 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Run locally reproducible verification
+      - name: Restore cached NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+      - name: Run locally reproducible .NET, web and fictional lab verification
         shell: pwsh
-        run: ./scripts/verify.ps1 -IncludeBrowserTests
-      - name: Publish sample-only UX screenshots and browser recordings
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: ux-visual-evidence
-          path: |
-            web/test-results/visual-*/**/*.png
-            web/test-results/visual-*/**/*.webm
-            web/test-results/visual-*/**/*.json
-            web/test-results/visual-*/**/trace.zip
-            web/test-results/visualizationAuthoring-*/**/*.png
-            web/test-results/visualizationAuthoring-*/**/*.json
-            web/test-results/visualizationAuthoring-*/**/trace.zip
-            web/test-results/visualizationReuse-*/**/*.png
-            web/test-results/visualizationReuse-*/**/*.json
-            web/test-results/visualizationReuse-*/**/trace.zip
-            web/test-results/dashboardActivation-*/**/*.png
-            web/test-results/dashboardActivation-*/**/*.json
-            web/test-results/dashboardActivation-*/**/trace.zip
-            web/test-results/ux29Discovery-*/**/*.png
-            web/test-results/ux29Discovery-*/**/*.json
-            web/test-results/ux29Discovery-*/**/trace.zip
-            web/test-results/ux30Navigation-*/**/*.png
-            web/test-results/ux30Navigation-*/**/*.json
-            web/test-results/ux30Navigation-*/**/trace.zip
-            web/test-results/ux31Workflows-*/**/*.png
-            web/test-results/ux31Workflows-*/**/*.json
-            web/test-results/ux31Workflows-*/**/trace.zip
-            web/test-results/embed-*/**/*.png
-            web/test-results/embed-*/**/*.webm
-            web/test-results/embed-*/**/*.json
-            web/test-results/embed-*/**/trace.zip
-            web/test-results/organization-*/**/*.png
-            web/test-results/organization-*/**/*.webm
-            web/test-results/organization-*/**/*.json
-            web/test-results/organization-*/**/trace.zip
-            web/test-results/discovery-*/**/*.png
-            web/test-results/discovery-*/**/*.webm
-            web/test-results/discovery-*/**/*.json
-            web/test-results/discovery-*/**/trace.zip
-            web/test-results/interpretation-*/**/*.png
-            web/test-results/interpretation-*/**/*.webm
-            web/test-results/interpretation-*/**/*.json
-            web/test-results/interpretation-*/**/trace.zip
-            web/test-results/handoff-*/**/*.png
-            web/test-results/handoff-*/**/*.webm
-            web/test-results/handoff-*/**/*.json
-            web/test-results/handoff-*/**/trace.zip
-            web/test-results/customerTasks-*/**/*.png
-            web/test-results/customerTasks-*/**/*.webm
-            web/test-results/customerTasks-*/**/*.json
-            web/test-results/customerTasks-*/**/trace.zip
-          if-no-files-found: warn
-          retention-days: 14
+        run: ./scripts/verify.ps1
 
-      - name: Publish focused UX-30 navigation evidence
+  browser:
+    name: Browser E2E (shard ${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Restore cached NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+      - name: Restore cached Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+      - name: Build isolated API and run Playwright shard
+        shell: pwsh
+        run: ./scripts/verify-browser.ps1 -ShardIndex ${{ matrix.shard }} -ShardTotal 2
+      - name: Publish sample-only screenshots and failure recordings
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: ux30-navigation-evidence
+          name: ux-visual-evidence-shard-${{ matrix.shard }}
           path: |
-            web/test-results/ux30Navigation-*/**/*.png
-            web/test-results/ux30Navigation-*/**/*.json
-            web/test-results/ux30Navigation-*/**/trace.zip
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Publish focused UX-31 workflow evidence
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: ux31-workflow-evidence
-          path: |
-            web/test-results/ux31Workflows-*/**/*.png
-            web/test-results/ux31Workflows-*/**/*.json
-            web/test-results/ux31Workflows-*/**/trace.zip
+            web/test-results/**/*.png
+            web/test-results/**/*.webm
+            web/test-results/**/*.json
+            web/test-results/**/trace.zip
           if-no-files-found: warn
           retention-days: 14
 
@@ -114,6 +94,13 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
+      - name: Restore cached NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
       - name: Start isolated provider fixtures with ephemeral passwords
         shell: bash
         run: bash ./scripts/start-provider-fixtures.sh
