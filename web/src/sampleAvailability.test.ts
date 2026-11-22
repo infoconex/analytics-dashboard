@@ -40,6 +40,11 @@ describe('fictional widget data availability', () => {
     expect(sampleConfigurationIssue({ ...channels, kind: 'scatter', dimensionKey: 'orders' })?.field).toBe('dimension');
     expect(sampleConfigurationIssue(channels)).toBeNull();
     expect(missingSource.datasetKey).toBe('future-source');
+    for (const key of ['__proto__', 'constructor', 'toString']) {
+      const widget = { ...revenue, datasetKey: key as DashboardWidget['datasetKey'] };
+      expect(sampleConfigurationIssue(widget)?.field).toBe('dataset');
+      expect(sampleAvailability(widget, defaults).state).toBe('unavailable');
+    }
   });
   it('summarizes mixed cards without interpreting unmatched records as a zero total', () => {
     expect(summarizeSampleAvailability([
