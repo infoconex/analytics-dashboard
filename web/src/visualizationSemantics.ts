@@ -1,4 +1,4 @@
-import { dimensions, metrics } from './demoData';
+import { dimensions, metrics, visualizations } from './demoData';
 import { sampleMetricContext } from './sampleInterpretation';
 import type { DashboardWidget, DatasetKey, WidgetKind } from './model';
 import { formatChartAxis } from './chartPresentation';
@@ -41,11 +41,10 @@ export function suggestedDimension(kind: WidgetKind, dataset: DatasetKey, metric
 }
 
 export function visualizationProblem(widget: DashboardWidget, rows: readonly Row[]): string | null {
+  if (!visualizations.some(item => item.key === widget.kind))
+    return 'This saved visualization type is not supported by the sample editor.';
   const metric = metrics[widget.datasetKey]?.find(item => item.key === widget.metricKey);
-  const context = sampleMetricContext(widget.datasetKey, widget.metricKey, dimensions[widget.datasetKey], [...rows]);
-  if (!metric || !context) return 'This metric or its fictional source rows are unavailable.';
-  if ((widget.kind === 'pie' || widget.kind === 'donut') && !context.additive)
-    return 'These values cannot be summed into meaningful parts of a whole.';
+  if (!metric) return 'The saved metric is not supported for this fictional dataset.';
   if (widget.kind === 'scatter') {
     if (widget.dimensionKey === widget.metricKey) return 'Choose different horizontal and vertical measures.';
     if (!metrics[widget.datasetKey].some(item => item.key === widget.dimensionKey) ||
@@ -54,6 +53,10 @@ export function visualizationProblem(widget: DashboardWidget, rows: readonly Row
   } else if (widget.dimensionKey !== dimensions[widget.datasetKey]) {
     return 'The selected dimension does not match the fictional dataset.';
   }
+  const context = sampleMetricContext(widget.datasetKey, widget.metricKey, dimensions[widget.datasetKey], [...rows]);
+  if (!context) return 'This metric cannot be calculated from the available fictional source rows.';
+  if ((widget.kind === 'pie' || widget.kind === 'donut') && !context.additive)
+    return 'These values cannot be summed into meaningful parts of a whole.';
   if (widget.kind === 'histogram' && !buildHistogram(rows, widget.metricKey, widget.appearance?.histogramBins ?? 4).length)
     return 'No usable numeric observations exist for this distribution.';
   return null;
