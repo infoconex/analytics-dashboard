@@ -8,7 +8,7 @@ The GitHub workflows are **declarative orchestration**. Commands and fixture lif
 - The PR classifier compares the **merge base** of the PR base/head SHAs, including deletion and rename paths, to select `backend`, `frontend`, `lab`, `browser`, `providers`, and CodeQL languages. Unexpected paths, absent diffs or CI/script/shared-config edits require **all** suites.
 - On `main` pushes and manual dispatches the classifier selects **all** suites even for documentation-only changes. CodeQL also runs both languages on weekly scheduled scans.
 - A stable `Gate | Required verification` job uses `always()` to ensure each selected suite succeeded and no required suite was silently skipped or failed. This gate does not validate CodeQL; CodeQL checks remain separately visible and should also be required in branch rules.
-- No `paths` or `paths-ignore` filters are placed on `CI | Verify`. Optional, historically expensive UX-13/14/16 labs retain their explicit path triggers and manual dispatch support.
+- No `paths` or `paths-ignore` filters are placed on `CI | Verify`. The permanent **Product comparison** and **Compose smoke** workflows retain explicit path triggers and manual dispatch support; the issue-number workflows have been retired.
 - **Security:** The classifier is a test-routing optimization, not an authorization boundary; use main-branch full verification and trusted reviews on workflow/policy changes. The GitHub App connection cannot update branch rules or configured required checks.
 
 ### PR impact policy
@@ -46,9 +46,8 @@ Multiple changed areas use the **union** of suites. We intentionally avoid test-
 
 ```bash
 bash scripts/ci/verify-providers.sh       # Docker, pwsh, local DB port availability
-bash scripts/ci/verify-ux13-lab.sh        # Isolated fictional Elastic lab
-bash scripts/ci/verify-ux14-lab.sh        # Isolated matched comparison lab
-bash scripts/ci/verify-owner-compose.sh  # Isolated fictional Compose smoke
+bash scripts/ci/verify-comparison-lab.sh # Pinned fictional Elastic and matched-task comparison
+bash scripts/ci/verify-compose-smoke.sh  # Fictional sample host and port smoke
 python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py'
 python3 scripts/ci/change-impact.py --files docs/example.md
 python3 scripts/ci/change-impact.py --files web/src/App.tsx
