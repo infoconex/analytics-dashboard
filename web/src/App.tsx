@@ -25,6 +25,7 @@ import { ModalDialog } from './ui/ModalDialog';
 import { isSupportedAppHash, organizationHash, parseOrganizationHash } from './organizationRoute';
 import { businessQuestions, findQuestionMatches, type QuestionMatch } from './dashboardDiscovery';
 import { discoverDashboards, savedDateLabel, type DiscoveryOrder } from './contentDiscovery';
+import { canRestoreCatalogReturn, readNavigationIndex, withNavigationIndex, type CatalogReturnPoint } from './navigationContinuity';
 import { DashboardStartingPoints } from './DashboardStartingPoints';
 import { DashboardTaskGuide } from './DashboardTaskGuide';
 import { ShareContextDialog } from './ShareContextDialog';
@@ -104,6 +105,20 @@ export default function App() {
   const skipNextHashPrompt = useRef(false);
   const acceptedHash = useRef(window.location.hash);
   const focusOnNavigation = useRef(false);
+  const catalogReturn = useRef<CatalogReturnPoint | null>(null);
+  const restoreCatalog = useRef(false);
+  const navigationIndex = useRef(readNavigationIndex(window.history.state) ?? 0);
+  const acceptedNavigationIndex = useRef(navigationIndex.current);
+  const reversingHistory = useRef(false);
+
+  // Mark visited hash entries without changing the URL or overwriting unrelated history state.
+  // A declined Back/Forward confirmation can then reverse the traversal rather than
+  // rewriting an existing history entry (which breaks subsequent Forward navigation).
+  useEffect(() => {
+    if (readNavigationIndex(window.history.state) === null) {
+      window.history.replaceState(withNavigationIndex(window.history.state, acceptedNavigationIndex.current), '', window.location.href);
+    }
+  }, []);
 
   const organization = organizations.find(item => item.id === organizationId);
   const canEdit = organization?.role === 'owner' || organization?.role === 'editor';
@@ -159,6 +174,8 @@ export default function App() {
     setLibraryError(''); setLibraryLoading(false);
     widgetBaseline.current = null;
     resetWidgetUndo(); setReturnToLibrary(false);
+    catalogReturn.current = null;
+    restoreCatalog.current = false;
   }, [organizationId]);
 
   useEffect(() => {
@@ -269,6 +286,10 @@ export default function App() {
 
   useEffect(() => {
     const handleHash = () => {
+      if (reversingHistory.current) {
+        reversingHistory.current = false;
+        return;
+      }
       const internalNavigation = skipNextHashPrompt.current;
       // navigate() has already changed view and cleared or initialized editing.
       // Reprocessing its hashchange would reset a freshly created dashboard editor.
@@ -278,11 +299,32 @@ export default function App() {
         return;
       }
       if (!confirmDiscard()) {
-        window.history.replaceState(null, '', acceptedHash.current || '#/');
+        const attemptedIndex = readNavigationIndex(window.history.state);
+        if (attemptedIndex !== null && attemptedIndex !== acceptedNavigationIndex.current) {
+          // Undo the actual traversal, including multi-entry Back/Forward jumps.
+          reversingHistory.current = true;
+          window.history.go(acceptedNavigationIndex.current - attemptedIndex);
+        } else {
+          // Manually entered hashes are not known history traversals.
+          window.history.replaceState(withNavigationIndex(window.history.state, acceptedNavigationIndex.current), '', acceptedHash.current || '#/');
+        }
         return;
       }
       skipNextHashPrompt.current = false;
+      const previousHash = acceptedHash.current;
       acceptedHash.current = window.location.hash;
+      const visitedIndex = readNavigationIndex(window.history.state);
+      if (visitedIndex !== null) {
+        acceptedNavigationIndex.current = visitedIndex;
+        navigationIndex.current = Math.max(navigationIndex.current, visitedIndex);
+      } else {
+        acceptedNavigationIndex.current = ++navigationIndex.current;
+        window.history.replaceState(withNavigationIndex(window.history.state, acceptedNavigationIndex.current), '', window.location.href);
+      }
+      const origin = catalogReturn.current;
+      restoreCatalog.current = Boolean(origin
+        && previousHash === organizationHash(origin.organizationId, 'dashboards', origin.dashboardId)
+        && window.location.hash === organizationHash(origin.organizationId, 'dashboards'));
       focusOnNavigation.current = true;
       const next = currentView();
       viewingSnapshot.current = null;
@@ -328,6 +370,8 @@ export default function App() {
   // guide owns focus when a customer explicitly chose a business question.
   useEffect(() => {
     if (!focusOnNavigation.current || loading) return;
+    // Catalog return restores focus to the opened card instead of an unrelated page heading.
+    if (restoreCatalog.current && view.page === 'dashboards' && !view.id) return;
     if (selectedTask?.organizationId === organizationId && selectedTask.dashboardId === view.id) {
       focusOnNavigation.current = false;
       return;
@@ -339,6 +383,29 @@ export default function App() {
     heading.scrollIntoView({ block: 'nearest', behavior: 'instant' });
     focusOnNavigation.current = false;
   }, [view, loading, selectedTask, organizationId, dashboardLoadFailed]);
+
+  useEffect(() => {
+    if (loading || !restoreCatalog.current || view.page !== 'dashboards' || view.id) return;
+    restoreCatalog.current = false;
+    const origin = catalogReturn.current;
+    const eligible = canRestoreCatalogReturn(origin, organizationId, dashboards);
+    const frame = window.requestAnimationFrame(() => {
+      const cards = mainContent.current?.querySelectorAll<HTMLElement>('.dashboard-card[data-dashboard-id]');
+      const card = eligible && origin
+        ? [...(cards ?? [])].find(item => item.dataset.dashboardId === origin.dashboardId)
+        : null;
+      const button = card?.querySelector<HTMLButtonElement>('.catalog-card-actions button');
+      if (button && origin) {
+        button.focus({ preventScroll: true });
+        window.scrollTo({ top: origin.scrollY, behavior: 'instant' });
+      } else {
+        const heading = mainContent.current?.querySelector<HTMLElement>('.page-heading h1');
+        heading?.focus({ preventScroll: true });
+      }
+      focusOnNavigation.current = false;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [view, organizationId, loading, dashboardList, search, questionFilter, dashboardOrder]);
 
   useEffect(() => {
     if (!hasPendingWork) return;
@@ -427,9 +494,17 @@ export default function App() {
     if (!justCreated && !confirmDiscard()) return;
     if (!organizations.some(item => item.id === nextOrganizationId)) return;
     const nextHash = organizationHash(nextOrganizationId, next, id);
+    const origin = catalogReturn.current;
+    restoreCatalog.current = Boolean(origin && view.id === origin.dashboardId
+      && organizationId === origin.organizationId && nextOrganizationId === origin.organizationId
+      && next === 'dashboards' && !id);
     focusOnNavigation.current = true;
     skipNextHashPrompt.current = window.location.hash !== nextHash;
-    window.location.hash = nextHash;
+    if (window.location.hash !== nextHash) {
+      window.location.hash = nextHash;
+      acceptedNavigationIndex.current = ++navigationIndex.current;
+      window.history.replaceState(withNavigationIndex(window.history.state, acceptedNavigationIndex.current), '', nextHash);
+    }
     acceptedHash.current = window.location.hash;
     if (nextOrganizationId !== organizationId) setOrganizationId(nextOrganizationId);
     setOrganizationNotice('');
@@ -459,6 +534,8 @@ export default function App() {
   }
 
   function openCatalogDashboard(dashboard: Dashboard) {
+    if (dashboard.organizationId !== organizationId || !dashboards.some(item => item.id === dashboard.id)) return;
+    catalogReturn.current = { organizationId, dashboardId: dashboard.id, scrollY: window.scrollY };
     const match = questionMatches.find(item => item.dashboard.id === dashboard.id);
     if (match && questionFilter) openQuestion(match, questionFilter);
     else navigate('dashboards', dashboard.id);
@@ -862,8 +939,8 @@ export default function App() {
             : view.id ? preview ? (
               <>
                 <div className="page-heading dashboard-heading">
-                  <div className="heading-left"><button className="back-button" aria-label="Back to dashboards" onClick={() => navigate('dashboards')}><ArrowLeft size={20} /></button>
-                    <div><div className="eyebrow">DASHBOARD <span>·</span> {editMode ? 'EDITING' : 'OVERVIEW'}</div>
+                  <div className="heading-left"><button className="back-button dashboard-return" aria-label="Back to dashboards" onClick={() => navigate('dashboards')}><ArrowLeft size={18} /><span>Dashboards</span></button>
+                    <div><div className="eyebrow">DASHBOARD <span>·</span> {editMode ? 'EDITING DRAFT' : 'VIEWING SAVED'}</div>
                       {editMode && draft ? <input className="title-edit" aria-label="Dashboard name" value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} /> : <h1>{preview.name}</h1>}
                       {editMode && draft ? <input className="description-edit" aria-label="Dashboard description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /> : <p>{preview.description}</p>}</div>
                   </div>
@@ -921,7 +998,7 @@ export default function App() {
                   <div className="list-count"><LayoutDashboard size={16} aria-hidden="true" /> {filtered.length} of {dashboards.length} dashboards</div>
                 </div>
                 {(search || questionFilter) && <div className="discovery-summary" role="status"><span>Showing {filtered.length} matching {filtered.length === 1 ? 'dashboard' : 'dashboards'}{questionFilter ? ` for “${businessQuestions.find(item => item.id === questionFilter)?.question}”` : ''}.</span><button type="button" className="text-link" onClick={() => { setSearch(''); setQuestionFilter(''); }}>Clear search and questions</button></div>}
-                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card">
+                <div className="dashboard-cards">{filtered.map((item, index) => <article key={item.id} className="dashboard-card" data-dashboard-id={item.id}>
                   <button className={`dashboard-thumbnail thumbnail-${index % 3}`} onClick={() => openCatalogDashboard(item)} aria-label={`Open ${item.name} — Fictional sample preview`}>
                     <div className="thumbnail-bars">{[38, 62, 48, 82, 68, 95, 75, 100, 80, 92, 71, 98].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div>
                     <div className="thumbnail-float"><ShieldCheck size={14} /> Fictional sample</div>
