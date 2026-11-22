@@ -77,6 +77,7 @@ export default function App() {
   const [returnToLibrary, setReturnToLibrary] = useState(false);
   const [widgetDraft, setWidgetDraft] = useState<DashboardWidget | null>(null);
   const widgetBaseline = useRef<{ widget: DashboardWidget; description: string } | null>(null);
+  const widgetEditorInitialFocus = useRef('.gallery-card');
   const [library, setLibrary] = useState<{ organizationId: string; items: SavedVisualization[] } | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryDiscovery, setLibraryDiscovery] = useState<LibraryDiscoveryContext>(initialLibraryDiscoveryContext);
@@ -230,6 +231,7 @@ export default function App() {
 
   function beginWidgetEditor(widget: DashboardWidget, template: SavedVisualization | null = null, backToLibrary = false) {
     widgetBaseline.current = { widget: structuredClone(widget), description: template?.description ?? '' };
+    widgetEditorInitialFocus.current = sampleConfigurationIssue(widget) ? '[data-repair-summary]' : '.gallery-card';
     setWidgetDraft({ ...widget, appearance: widget.appearance ? { ...widget.appearance } : undefined });
     setLibraryEditing(template);
     setTemplateConflict(null);
@@ -1130,7 +1132,7 @@ export default function App() {
       {widgetDraft && editMode && draft && <ModalDialog title={libraryEditing ? 'Edit saved visualization' : draft.widgets.some(item => item.id === widgetDraft.id) ? 'Edit dashboard visualization' : 'Configure visualization'}
         eyebrow="VISUALIZATION BUILDER · SAMPLE DATA"
         description={libraryEditing ? 'Save template updates this reusable library definition immediately. Existing dashboard copies remain unchanged.' : 'Apply the preview to this dashboard draft. Then choose Save changes on the dashboard to persist it.'}
-        className="visualization-modal" initialFocus={widgetDraftIssue ? '[data-repair-summary]' : '.gallery-card'} busy={libraryBusy}
+        className="visualization-modal" initialFocus={widgetEditorInitialFocus.current} busy={libraryBusy}
         onDismiss={dismissVisualizationEditor}>
         <nav className="authoring-context" aria-label="Authoring location">
           <span>Dashboard draft</span><span aria-hidden="true">›</span>
