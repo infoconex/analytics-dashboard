@@ -123,7 +123,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
             <button type="button" ref={node => {
               if (node) indexButtons.current.set(widget.id, node);
               else indexButtons.current.delete(widget.id);
-            }} onClick={() => focusWidget(widget.id)} aria-label={`${index + 1}. ${widget.title}`}>
+            }} onClick={() => focusWidget(widget.id)} aria-label={`${index + 1}. ${widget.title}${sampleAvailability(widget, filters).state === 'unavailable' ? ' — Unavailable' : sampleAvailability(widget, filters).state === 'no-match' ? ' — No matching records' : ''}`}>
               <span aria-hidden="true">{index + 1}.</span> {widget.title}{sampleAvailability(widget, filters).state === 'unavailable' ? ' — Unavailable' : sampleAvailability(widget, filters).state === 'no-match' ? ' — No matching records' : ''}
             </button>
           </li>)}</ol>
