@@ -60,3 +60,13 @@ body:has(.embedded-shell) { min-width:0; background:var(--color-canvas); }
   .embedded-retry { background:ButtonFace; color:ButtonText; border:1px solid ButtonText; }
   .embedded-retry:focus-visible { outline:3px solid Highlight; }
 }
+
+/* UX-36: reloading a definition never masquerades as refreshing live metrics. */
+.embedded-heading-actions { display:flex; flex-direction:column; align-items:flex-end; gap:var(--space-2); flex:none; }
+.embedded-definition-refresh { background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-primary); min-height:40px; white-space:normal; text-align:center; }
+.embedded-definition-refresh[aria-disabled="true"] { opacity:.7; cursor:progress; }
+@media(max-width:540px) { .embedded-heading-actions { align-items:flex-start; width:100%; } }
+@media(forced-colors:active) {
+  .embedded-definition-refresh { color:CanvasText; background:Canvas; border:1px solid CanvasText; }
+  .embedded-definition-refresh:focus-visible { outline:3px solid Highlight; }
+}
