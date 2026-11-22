@@ -40,13 +40,13 @@ jobs:
         run: ./scripts/verify.ps1
 
   browser:
-    name: Browser E2E (shard ${{ matrix.shard }}/2)
+    name: Browser E2E (shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
@@ -71,7 +71,7 @@ jobs:
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
       - name: Build isolated API and run Playwright shard
         shell: pwsh
-        run: ./scripts/verify-browser.ps1 -ShardIndex ${{ matrix.shard }} -ShardTotal 2
+        run: ./scripts/verify-browser.ps1 -ShardIndex ${{ matrix.shard }} -ShardTotal 4
       - name: Publish sample-only screenshots and failure recordings
         if: always()
         uses: actions/upload-artifact@v6
