@@ -48,6 +48,9 @@ jobs:
             web/test-results/ux29Discovery-*/**/*.png
             web/test-results/ux29Discovery-*/**/*.json
             web/test-results/ux29Discovery-*/**/trace.zip
+            web/test-results/ux30Navigation-*/**/*.png
+            web/test-results/ux30Navigation-*/**/*.json
+            web/test-results/ux30Navigation-*/**/trace.zip
             web/test-results/embed-*/**/*.png
             web/test-results/embed-*/**/*.webm
             web/test-results/embed-*/**/*.json
@@ -72,6 +75,18 @@ jobs:
             web/test-results/customerTasks-*/**/*.webm
             web/test-results/customerTasks-*/**/*.json
             web/test-results/customerTasks-*/**/trace.zip
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish focused UX-30 navigation evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux30-navigation-evidence
+          path: |
+            web/test-results/ux30Navigation-*/**/*.png
+            web/test-results/ux30Navigation-*/**/*.json
+            web/test-results/ux30Navigation-*/**/trace.zip
           if-no-files-found: warn
           retention-days: 14
 

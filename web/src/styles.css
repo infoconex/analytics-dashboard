@@ -941,3 +941,11 @@ button:disabled { opacity:.6; }
   .dashboard-card .catalog-card-actions .catalog-delete { color:LinkText; }
   .library-result { border:1px solid CanvasText; }
 }
+
+/* UX-30: name the return destination without adding persistent navigation chrome. */
+.dashboard-return { width:auto; min-width:44px; min-height:44px; padding:0 11px; gap:7px; display:inline-flex; align-items:center; justify-content:center; color:var(--color-primary); font-size:var(--type-label); font-weight:750; white-space:nowrap; }
+.dashboard-return:hover { background:var(--color-surface-muted,#f5f7ff); }
+@media(max-width:480px) {
+  .dashboard-heading .heading-left { flex-direction:column; align-items:flex-start; gap:10px; width:100%; }
+  .dashboard-heading .heading-left > div { width:100%; }
+}

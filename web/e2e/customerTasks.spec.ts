@@ -153,7 +153,8 @@ test('SC-UX11-06/07: stale dashboard data is hidden after a failed refresh, and 
   await page.getByRole('button', { name: 'View dashboard' }).click();
   await expect(page.getByRole('heading', { name: 'Business performance' })).toBeFocused();
   await page.getByRole('button', { name: 'Back to dashboards' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeFocused();
+  // UX-30 restores focus to the opened catalog card, preserving task context.
+  await expect(page.getByRole('button', { name: 'View dashboard' })).toBeFocused();
   await page.goto('/#/organization/northstar/dashboard/not-found');
   await page.getByRole('button', { name: 'Back to dashboards' }).click();
   await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeFocused();
