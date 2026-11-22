@@ -133,6 +133,10 @@ export default function App() {
   const dashboards = dashboardList?.organizationId === organizationId
     ? dashboardList.items.filter(item => item.organizationId === organizationId) : [];
   const activeDashboard = dashboards.find(item => item.id === view.id);
+  const liveDraft = useRef(draft);
+  liveDraft.current = draft;
+  const liveEditingTarget = useRef<string | null>(null);
+  liveEditingTarget.current = editMode && activeDashboard ? `${organizationId}/${activeDashboard.id}` : null;
   const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
   const conflictReview = dashboardConflict && dashboardConflict !== 'unavailable' && draft && activeDashboard
     ? reviewDashboardConflict(activeDashboard, draft, dashboardConflict) : null;
@@ -741,6 +745,8 @@ export default function App() {
     if (!activeDashboard || !draft || dashboardConflict === null
       || dashboardConflict === 'unavailable' || saving || !recoverySelected.length || !canEdit) return;
     const org = organizationId;
+    const target = `${org}/${activeDashboard.id}`;
+    const draftAtClick = JSON.stringify(draft);
     const reviewed = dashboardConflict;
     setSaving(true);
     setRecoveryNotice('');
@@ -751,7 +757,12 @@ export default function App() {
       if (!memberships.some(item => item.id === org && (item.role === 'owner' || item.role === 'editor')))
         throw new Error('Editing permission unavailable');
       const latest = await dashboardApi.find(org, activeDashboard.id);
-      if (activeOrganization.current !== org) return;
+      if (activeOrganization.current !== org || liveEditingTarget.current !== target) return;
+      if (JSON.stringify(liveDraft.current) !== draftAtClick) {
+        setRecoverySelected([]);
+        setRecoveryNotice('Your draft changed while checking the latest revision. Review the updated draft and choose edits again.');
+        return;
+      }
       if (latest.revision !== reviewed.revision
         || JSON.stringify([latest.name, latest.description, latest.widgets])
           !== JSON.stringify([reviewed.name, reviewed.description, reviewed.widgets])) {
@@ -774,10 +785,15 @@ export default function App() {
       window.requestAnimationFrame(() => saveChangesButton.current?.focus());
     } catch (exception) {
       if (activeOrganization.current !== org) return;
-      if (exception instanceof Error && exception.message.startsWith('Recovery ')) {
+      if (liveEditingTarget.current !== target) return;
+      if (exception instanceof Error && (
+        exception.message.includes('24-visualization')
+        || exception.message.includes('Recovered dashboard fields')
+        || exception.message.includes('manual review')
+        || exception.message.includes('identity or revision')
+      )) {
         setRecoveryNotice(exception.message);
-      } else if (exception instanceof Error && exception.message.includes('24-visualization')) {
-        setRecoveryNotice(exception.message);
+        setRecoverySelected([]);
       } else {
         // Cannot treat a local draft as authorization to obtain a new revision.
         setDashboardConflict('unavailable');
