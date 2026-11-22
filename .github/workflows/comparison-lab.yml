@@ -1,4 +1,4 @@
-name: Lab | UX-14 matched comparison
+name: Lab | Product comparison
 
 on:
   pull_request:
@@ -9,23 +9,22 @@ on:
       - 'web/scripts/ux14/**'
       - 'web/src/demoData.ts'
       - 'web/package*.json'
-      - 'docs/ux14-matched-task-evidence.md'
-      - 'scripts/ci/verify-ux14-lab.sh'
-      - '.github/workflows/ux14-comparison.yml'
+      - 'scripts/ci/verify-comparison-lab.sh'
+      - '.github/workflows/comparison-lab.yml'
   workflow_dispatch:
 
 concurrency:
-  group: ux14-${{ github.event.pull_request.number || github.ref }}
+  group: comparison-lab-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  ux14:
-    name: Lab | Matched UX-14 browser evidence
+  compare:
+    name: Lab | Fictional Elastic comparison and task evidence
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - name: Checkout | Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -37,18 +36,18 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Test | Provision, compare and clean up UX-14 lab
+      - name: Test | Pinned fixtures, access controls, screenshots and matched tasks
         env:
           UX14_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: bash ./scripts/ci/verify-ux14-lab.sh
-      - name: Evidence | Upload original comparison and review package
+        run: bash ./scripts/ci/verify-comparison-lab.sh
+      - name: Evidence | Upload original screenshots and comparison review package
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: ux14-fictional-comparison
+          name: fictional-product-comparison
           path: |
+            lab/ux13/evidence/**
             lab/ux14/evidence/**
             lab/ux14/ux14-review-package.zip
-            lab/ux13/evidence/**
           if-no-files-found: warn
           retention-days: 14

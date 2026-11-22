@@ -29,7 +29,7 @@ Every other task is unapproved for paired scoring until its separate requirement
 
 ## 2. Reproducible operator steps
 
-The [UX-14 comparison workflow](../.github/workflows/ux14-comparison.yml) performs these steps on a disposable GitHub-hosted Linux runner. Docker Engine 28+, Compose, Node 24, OpenSSL, enough Elastic memory, and Playwright Chromium are required. A missing runtime is an **environment/setup defect**, never a product result.
+The [Product comparison lab workflow](../.github/workflows/comparison-lab.yml) performs these steps on a disposable GitHub-hosted Linux runner. Docker Engine 28+, Compose, Node 24, OpenSSL, enough Elastic memory, and Playwright Chromium are required. A missing runtime is an **environment/setup defect**, never a product result.
 
 ```bash
 npm --prefix web ci --no-audit --no-fund
