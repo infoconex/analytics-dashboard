@@ -140,7 +140,7 @@ export function EmbeddedDashboard() {
           </header>
           <DashboardConsumer key={`${visible.dashboard.organizationId}:${visible.dashboard.id}:${hash}`} widgets={visible.dashboard.widgets}
             initialFilters={parseEmbedTarget(window.location.hash)?.filters ?? target?.filters} onFiltersChange={preserveFilters}
-            updatedAt={visible.dashboard.updatedAt} editing={false} canEdit={false} onStartEdit={() => {}}
+            updatedAt={visible.dashboard.updatedAt} editing={false} canEdit={false} onStartEdit={() => {}} onRepair={() => {}}
             onChange={() => {}} onEdit={() => {}} onAdd={() => {}}
             onAddSaved={() => {}} onDuplicate={() => {}} onSaveToLibrary={() => {}}
             onShareInsight={(widget, filters) => setShareRequest({ widget, filters })} />
