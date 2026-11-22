@@ -176,25 +176,6 @@ document.addEventListener('click', event => {
   }
   render();
 });
-// Preserve ordinary anchors for open-in-new-tab and modified clicks, but
-// handle same-document primary host navigation without the browser's native
-// fragment-focus reset. The host owns its history; NEXA's iframe is untouched.
-document.addEventListener('click', event => {
-  if (event.defaultPrevented || event.button !== 0 || event.metaKey ||
-      event.ctrlKey || event.shiftKey || event.altKey) return;
-  const target = event.target;
-  if (!(target instanceof Element)) return;
-  const link = target.closest<HTMLAnchorElement>('a[href^="#"]');
-  if (!link) return;
-  const nextHash = link.getAttribute('href');
-  if (!nextHash || !parseHostView(nextHash)) return;
-  event.preventDefault();
-  if (window.location.hash !== nextHash) {
-    window.history.pushState(window.history.state, '', nextHash);
-  }
-  render();
-});
-
 window.addEventListener('hashchange', render);
 window.addEventListener('popstate', render);
 retry.addEventListener('click', () => { void loadDashboards(); });
