@@ -31,7 +31,7 @@ body:has(.embedded-shell) { min-width:0; background:var(--color-canvas); }
 .same-origin-sample-host .share-context-modal[open] {
   position:fixed;
   inset:auto auto auto 50%;
-  top:calc(var(--host-visible-top, 0px) + var(--host-visible-height, 100vh) / 2);
+  top:var(--host-visible-center, 50vh);
   width:min(570px, calc(100% - 32px));
   max-height:min(850px, calc(var(--host-visible-height, 100vh) - 24px));
   margin:0;
