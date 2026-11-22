@@ -46,7 +46,8 @@ def classify(paths: list[str]) -> set[str]:
             else:
                 selected.update(("frontend", "browser", "integration", "javascript"))
                 if path.startswith("web/scripts/") or path in (
-                    "web/package.json", "web/package-lock.json"
+                    "web/package.json", "web/package-lock.json",
+                    "web/src/demoData.ts",  # UX-13 fixture manifest hashes the entire source
                 ):
                     selected.add("lab")
         elif path.startswith("lab/"):
