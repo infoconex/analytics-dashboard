@@ -1,11 +1,11 @@
-name: Verify
+name: CI | Verify
 
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
-# A newer PR head supersedes older checks. Main pushes always run to completion.
 concurrency:
   group: verify-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -14,33 +14,104 @@ permissions:
   contents: read
 
 jobs:
-  verify:
-    name: .NET and web tests
+  impact:
+    name: Plan | Test impact
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+      frontend: ${{ steps.detect.outputs.frontend }}
+      lab: ${{ steps.detect.outputs.lab }}
+      browser: ${{ steps.detect.outputs.browser }}
+      providers: ${{ steps.detect.outputs.providers }}
+    steps:
+      - name: Checkout | Full git history for PR comparison
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test | Validate change impact and gate policy
+        run: python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py'
+      - name: Plan | Classify changed paths
+        id: detect
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/ci/change-impact.py --event "$CI_EVENT" --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT" --summary "$GITHUB_STEP_SUMMARY"
+
+  backend:
+    name: Backend | .NET tests
+    needs: impact
+    if: needs.impact.outputs.backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      - name: Checkout | Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | .NET 10 SDK
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Restore cached NuGet packages
-        uses: actions/cache@v4
+      - name: Cache | Restore NuGet packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json') }}
           restore-keys: |
             nuget-${{ runner.os }}-
-      - name: Run locally reproducible .NET, web and fictional lab verification
+      - name: Test | .NET application and domain
         shell: pwsh
-        run: ./scripts/verify.ps1
+        run: ./scripts/ci/verify-backend.ps1
+
+  frontend:
+    name: Frontend | Unit tests and build
+    needs: impact
+    if: needs.impact.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout | Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | Node.js 24 and npm cache
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Test | Vitest, TypeScript and production build
+        shell: pwsh
+        run: ./scripts/ci/verify-frontend.ps1
+
+  lab:
+    name: Lab | Fictional fixture guards
+    needs: impact
+    if: needs.impact.outputs.lab == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout | Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | Node.js 24 and npm cache
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Test | Fictional data and lab admission
+        shell: pwsh
+        run: ./scripts/ci/verify-lab.ps1
 
   browser:
-    name: Browser E2E (shard ${{ matrix.shard }}/4)
+    name: Browser | Chromium E2E (shard ${{ matrix.shard }}/4)
+    needs: impact
+    if: needs.impact.outputs.browser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -48,35 +119,54 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      - name: Checkout | Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | .NET 10 SDK
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
-      - uses: actions/setup-node@v7
+      - name: Setup | Node.js 24 and npm cache
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Restore cached NuGet packages
-        uses: actions/cache@v4
+      - name: Cache | Restore NuGet packages
+        id: nuget
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json') }}
           restore-keys: |
             nuget-${{ runner.os }}-
-      - name: Restore cached Playwright Chromium
-        uses: actions/cache@v4
+      - name: Cache | Restore Chromium
+        id: chromium
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
-      - name: Build isolated API and run Playwright shard
+          key: chromium-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+      - name: Test | Browser shard and isolated API
         shell: pwsh
         run: ./scripts/verify-browser.ps1 -ShardIndex ${{ matrix.shard }} -ShardTotal 4
-      - name: Publish sample-only screenshots and failure recordings
-        if: always()
-        uses: actions/upload-artifact@v6
+      - name: Cache | Save NuGet packages (single writer)
+        if: success() && matrix.shard == 1 && steps.nuget.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          name: ux-visual-evidence-shard-${{ matrix.shard }}
+          path: ~/.nuget/packages
+          key: ${{ steps.nuget.outputs.cache-primary-key }}
+      - name: Cache | Save Chromium (single writer)
+        if: success() && matrix.shard == 1 && steps.chromium.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.chromium.outputs.cache-primary-key }}
+      - name: Evidence | Upload screenshots and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: browser-evidence-shard-${{ matrix.shard }}
           path: |
             web/test-results/**/*.png
             web/test-results/**/*.webm
@@ -85,30 +175,53 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  provider-conformance:
-    name: Real SQL Server and PostgreSQL adapter tests
+  providers:
+    name: Database | SQL Server and PostgreSQL
+    needs: impact
+    if: needs.impact.outputs.providers == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      - name: Checkout | Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup | .NET 10 SDK
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: 10.0.x
-      - name: Restore cached NuGet packages
-        uses: actions/cache@v4
+      - name: Cache | Restore NuGet packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json') }}
           restore-keys: |
             nuget-${{ runner.os }}-
-      - name: Start isolated provider fixtures with ephemeral passwords
-        shell: bash
-        run: bash ./scripts/start-provider-fixtures.sh
-      - name: Run mandatory real-provider conformance tests
-        shell: pwsh
-        run: ./scripts/verify-provider-adapters.ps1
-      - name: Remove disposable provider containers
-        if: always()
-        shell: bash
-        run: |
-          docker rm -f analytics-sqlserver-fixture analytics-postgres-fixture 2>/dev/null || true
+      - name: Test | Real-provider fixtures, conformance and cleanup
+        run: bash ./scripts/ci/verify-providers.sh
+
+  gate:
+    name: Gate | Required verification
+    if: always()
+    needs: [impact, backend, frontend, lab, browser, providers]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout | Gate policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Gate | Reject missing or failed required suites
+        env:
+          IMPACT_RESULT: ${{ needs.impact.result }}
+          BACKEND_EXPECTED: ${{ needs.impact.outputs.backend }}
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          FRONTEND_EXPECTED: ${{ needs.impact.outputs.frontend }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          LAB_EXPECTED: ${{ needs.impact.outputs.lab }}
+          LAB_RESULT: ${{ needs.lab.result }}
+          BROWSER_EXPECTED: ${{ needs.impact.outputs.browser }}
+          BROWSER_RESULT: ${{ needs.browser.result }}
+          PROVIDERS_EXPECTED: ${{ needs.impact.outputs.providers }}
+          PROVIDERS_RESULT: ${{ needs.providers.result }}
+        run: python3 scripts/ci/verify-gate.py
