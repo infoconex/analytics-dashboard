@@ -54,6 +54,7 @@ function persistSnapshots() {
 }
 
 let frameObserver: ResizeObserver | null = null;
+let observedChild: Document | null = null;
 let measureQueued = false;
 
 // Content sizing is deliberately restricted to this same-origin example.
@@ -86,6 +87,9 @@ function scheduleFrameMeasure() {
 function observeFrame() {
   frameObserver?.disconnect();
   frameObserver = null;
+  observedChild?.removeEventListener('change', snapshotCurrent);
+  observedChild?.removeEventListener('click', snapshotCurrent);
+  observedChild = null;
   try {
     const child = frame.contentDocument;
     if (child?.location.origin !== location.origin || child.location.pathname !== '/embed.html') return;
@@ -93,6 +97,10 @@ function observeFrame() {
     if (!shell) return;
     frameObserver = new ResizeObserver(scheduleFrameMeasure);
     frameObserver.observe(shell);
+    // Same-origin sample events capture approved filters before reload.
+    observedChild = child;
+    child.addEventListener('change', snapshotCurrent);
+    child.addEventListener('click', snapshotCurrent);
     scheduleFrameMeasure();
   } catch {
     // This sample does not implement cross-origin frame communication.
@@ -125,6 +133,9 @@ function showDashboard(dashboard: HostDashboard) {
   frame.title = `${dashboard.name} analytics — Northstar Commerce sample`;
   if (isNew) {
     frameObserver?.disconnect();
+    observedChild?.removeEventListener('change', snapshotCurrent);
+    observedChild?.removeEventListener('click', snapshotCurrent);
+    observedChild = null;
     frameLoading.hidden = false;
     frameShell.setAttribute('aria-busy', 'true');
     // The first frame navigation occurs only AFTER the authenticated host
@@ -223,6 +234,9 @@ async function loadDashboards() {
   loadError = '';
   frameShell.hidden = true;
   frameObserver?.disconnect();
+  observedChild?.removeEventListener('change', snapshotCurrent);
+  observedChild?.removeEventListener('click', snapshotCurrent);
+  observedChild = null;
   frameLoading.hidden = false;
   frameShell.setAttribute('aria-busy', 'true');
   frame.src = 'about:blank';
