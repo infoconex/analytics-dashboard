@@ -285,8 +285,8 @@ test('UX-16 filter cards disclose scope and permit in-place keyboard clearing', 
   await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
   await expect(traffic.getByRole('button', { name: 'Remove Referral filter from Traffic sources' })).toBeVisible();
-  await expect(traffic.getByText(/Date range does not apply/)).toHaveCount(0);
-  await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' })).toHaveCount(0);
+  await expect(traffic.getByText(/Reporting period does not apply/)).toBeVisible();
+  await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' })).toBeVisible();
   await expect(revenue.getByText('Oct–Dec', { exact: false }).first()).toBeVisible();
   await expect(revenue.getByText(/commerce records have no channel attribution/)).toBeVisible();
   await capture(page, testInfo, 'ux16-scoped-filter-cards');

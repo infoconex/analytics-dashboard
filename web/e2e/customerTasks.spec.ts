@@ -88,7 +88,7 @@ test('SC-UX11-01/02/03/04/05: first value through exact data, independent filter
   await expect(chart.getByRole('table').getByText('$41,400')).toBeVisible();
   await expect(chart.getByRole('table').getByText('$18,400')).toHaveCount(0);
   await expect(page.getByRole('article', { name: 'Orders by channel' }).locator('.chart-insight')).toContainText('1,530');
-  await interact('Clear channel filter', () => page.getByRole('button', { name: 'Clear channel filter' }).click()); milestones.push('Clear channel filter');
+  await interact('Clear channel filter', () => page.getByRole('button', { name: 'Remove Direct filter', exact: true }).click()); milestones.push('Clear channel filter');
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
   await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
   await interact('Restore all sample months', () => page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('12m')); milestones.push('Restore full reporting period');

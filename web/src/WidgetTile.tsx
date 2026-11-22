@@ -69,11 +69,12 @@ interface Props {
   onSaveToLibrary?: (widget: DashboardWidget) => void;
   filters?: ConsumerFilters;
   onChannelSelect?: (channel: string) => void;
+  onPeriodReset?: () => void;
   onReturnToIndex?: () => void;
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function WidgetTile({ widget, period, preview, position, total, editing, onEdit, onRemove, onDuplicate, onSaveToLibrary, filters, onChannelSelect, onReturnToIndex, onShareInsight }: Props) {
+export function WidgetTile({ widget, period, preview, position, total, editing, onEdit, onRemove, onDuplicate, onSaveToLibrary, filters, onChannelSelect, onPeriodReset, onReturnToIndex, onShareInsight }: Props) {
   const [keyboardIndex, setKeyboardIndex] = useState(0);
   const [chartFocused, setChartFocused] = useState(false);
   const appearance = chartAppearance(widget);
@@ -93,7 +94,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
   const scatter = widget.kind === 'scatter';
   const axis = scatter ? dimensions[widget.datasetKey] : widget.dimensionKey;
   const context = sampleMetricContext(widget.datasetKey, widget.metricKey, axis, data, filters);
-  const problem = visualizationProblem(widget, data);
+  const problem = data.length ? visualizationProblem(widget, data) : null;
   const histogram = widget.kind === 'histogram' ? buildHistogram(data, widget.metricKey, appearance.histogramBins) : [];
   const xMeasure = metrics[widget.datasetKey]?.find(item => item.key === widget.dimensionKey)?.label ?? widget.dimensionKey;
   const tooltipValue = (value: unknown) => formatChartTooltip(Number(value), metric);
@@ -142,7 +143,8 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
     // It remains in this exact visualization at high zoom and inside iframes.
     const heading = document.getElementById(headingId);
     heading?.focus({ preventScroll: true });
-    if (filterContext?.applied && filters?.channel) onChannelSelect?.(filters.channel);
+    if (filterContext?.applied?.kind === 'channel' && filters?.channel) onChannelSelect?.(filters.channel);
+    if (filterContext?.applied?.kind === 'period') onPeriodReset?.();
   }
   const insight = context && !['table', 'metric', 'histogram', 'scatter'].includes(widget.kind)
     ? chartInsight(widget.dimensionKey, widget.metricKey, data)
@@ -180,7 +182,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
         <div className="widget-heading"><div><h2 className="widget-title" id={headingId} tabIndex={-1}>{widget.title}</h2></div>
           {onReturnToIndex && <button type="button" className="widget-index-shortcut" onClick={onReturnToIndex} aria-label={`Jump to visualization index from ${widget.title}`}>Index</button>}
         </div>
-        <p className="widget-empty"><strong>Insight unavailable.</strong> {problem ?? (data.length === 0
+        <p className="widget-empty"><strong>{data.length === 0 && filters?.channel && widget.datasetKey === 'channels' ? 'No matching sample data.' : 'Insight unavailable.'}</strong> {problem ?? (data.length === 0
           ? selectedChannel && widget.datasetKey === 'channels'
             ? 'No sample records match this channel. Remove the channel filter to see all channels.'
             : 'This dataset has no available sample records.'
@@ -221,7 +223,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
       {filterContext && (filterContext.applied || filterContext.unaffected) && <div className="widget-filter-context" aria-label={`Filter scope for ${widget.title}`}>
         {filterContext.applied && <div className="widget-filter-applied">
           <span className="widget-filter-status">Filter applied</span>
-          {(onChannelSelect)
+          {(filterContext.applied.kind === 'channel' ? Boolean(onChannelSelect) : Boolean(onPeriodReset))
             ? <button type="button" className="widget-filter-clear" onClick={clearLocalFilter} aria-label={`Remove ${filterContext.applied.label} filter from ${widget.title}`}>{filterContext.applied.label}<X size={14} aria-hidden="true" /></button>
             : <span className="widget-filter-label">{filterContext.applied.label}</span>}
         </div>}

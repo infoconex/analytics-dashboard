@@ -20,10 +20,11 @@ interface Props {
   onDuplicate: (widget: DashboardWidget) => void;
   onSaveToLibrary: (widget: DashboardWidget) => void;
   onChannelSelect: (channel: string) => void;
+  onPeriodReset: () => void;
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onChannelSelect, onShareInsight }: Props) {
+export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onChannelSelect, onPeriodReset, onShareInsight }: Props) {
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -169,7 +170,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
             <button className="icon-button" aria-label={`Move ${widget.title} earlier`} title="Move earlier" disabled={index === 0} onClick={() => announceMove(moveWidget(widgets, widget.id, -1), widget.id)}><ArrowUp size={17} /></button>
             <button className="icon-button" aria-label={`Move ${widget.title} later`} title="Move later" disabled={index === widgets.length - 1} onClick={() => announceMove(moveWidget(widgets, widget.id, 1), widget.id)}><ArrowDown size={17} /></button>
           </div>}
-          <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined}
+          <WidgetTile widget={widget} position={index + 1} total={widgets.length} period={filters.period} filters={filters} editing={editing} onEdit={onEdit} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onRemove={id => onChange(widgets.filter(item => item.id !== id))} onChannelSelect={!editing && widget.datasetKey === 'channels' ? onChannelSelect : undefined} onPeriodReset={!editing && widget.datasetKey === 'commerce' ? onPeriodReset : undefined}
             onReturnToIndex={!editing && widgets.length >= 8 ? () => returnToIndex(widget.id) : undefined}
             onShareInsight={!editing ? onShareInsight : undefined} />
           {editing && <details className="canvas-size-tools">

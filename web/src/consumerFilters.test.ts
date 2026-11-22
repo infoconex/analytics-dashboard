@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultConsumerFilters, selectConsumerRows, toggleChannel } from './consumerFilters';
+import { consumerPeriodLabels, defaultConsumerFilters, selectConsumerRows, summarizeFilterImpact, toggleChannel } from './consumerFilters';
 
 describe('dashboard consumer filters', () => {
   it('uses a 12-month unfiltered default without changing the source records', () => {
@@ -24,6 +24,17 @@ describe('dashboard consumer filters', () => {
     expect(selectConsumerRows('commerce', filters)).toHaveLength(6);
     expect(selectConsumerRows('channels', filters)).toEqual([{ channel: 'Paid search', orders: 1120, sessions: 5340, conversion: 3.6 }]);
     expect(selectConsumerRows('channels', defaultConsumerFilters)).toHaveLength(5);
+  });
+
+  it('counts compatible visualizations without assuming cross-source relationships', () => {
+    const widgets = Array.from({ length: 18 }, (_, index) => ({
+      datasetKey: (index % 2 === 0 ? 'commerce' : 'channels') as 'commerce' | 'channels',
+    }));
+    expect(summarizeFilterImpact(widgets)).toEqual({ commerce: 9, channels: 9, other: 0 });
+    expect(summarizeFilterImpact([{ datasetKey: 'future' as 'commerce' }, widgets[0]!]))
+      .toEqual({ commerce: 1, channels: 0, other: 1 });
+    expect(consumerPeriodLabels['3m']).toBe('Final 3 sample months');
+    expect(consumerPeriodLabels['6m']).toBe('Final 6 sample months');
   });
 
   it('toggles the chosen category and ignores unknown future datasets safely', () => {

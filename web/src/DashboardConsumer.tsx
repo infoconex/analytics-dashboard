@@ -27,8 +27,7 @@ interface Props {
 // scoped to one open dashboard, not to a link or server-persisted draft.
 export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight, initialFilters }: Props) {
   const [filters, setFilters] = useState({ ...(initialFilters ?? defaultConsumerFilters) });
-  const hasCommerce = widgets.some(widget => widget.datasetKey === 'commerce');
-  const hasChannels = widgets.some(widget => widget.datasetKey === 'channels');
+  const hasFilters = widgets.some(widget => widget.datasetKey === 'commerce' || widget.datasetKey === 'channels');
 
   function changeFilters(next: ConsumerFilters) {
     setFilters(next);
@@ -43,9 +42,10 @@ export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStar
         <li>Choose the reporting period at the top of the dashboard. Select a marketing channel when available; remove its filter to see all channels.</li>
         <li>{canEdit ? 'For advanced composition, choose Edit dashboard above. Viewing and filtering never save changes.' : 'This is a read-only view; exploring and filtering never change the saved dashboard.'}</li></ul>
     </details>}
-    {(hasCommerce || hasChannels) && <DashboardFiltersBar filters={filters} onChange={changeFilters} hasCommerce={hasCommerce} hasChannels={hasChannels} />}
+    {hasFilters && <DashboardFiltersBar filters={filters} onChange={changeFilters} widgets={widgets} />}
     <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onEdit={onEdit} onAdd={onAdd} onAddSaved={onAddSaved} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onChange={onChange}
       onChannelSelect={channel => changeFilters({ ...filters, channel: toggleChannel(filters.channel, channel) })}
+      onPeriodReset={() => changeFilters({ ...filters, period: '12m' })}
       onShareInsight={onShareInsight ? widget => onShareInsight(widget, filters) : undefined} />
   </>;
 }
