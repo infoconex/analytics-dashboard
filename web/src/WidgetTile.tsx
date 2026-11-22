@@ -47,12 +47,12 @@ function ScrollableTable({ className, label, children }: { className: string; la
   }, []);
 
   return <div className="table-viewport">
-    <div ref={regionRef} className={className} role="region" aria-label={label}
-      aria-describedby={scrollState.overflow ? hintId : undefined} tabIndex={0}>{children}</div>
     {scrollState.overflow && <p id={hintId} className="table-scroll-hint">
       {scrollState.left && scrollState.right ? 'More columns on both sides.' : scrollState.left ? 'More columns to the left.' : 'More columns to the right.'}
       {' '}Focus the table and use left/right arrow keys, or swipe sideways.
     </p>}
+    <div ref={regionRef} className={className} role="region" aria-label={label}
+      aria-describedby={scrollState.overflow ? hintId : undefined} tabIndex={0}>{children}</div>
   </div>;
 }
 

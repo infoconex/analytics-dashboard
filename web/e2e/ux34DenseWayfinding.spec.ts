@@ -151,6 +151,7 @@ test('tables preserve headings and full numeric values at 390/320px with horizon
     expect(before.scrollWidth).toBeGreaterThan(before.clientWidth + 1);
     expect(before.scrollHeight - before.clientHeight, 'no nested vertical table scrolling').toBeLessThanOrEqual(1);
     await expect(article.locator('.table-scroll-hint')).toContainText('More columns to the right');
+    await capture(page, info, `ux34-data-initial-${width}`);
     await region.focus();
     await page.keyboard.press('ArrowRight');
     await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
@@ -163,6 +164,7 @@ test('tables preserve headings and full numeric values at 390/320px with horizon
     const expanded = revenue.getByRole('region', { name: 'Scrollable Revenue over time 2 data' });
     await expect(revenue.getByRole('columnheader', { name: 'Revenue (USD)' })).toBeVisible();
     await expect(revenue.getByRole('row', { name: /Jan.*\$18,400/ })).toBeVisible();
+    await expect(revenue.locator('.table-scroll-hint')).toContainText('More columns to the right');
     const details = await expanded.evaluate(element => ({
       clientHeight: element.clientHeight, scrollHeight: element.scrollHeight,
       clientWidth: element.clientWidth, scrollWidth: element.scrollWidth,
