@@ -20,8 +20,8 @@ export interface SampleConfigurationIssue {
  * or manufacturing a replacement field/dataset.
  */
 export function sampleConfigurationIssue(widget: DashboardWidget): SampleConfigurationIssue | null {
-  const source = datasets[widget.datasetKey];
-  if (!source) return { field: 'dataset', explanation: 'This saved visualization uses a source unavailable in this sample viewer. Choose a supported fictional dataset to repair it.' };
+  const source = Object.hasOwn(datasets, widget.datasetKey) ? datasets[widget.datasetKey] : undefined;
+  if (!Array.isArray(source)) return { field: 'dataset', explanation: 'This saved visualization uses a source unavailable in this sample viewer. Choose a supported fictional dataset to repair it.' };
   if (source.length === 0) return { field: 'dataset', explanation: 'This sample source has no available records. Its values cannot be calculated.' };
   if (!visualizations.some(item => item.key === widget.kind))
     return { field: 'kind', explanation: 'This saved visualization type is unsupported. Choose a supported chart type to repair it.' };
