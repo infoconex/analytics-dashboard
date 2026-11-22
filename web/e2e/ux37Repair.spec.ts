@@ -122,7 +122,7 @@ test('missing fictional source and invalid dimension require explicit choices; c
   await expect(page.getByRole('heading', { name: 'Missing source' })).toBeFocused();
   await page.getByRole('button', { name: 'Review configuration for Legacy dimension' }).click();
   await expect(dialog.getByRole('group', { name: 'Configuration needs review' })).toContainText('selected dimension does not match');
-  await expect(dialog.getByText('former-month', { exact: true })).toBeVisible();
+  await expect(dialog.locator('.visualization-dimension')).toContainText('former-month');
   await dialog.getByRole('button', { name: 'Use supported dimension: month' }).click();
   await expect(dialog.getByRole('button', { name: 'Update visualization' })).toBeEnabled();
   await screenshot(page, info, 'repaired-dimension');
@@ -141,8 +141,18 @@ test('long-dashboard index marks only genuinely unavailable cards and filtered r
   await nav.getByRole('button', { name: 'Go to visualization' }).click();
   await expect(page.getByRole('heading', { name: 'Missing source' })).toBeFocused();
   await expect(page.getByRole('article', { name: 'Conversion slices' })).toContainText('cannot be summed');
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
+  const channel = page.getByRole('combobox', { name: 'Marketing channel' });
+  await channel.evaluate((element: HTMLSelectElement) => {
+    element.add(new Option('Unknown channel', 'Unknown channel'));
+    element.value = 'Unknown channel';
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(page.getByRole('article', { name: 'Channel orders' })).toContainText('No matching sample data');
+  await expect(page.getByRole('article', { name: 'Channel orders' }).getByRole('button', { name: /Review configuration/ })).toHaveCount(0);
+  await expect(nav.getByRole('combobox', { name: 'Find a visualization' })).toContainText('Channel orders — No matching records');
   await expect(page.getByRole('article', { name: 'Revenue', exact: true }).locator('.metric-number')).toBeVisible();
+  await page.getByRole('article', { name: 'Channel orders' }).getByRole('button', { name: /Clear channel filter/ }).click();
+  await expect(channel).toHaveValue('');
 });
 
 test('viewer and embedded read-only consumers cannot open repair or modify dashboard', async ({ page }) => {
