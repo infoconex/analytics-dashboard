@@ -19,13 +19,14 @@ interface Props {
   onDuplicate: (widget: DashboardWidget) => void;
   onSaveToLibrary: (widget: DashboardWidget) => void;
   onFiltersChange?: (filters: ConsumerFilters) => void;
+  initialFilters?: ConsumerFilters;
   onShareInsight?: (widget: DashboardWidget, filters: ConsumerFilters) => void;
 }
 
 // Mount with a dashboard-and-organization key to keep unsaved consumer filters
 // scoped to one open dashboard, not to a link or server-persisted draft.
-export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight }: Props) {
-  const [filters, setFilters] = useState({ ...defaultConsumerFilters });
+export function DashboardConsumer({ widgets, updatedAt, editing, canEdit, onStartEdit, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight, initialFilters }: Props) {
+  const [filters, setFilters] = useState({ ...(initialFilters ?? defaultConsumerFilters) });
   const hasCommerce = widgets.some(widget => widget.datasetKey === 'commerce');
   const hasChannels = widgets.some(widget => widget.datasetKey === 'channels');
 

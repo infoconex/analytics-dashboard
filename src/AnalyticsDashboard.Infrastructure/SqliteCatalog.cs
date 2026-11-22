@@ -267,11 +267,8 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
         await command.ExecuteNonQueryAsync(cancellationToken);
 
         var existing = await ListAsync("northstar", cancellationToken);
-        if (existing.Count > 0)
+        if (existing.Count == 0)
         {
-            return;
-        }
-
         var now = DateTimeOffset.UtcNow;
         var dashboard = new Dashboard(Guid.Parse("a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3441"),
             "northstar", "Business performance", "Revenue, conversion and customer activity in one view.",
@@ -290,6 +287,27 @@ public sealed class SqliteCatalog(string databasePath) : IDashboardRepository, I
                     "Channel details", VisualizationKind.Table, "channels", "orders", "channel")
             ], 1, "demo-owner", now, now);
         await AddAsync(dashboard, cancellationToken);
+        }
+
+        // Development-only second dashboard makes the customer-host navigation
+        // workflow realistic, including existing development catalogs. These
+        // fixtures never seed when DevelopmentIdentity is disabled.
+        var channelId = Guid.Parse("c730b8e2-4990-42b7-80cc-71b47290aec4");
+        if (existing.All(item => item.Id != channelId))
+        {
+            var now = DateTimeOffset.UtcNow;
+            var channelDashboard = new Dashboard(channelId, "northstar",
+                "Channel performance", "Compare fictional channel traffic and orders.",
+                [
+                    new(Guid.Parse("78654a5b-615d-4450-8245-243dfbca8bc1"),
+                        "Orders by channel", VisualizationKind.Bar, "channels", "orders", "channel"),
+                    new(Guid.Parse("78654a5b-615d-4450-8245-243dfbca8bc2"),
+                        "Traffic sources", VisualizationKind.Donut, "channels", "sessions", "channel"),
+                    new(Guid.Parse("78654a5b-615d-4450-8245-243dfbca8bc3"),
+                        "Channel details", VisualizationKind.Table, "channels", "orders", "channel")
+                ], 1, "demo-owner", now, now);
+            await AddAsync(channelDashboard, cancellationToken);
+        }
     }
 
     private async Task<SqliteConnection> OpenAsync(CancellationToken cancellationToken)

@@ -61,9 +61,12 @@ test('catalog discovers dashboards by business question and search, with no-matc
   await page.goto('/#/dashboards');
   const options = page.getByRole('group', { name: 'Find dashboards by business question' });
   await options.getByRole('button', { name: 'Where are orders coming from?' }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Showing 1 matching dashboard' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();
-  await page.getByRole('button', { name: 'View dashboard' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Showing 2 matching dashboards' })).toBeVisible();
+  // The UX-32 development fixture introduces a second legitimate channel
+  // dashboard. Continue this workflow with its original Business performance target.
+  const businessCard = page.locator('.dashboard-card').filter({ has: page.getByRole('heading', { name: 'Business performance' }) });
+  await expect(businessCard).toBeVisible();
+  await businessCard.getByRole('button', { name: 'View dashboard' }).click();
   await expect(page.getByRole('heading', { name: 'Where are orders coming from?' })).toBeFocused();
   await page.getByRole('button', { name: 'Go to Orders by channel' }).click();
   await expect(page.getByRole('heading', { name: 'Orders by channel' })).toBeFocused();

@@ -95,7 +95,7 @@ test('host integration preserves context, filtering, keyboard exit and standalon
   const portalLink = page.getByRole('navigation', { name: 'Customer portal navigation' }).getByRole('link', { name: 'Insights' });
   const embeddedSkip = frame.getByRole('button', { name: 'Skip to dashboard content' });
   await portalLink.focus();
-  for (let step = 0; step < 2; step++) {
+  for (let step = 0; step < 8; step++) {
     await page.keyboard.press('Tab');
     if (await embeddedSkip.evaluate(node => node.ownerDocument.activeElement === node)) break;
   }

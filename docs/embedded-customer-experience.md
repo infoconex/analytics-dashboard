@@ -2,6 +2,8 @@
 
 Tracking: [Issue #38](https://github.com/infoconex/analytics-dashboard/issues/38). **Pre-alpha, sample-data UI evaluation only.** This does not constitute production-ready embedding, a public SDK, customer authentication, tenant provisioning, or a license to redistribute.
 
+> **UX-32 update:** The same-origin sample host now provides an authorized dashboard picker, a second Development-only sample dashboard, host-owned account/Insights Back/Forward, and validated per-dashboard sample filter links. See [UX-32 host navigation](ux32-embedded-host-navigation.md) for current behavior and evidence. The original UX-6 description below records the baseline, not the expanded UX-32 demonstration.
+
 ## What a customer sees
 
 `/sample-host.html` is a fictional Northstar Customer Portal. Its **Insights** area contains a labeled, same-origin frame showing `/embed.html#/organization/northstar/dashboard/a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3441`. The frame displays the server-authorized dashboard name, purpose, organization and sample-data status; it omits standalone workspace navigation, creation, management, sharing and editing. A consumer can filter, inspect exact data tables and navigate twelve-visualization dashboards, including returning keyboard focus to the corresponding numbered index entry. The standalone `/` route remains intact.

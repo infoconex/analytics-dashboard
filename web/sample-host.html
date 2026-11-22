@@ -27,6 +27,13 @@
       .host-intro { margin:0 0 22px; }
       .host-frame-shell { border:1px solid #cad8df; background:white; border-radius:14px; padding:clamp(4px,1vw,12px); box-shadow:0 10px 34px #0b31440e; }
       .host-frame { display:block; width:100%; height:900px; border:0; border-radius:8px; background:#f7f9fd; }
+      .host-dashboard-picker { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
+      .host-dashboard-link { display:inline-flex; min-height:44px; align-items:center; padding:9px 14px; border:1px solid #9fb5c1; border-radius:9px; background:white; color:#154861; font-size:.9rem; text-decoration:none; font-weight:700; }
+      .host-dashboard-link[aria-current] { background:#123d50; color:white; border-color:#123d50; }
+      .host-dashboard-link:hover { text-decoration:underline; }
+      .host-status { min-height:24px; margin:8px 0 12px; color:#3b536a; font-size:.875rem; }
+      .host-retry { padding:8px 12px; border:1px solid #2a6681; color:#164e69; background:white; border-radius:8px; font:inherit; cursor:pointer; }
+      [hidden] { display:none !important; }
       .host-exit { margin:18px 0 12px; display:flex; gap:16px; flex-wrap:wrap; }
       .host-exit a { color:#174c6a; font-size:.875rem; font-weight:700; }
       .host-note { color:#55677c; font-size:.75rem; margin:0 0 16px; }
@@ -40,6 +47,8 @@
         .host-logo { background:Canvas; color:CanvasText; border:1px solid CanvasText; }
         .host-nav a[aria-current] { outline:2px solid Highlight; }
         .host-frame { border:1px solid CanvasText; }
+        .host-dashboard-link { background:Canvas; color:LinkText; border:1px solid CanvasText; }
+        .host-dashboard-link[aria-current] { background:Highlight; color:HighlightText; }
       }
     </style>
   </head>
@@ -47,7 +56,7 @@
     <a class="host-skip" href="#analytics-section">Skip to customer analytics</a>
     <header class="host-header">
       <div class="host-brand"><span class="host-logo" aria-hidden="true">N</span><span>Northstar Customer Portal <span style="font-weight:400">· Sample</span></span></div>
-      <nav class="host-nav" aria-label="Customer portal navigation"><a href="#account-summary">Account</a><a href="#analytics-section" aria-current="page">Insights</a></nav>
+      <nav class="host-nav" aria-label="Customer portal navigation"><a id="host-account-link" href="#account-summary">Account</a><a id="host-insights-link" href="#analytics-section" aria-current="page">Insights</a></nav>
     </header>
     <main class="host-main">
       <section id="account-summary" class="host-intro" aria-labelledby="portal-heading">
@@ -55,14 +64,24 @@
         <h1 id="portal-heading">Customer insights</h1>
         <p class="host-description">Explore a sample of your business performance without leaving your customer portal.</p>
       </section>
+
+      <section id="host-account-panel" aria-labelledby="host-account-heading" hidden>
+        <h1 id="host-account-heading" tabindex="-1">Account overview</h1>
+        <p class="host-description">Your customer portal remains in control of navigation. Return to Insights to continue where you left off.</p>
+        <a href="#analytics-section">Return to customer insights</a>
+      </section>
       <section id="analytics-section" aria-label="Embedded customer analytics">
+        <nav id="host-dashboard-picker" class="host-dashboard-picker" aria-label="Customer dashboards"></nav>
+        <p id="host-status" class="host-status" role="status" aria-live="polite">Loading accessible dashboards…</p>
+        <button id="host-retry" class="host-retry" type="button" hidden>Retry loading dashboards</button>
         <div class="host-frame-shell">
           <iframe class="host-frame" title="Business performance analytics — Northstar Commerce sample" loading="eager" referrerpolicy="no-referrer"
             src="/embed.html#/organization/northstar/dashboard/a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3441"></iframe>
         </div>
       </section>
-      <nav class="host-exit" aria-label="After the embedded dashboard"><a href="#account-summary">Return to account overview</a><a href="#analytics-section">Back to analytics</a></nav>
+      <nav class="host-exit" aria-label="After the embedded dashboard"><a class="host-return-account" href="#account-summary">Return to account overview</a><a href="#analytics-section">Back to analytics</a></nav>
       <p class="host-note">Fictional sample portal and analytics. Production authentication, customer data and cross-origin embedding are not supported.</p>
     </main>
+    <script type="module" src="/src/sampleHostMain.ts"></script>
   </body>
 </html>
