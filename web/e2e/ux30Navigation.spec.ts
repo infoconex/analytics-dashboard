@@ -157,6 +157,9 @@ test('UX-30 question context survives return; viewer and organization boundaries
   await expect(page.getByRole('button', { name: 'How is revenue changing?' })).toHaveAttribute('aria-pressed', 'true');
 
   await page.getByRole('combobox', { name: 'Switch organization' }).selectOption('isolated');
+  // Switching organizations goes to that organization's Overview, not its old catalog.
+  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: /Dashboards/ }).click();
   await expect(query).toHaveValue('');
   await expect(page.getByRole('button', { name: 'All dashboards' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.dashboard-card')).toHaveCount(1);
