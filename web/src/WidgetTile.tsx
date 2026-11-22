@@ -13,6 +13,7 @@ import type { DashboardWidget } from './model';
 import { buildHistogram, visualizationProblem } from './visualizationSemantics';
 import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartTooltip, selectedPieLabels, fitOutsidePieLabels } from './chartPresentation';
 import { describeWidgetFilters } from './widgetFilterContext';
+import { sampleAvailability } from './sampleAvailability';
 import { chartAppearance, chartCategoryRows } from './visualizationAppearance';
 
 const axisTick = { fontSize: 12, fill: '#566780' };
@@ -90,6 +91,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
 
   const headingId = `widget-heading-${preview ? 'preview-' : ''}${widget.id}`;
   const data = filters ? selectConsumerRows(widget.datasetKey, filters) : selectRows(widget.datasetKey, period);
+  const availability = sampleAvailability(widget, filters ?? { period: period as '3m' | '6m' | '12m', channel: null });
   const chartRows = chartCategoryRows(data, widget);
   const scatter = widget.kind === 'scatter';
   const axis = scatter ? dimensions[widget.datasetKey] : widget.dimensionKey;
@@ -176,17 +178,18 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
     ? ((Number(last?.[metric]) - Number(first?.[metric])) / Number(first?.[metric])) * 100
     : null;
 
-  if (!context || problem) {
+  if (availability.state !== 'available' || !context || problem) {
     return (
-      <article className="widget-tile" aria-labelledby={headingId}>
+      <article className="widget-tile widget-unavailable" data-availability={availability.state} aria-labelledby={headingId}>
         <div className="widget-heading"><div><h2 className="widget-title" id={headingId} tabIndex={-1}>{widget.title}</h2></div>
           {onReturnToIndex && <button type="button" className="widget-index-shortcut" onClick={onReturnToIndex} aria-label={`Jump to visualization index from ${widget.title}`}>Index</button>}
         </div>
-        <p className="widget-empty"><strong>{data.length === 0 && filters?.channel && widget.datasetKey === 'channels' ? 'No matching sample data.' : 'Insight unavailable.'}</strong> {problem ?? (data.length === 0
-          ? selectedChannel && widget.datasetKey === 'channels'
-            ? 'No sample records match this channel. Remove the channel filter to see all channels.'
-            : 'This dataset has no available sample records.'
-          : 'The saved metric or dimension is not supported by the fictional sample. Ask a dashboard editor to choose an available metric.')} No value has been inferred.</p>
+        <p className="widget-empty"><strong>{availability.state === 'no-match' ? 'No matching sample data.' : 'Insight unavailable.'}</strong> {availability.state === 'available' ? (problem ?? 'This saved visualization cannot be interpreted from the available sample records.') : availability.explanation} No value has been inferred.</p>
+        {availability.state === 'no-match' && widget.datasetKey === 'channels' && filters?.channel && onChannelSelect &&
+          <button type="button" className="widget-recovery" onClick={() => {
+            document.getElementById(headingId)?.focus({ preventScroll: true });
+            onChannelSelect(filters.channel!);
+          }}>Clear channel filter for {widget.title}</button>}
         {editing && <div className="widget-actions">
           <button aria-label={`Edit ${widget.title}`} className="icon-button" onClick={() => onEdit?.(widget)}><Pencil size={15} /></button>
             <button aria-label={`Duplicate ${widget.title}`} title="Duplicate on dashboard" className="icon-button" onClick={() => onDuplicate?.(widget)}><CopyPlus size={15} /></button>
@@ -199,7 +202,7 @@ export function WidgetTile({ widget, period, preview, position, total, editing, 
   }
 
   return (
-    <article className={`widget-tile widget-${widget.kind}`} aria-labelledby={headingId}>
+    <article className={`widget-tile widget-${widget.kind}`} data-availability="available" aria-labelledby={headingId}>
       <div className="widget-heading">
         <div>
           <h2 className="widget-title" id={headingId} tabIndex={-1}>{widget.title}</h2>
