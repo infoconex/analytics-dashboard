@@ -1,5 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { chromium, expect, test, type Page, type TestInfo } from '@playwright/test';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { writeFile } from 'node:fs/promises';
 import type { Dashboard, DashboardDraft, DashboardWidget } from '../src/model';
 
 const id = 'a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3888';
@@ -296,4 +299,69 @@ test('responsive and forced-colors review remain navigable with no horizontal ov
   await page.emulateMedia({ forcedColors: 'none' });
   // CSS zoom scales the full page without Chromium's native viewport reflow.
   // Native browser zoom is verified in a separate extension-backed test below.
+});
+
+
+test('genuine native Chromium 200% and 400% zoom reflows pending-save disclosure and keeps actions accessible', async ({}, info) => {
+  test.setTimeout(120_000);
+  const extension = join(dirname(fileURLToPath(import.meta.url)), 'zoom-extension');
+  const context = await chromium.launchPersistentContext('', {
+    channel: 'chromium', executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+    headless: true, viewport: null,
+    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`, '--window-size=1440,900'],
+  });
+  const evidence: unknown[] = [];
+  try {
+    const page = await context.newPage();
+    await mockApi(page);
+    await page.goto(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${id}`);
+    await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
+    await page.getByRole('button', { name: 'Edit dashboard' }).click();
+    await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Native zoom draft');
+    await page.getByRole('button', { name: 'Remove Orders' }).click();
+    const section = pending(page);
+    await section.getByText(/Review changes before saving/).click();
+    const worker = context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker');
+    const setZoom = (factor: number) => worker.evaluate(async zoom => {
+      const tabs = (globalThis as unknown as { chrome: { tabs: {
+        query(options: Record<string, never>): Promise<Array<{ id?: number; url?: string }>>;
+        setZoom(id: number, factor: number): Promise<void>;
+        getZoom(id: number): Promise<number>;
+      } } }).chrome.tabs;
+      const tab = (await tabs.query({})).find(item => item.url?.includes('127.0.0.1:5173/#/organization/northstar/dashboard/'));
+      if (tab?.id === undefined) throw new Error('Authoring tab unavailable');
+      await tabs.setZoom(tab.id, zoom);
+      return tabs.getZoom(tab.id);
+    }, factor);
+    const metrics = () => page.evaluate(() => ({
+      cssWidth: innerWidth, dpr: devicePixelRatio,
+      overflow: document.documentElement.scrollWidth - innerWidth,
+    }));
+    const baseline = await metrics();
+    for (const factor of [2, 4]) {
+      const actual = await setZoom(factor);
+      await expect.poll(async () => (await metrics()).cssWidth).toBeLessThanOrEqual(baseline.cssWidth / factor + 2);
+      const current = await metrics();
+      expect(actual).toBeCloseTo(factor, 1);
+      expect(current.dpr / baseline.dpr).toBeCloseTo(factor, 1);
+      expect(current.overflow).toBeLessThanOrEqual(1);
+      await expect(section.getByText('Removed: Orders')).toBeVisible();
+      const summary = section.locator('summary');
+      await summary.focus();
+      await expect(summary).toBeFocused();
+      await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+      const cdp = await context.newCDPSession(page);
+      const raw = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: false, captureBeyondViewport: false });
+      const path = info.outputPath(`ux39-native-${factor * 100}-chrome.png`);
+      await writeFile(path, Buffer.from(raw.data, 'base64'));
+      await info.attach(`native-${factor * 100}-chrome`, { path, contentType: 'image/png' });
+      evidence.push({ factor, actual, ...current, viewport: page.viewportSize(), browser: context.browser()?.version() });
+      await cdp.detach();
+    }
+  } finally {
+    const path = info.outputPath('ux39-native-zoom.json');
+    await writeFile(path, JSON.stringify(evidence, null, 2));
+    await info.attach('native-zoom-measurements', { path, contentType: 'application/json' });
+    await context.close();
+  }
 });
