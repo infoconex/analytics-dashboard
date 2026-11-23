@@ -1197,7 +1197,7 @@ export default function App() {
                 </section>}
                 {viewerPreview && editMode && canEdit && <section className="dashboard-preview-banner" aria-label="Unsaved dashboard preview">
                   <strong>Unsaved viewer preview — not published</strong>
-                  <p>{hasChanges ? pendingSaveReview?.summary : 'No dashboard changes pending.'} This is how the current in-memory draft appears in the ordinary dashboard viewer. Only Save changes commits the draft. Return to editing to review, save or discard it.</p>
+                  <p>{hasChanges ? `${pendingSaveReview?.summary}.` : 'No dashboard changes pending.'} This is how the current in-memory draft appears in the ordinary dashboard viewer. Only Save changes commits the draft. Return to editing to review, save or discard it.</p>
                   {dashboardConflict && <p>The saved dashboard changed while you edited. Return to editing to resolve the conflict before Save.</p>}
                   <p>Embedded dashboards use their own host presentation and continue to load authorized saved revisions only.</p>
                 </section>}
