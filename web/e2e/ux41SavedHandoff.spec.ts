@@ -114,14 +114,18 @@ test('unchanged share identifies saved revision; previously copied link opens la
     await expect(afterSave).toContainText('Saved revision 2');
     expect(await afterSave.locator('.share-link-field').inputValue()).toBe(link);
     await afterSave.getByRole('button', { name: 'Done' }).click();
-    await recipient.goto(link);
+    // Following an identical URL in the already-open tab is a same-document hash navigation.
+    // Reload explicitly to represent a recipient checking the saved resource again.
+    await recipient.reload();
     await expect(recipient.getByRole('heading', { name: 'Committed handoff' })).toBeVisible();
     await expect(recipient.locator('.dashboard-toolbar')).toContainText('Dashboard saved 2');
     expect(originalNote).toContain('Saved revision shown to sender: 1');
     expect(originalNote).not.toContain('Committed handoff');
 
     server.saved = { ...server.saved, name: 'Newer saved handoff', revision: 3 };
-    await recipient.reload();
+    // Reopen the copied locator from a fresh document; it stays unpinned.
+    await recipient.goto('about:blank');
+    await recipient.goto(link);
     await expect(recipient.getByRole('heading', { name: 'Newer saved handoff' })).toBeVisible();
     await expect(recipient.locator('.dashboard-toolbar')).toContainText('Dashboard saved 3');
     await snap(recipient, info, 'recipient-latest-saved');
@@ -208,6 +212,9 @@ test('shared destination remains authorization scoped and deleted or malformed l
   await page.goto(route);
   await expect(page.getByText('No organizations available')).toBeVisible();
   server.revokeViewer = false;
+  // Refresh membership after a denied session; a hash change cannot refresh absent membership.
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();
   await page.goto('/#/organization/unknown/dashboard/' + id);
   await expect(page.getByText(/requested organization is unavailable/)).toBeVisible();
   await page.goto('/#/organization/northstar/dashboard/11111111-1111-4111-8111-111111111111');
