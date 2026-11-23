@@ -39,8 +39,8 @@ describe('UX-39 pending dashboard save review', () => {
       widgets: [{ ...saved.widgets[0]!, title: 'Revenue changed' }, saved.widgets[1]!,
         widget('added-one', 'Acquisition'), widget('added-two', 'Conversions')] }));
     expect(review.changes.map(item => item.label)).toEqual([
-      'Dashboard name', 'Updated: Revenue changed', 'Added: Acquisition',
-      'Added: Conversions', 'Removed: Sessions',
+      'Dashboard name', 'Updated: Revenue changed', 'Removed: Sessions',
+      'Added: Acquisition', 'Added: Conversions',
     ]);
     expect(review.summary).toContain('2 visualizations added');
     expect(review.summary).toContain('1 visualization updated');
