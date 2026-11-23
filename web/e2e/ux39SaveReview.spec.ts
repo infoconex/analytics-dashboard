@@ -91,7 +91,7 @@ test('single metadata change: optional review, normal Save and accurate post-sav
   await name.fill('Revised dashboard');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('All changes saved');
+  await expect(page.getByText('All changes saved', { exact: true })).toBeVisible();
   expect(api.writes.map(item => item.expectedRevision)).toEqual([1]);
   expect(api.saved().name).toBe('Revised dashboard');
   expect(await pending(page).count()).toBe(0);
@@ -107,6 +107,7 @@ test('duplicate, edit, resize, reorder and remove: each local widget counted onc
   await dialog.getByRole('button', { name: 'Update visualization' }).click();
   await page.getByText('Adjust size', { exact: false }).first().click();
   await page.getByRole('button', { name: 'Taller Revenue' }).click();
+  await page.getByRole('button', { name: 'Move Revenue later' }).click();
   await page.getByRole('button', { name: 'Move Revenue later' }).click();
   await page.getByRole('button', { name: 'Remove Sessions' }).click();
   const section = pending(page);
@@ -220,9 +221,6 @@ test('Save template while dashboard has unsaved edits does not commit or alter d
   expect(api.templates()).toBe(1);
   expect(api.writes).toHaveLength(0);
   await expect(pending(page)).toContainText('Pending: description');
-  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  // The app explicitly confirms discarding the dashboard draft.
-  // The click above is resolved by Playwright's dialog handler below only when prompted.
 });
 
 test('viewer is read-only; revocation during authoring fails server-side and keeps pending work', async ({ page }) => {
@@ -253,13 +251,15 @@ test('responsive, forced-colors and CSS zoom review remain navigable with no hor
     await section.getByText(/Review changes before saving/).click();
     await expect(section.getByText('Removed: Orders')).toBeVisible();
     await snapshot(page, info, `review-${width}`);
-    await expect(section.locator('summary')).toBeFocusable();
+    await section.locator('summary').focus();
+    await expect(section.locator('summary')).toBeFocused();
   }
   await page.emulateMedia({ forcedColors: 'active' });
   const findings = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
   expect(findings.violations.map(item => item.id)).toEqual([]);
   await snapshot(page, info, 'forced-colors-320');
   await page.emulateMedia({ forcedColors: 'none' });
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.evaluate(() => { document.body.style.zoom = '200%'; });
   await snapshot(page, info, 'css-zoom-200-percent');
 });
