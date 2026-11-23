@@ -13,6 +13,7 @@ interface Props {
   filters: ConsumerFilters;
   editing: boolean;
   canEdit: boolean;
+  draftPreview?: boolean;
   onStartEdit: () => void;
   onRepair: (widget: DashboardWidget) => void;
   onChange: (widgets: DashboardWidget[]) => void;
@@ -26,7 +27,7 @@ interface Props {
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdit, onRepair, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onChannelSelect, onPeriodReset, onShareInsight }: Props) {
+export function DashboardCanvas({ widgets, filters, editing, canEdit, draftPreview = false, onStartEdit, onRepair, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onChannelSelect, onPeriodReset, onShareInsight }: Props) {
   const [dragged, setDragged] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -241,7 +242,7 @@ export function DashboardCanvas({ widgets, filters, editing, canEdit, onStartEdi
         {editing && widgets.length > 0 && <button className="add-widget" onClick={onAdd}><span><Plus size={25} /></span><strong>Add visualization</strong><small>Create a chart and see it on your dashboard</small></button>}
         {editing && widgets.length > 0 && <button type="button" className="add-widget add-saved-widget" onClick={onAddSaved}><span><Plus size={25} /></span><strong>Add saved visualization</strong><small>Reuse a chart from this organization</small></button>}
       </div>
-      {widgets.length === 0 && !editing && <div className="canvas-empty"><strong>No visualizations yet</strong><p>{canEdit ? 'This empty dashboard is saved. Add a chart whenever you are ready.' : 'An editor can add the first visualization to this saved dashboard.'}</p>{canEdit && <Button onClick={onStartEdit}><Plus size={17} aria-hidden="true" /> Add first visualization</Button>}</div>}
+      {widgets.length === 0 && !editing && <div className="canvas-empty"><strong>No visualizations yet</strong><p>{draftPreview ? 'The current dashboard draft has no visualizations. Return to editing to add one; previewing does not save.' : canEdit ? 'This empty dashboard is saved. Add a chart whenever you are ready.' : 'An editor can add the first visualization to this saved dashboard.'}</p>{canEdit && <Button onClick={onStartEdit}><Plus size={17} aria-hidden="true" /> Add first visualization</Button>}</div>}
       {widgets.length === 0 && editing && <section className="canvas-empty-start" aria-labelledby="first-visualization-heading">
         <h2 id="first-visualization-heading">Start with your first visualization</h2>
         <p>Your empty dashboard is already saved. Build a new visualization or add an independent copy from this organization's library. After adding, choose Save changes to keep it.</p>
