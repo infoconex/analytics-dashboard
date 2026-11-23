@@ -42,7 +42,7 @@ export function DashboardConsumer({ widgets, updatedAt, savedRevision, draftPrev
   }
 
   return <>
-    {(!editing || widgets.length > 0) && <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Static fictional sample</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> {draftPreview ? 'Last saved revision' : 'Dashboard saved'} {savedRevision} · {new Date(updatedAt).toLocaleDateString()}{draftPreview ? ' · Draft not saved' : ''} · Sample freshness unavailable</span></div></div>}
+    {(!editing || widgets.length > 0) && <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Static fictional sample</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> {draftPreview ? 'Last saved revision' : 'Saved revision'} {savedRevision} · Dashboard updated {new Date(updatedAt).toLocaleDateString()}{draftPreview ? ' · Draft not saved' : ''} · Sample freshness unavailable</span></div></div>}
     {!editing && <details className="consumer-guidance"><summary>How to explore this dashboard</summary>
       <ul><li>Start with a visualization's title and “At a glance” insight when available.</li>
         <li>Choose “View data table” below a chart to see exact fictional values and use keyboard-accessible controls.</li>
