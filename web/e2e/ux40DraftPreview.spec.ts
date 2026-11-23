@@ -182,8 +182,9 @@ test('unsupported and repaired visualizations render through the same consumer p
 });
 
 test('empty in-memory dashboard is not mislabeled as a saved empty dashboard', async ({ page }) => {
-  await mockApi(page, { ...initial, widgets: [] });
+  await mockApi(page, { ...initial, widgets: [widget(1, 'Revenue')] });
   await openEditor(page);
+  await page.getByRole('button', { name: 'Remove Revenue' }).click();
   await enter(page);
   await expect(page.getByText('The current dashboard draft has no visualizations.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add first visualization' })).toHaveCount(0);
