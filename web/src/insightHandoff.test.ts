@@ -68,4 +68,31 @@ describe('UX-10 insight handoff contract', () => {
     expect(note).toContain('Adding or averaging rates cannot establish a combined rate');
     expect(note).not.toContain('Total conversion:');
   });
+
+  it('keeps the saved link unpinned while identifying the revision displayed to the sender', () => {
+    const newer = { ...dashboard, revision: 2, name: 'Revised business performance' };
+    const earlierLink = dashboardHandoffLink('https://example.test', '/app', dashboard);
+    expect(dashboardHandoffLink('https://example.test', '/app', newer)).toBe(earlierLink);
+    expect(earlierLink).not.toContain('revision');
+    const earlierNote = dashboardHandoffNote(dashboard, 'Northstar Commerce', defaultConsumerFilters, earlierLink);
+    const newerNote = dashboardHandoffNote(newer, 'Northstar Commerce', defaultConsumerFilters, earlierLink);
+    expect(earlierNote).toContain('Saved revision shown to sender: 1');
+    expect(earlierNote).toContain('link may open a newer saved revision');
+    expect(earlierNote).toContain('not a live or automatically updated report');
+    expect(newerNote).toContain('Saved revision shown to sender: 2');
+    expect(newerNote).toContain('Dashboard: Revised business performance');
+    expect(earlierNote).not.toContain('Saved revision shown to sender: 2');
+    expect(earlierNote).toContain(earlierLink);
+  });
+
+  it('labels exact fictional insight values with the sender-viewed saved revision', () => {
+    const snapshot = insightHandoffNote(dashboard, 'Northstar Commerce', dashboard.widgets[0]!,
+      { period: '3m', channel: 'Direct' }, link);
+    expect(snapshot).toContain('Saved revision shown to sender: 1');
+    expect(snapshot).toContain('link may open a newer saved revision');
+    expect(snapshot).toContain('not a live or automatically updated report');
+    expect(snapshot).toContain('Oct: $41,400');
+    expect(snapshot).toContain('Marketing channels: Direct');
+    expect(snapshot).not.toContain('refresh timestamp: 2026');
+  });
 });
