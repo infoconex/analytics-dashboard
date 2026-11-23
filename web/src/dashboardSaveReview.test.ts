@@ -91,6 +91,7 @@ describe('UX-39 pending dashboard save review', () => {
     expect(review.changes.map(item => item.kind)).toEqual(['widget-edit', 'order']);
     expect(review.changes[0]?.detail).toContain('Size or layout changed');
     expect(review.summary).toContain('order');
+    expect(review.changes[1]?.detail).toContain('Orders, Revenue');
   });
 
   it('does not manufacture a reordering when simply removing an existing widget', () => {
