@@ -105,7 +105,7 @@ test('duplicate, edit, resize, reorder and remove: each local widget counted onc
   const dialog = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
   await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders updated');
   await dialog.getByRole('button', { name: 'Update visualization' }).click();
-  await page.getByText('Adjust size', { exact: false }).first().click();
+  await page.locator(`[data-widget-id="${widget(1, 'Revenue').id}"] .canvas-size-tools summary`).click();
   await page.getByRole('button', { name: 'Taller Revenue' }).click();
   await page.getByRole('button', { name: 'Move Revenue later' }).click();
   await page.getByRole('button', { name: 'Move Revenue later' }).click();
@@ -273,7 +273,7 @@ test('Cancel and navigation preserve or discard pending edits only after explici
   expect(api.writes).toHaveLength(0);
 });
 
-test('responsive, forced-colors and CSS zoom review remain navigable with no horizontal overflow', async ({ page }, info) => {
+test('responsive and forced-colors review remain navigable with no horizontal overflow', async ({ page }, info) => {
   test.setTimeout(160_000);
   await mockApi(page);
   for (const width of [1440, 768, 390, 320]) {
@@ -294,7 +294,6 @@ test('responsive, forced-colors and CSS zoom review remain navigable with no hor
   expect(findings.violations.map(item => item.id)).toEqual([]);
   await snapshot(page, info, 'forced-colors-320');
   await page.emulateMedia({ forcedColors: 'none' });
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.evaluate(() => { document.body.style.zoom = '200%'; });
-  await snapshot(page, info, 'css-zoom-200-percent');
+  // CSS zoom scales the full page without Chromium's native viewport reflow.
+  // Native browser zoom is verified in a separate extension-backed test below.
 });
