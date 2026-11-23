@@ -108,8 +108,11 @@ test('duplicate, edit, resize, reorder and remove: each local widget counted onc
   const dialog = page.getByRole('dialog', { name: 'Edit dashboard visualization' });
   await dialog.getByRole('textbox', { name: 'Title' }).fill('Orders updated');
   await dialog.getByRole('button', { name: 'Update visualization' }).click();
-  await page.locator(`[data-widget-id="${widget(1, 'Revenue').id}"] .canvas-size-tools summary`).click();
-  await page.getByRole('button', { name: 'Taller Revenue' }).click();
+  // Wide desktop layouts use the existing accessible resize handle; the
+  // touch-friendly Adjust size disclosure is intentionally hidden at this width.
+  const resize = page.getByRole('button', { name: /^Resize Revenue: / });
+  await resize.focus();
+  await resize.press('ArrowDown');
   await page.getByRole('button', { name: 'Move Revenue later' }).click();
   await page.getByRole('button', { name: 'Move Revenue later' }).click();
   await page.getByRole('button', { name: 'Remove Sessions' }).click();
