@@ -98,7 +98,7 @@ test('unchanged share identifies saved revision; previously copied link opens la
     await mock(recipient, server);
     await recipient.goto(link);
     await expect(recipient.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();
-    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Dashboard saved 1');
+    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 1');
     await expect(recipient.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Edit dashboard' }).click();
@@ -118,7 +118,7 @@ test('unchanged share identifies saved revision; previously copied link opens la
     // Reload explicitly to represent a recipient checking the saved resource again.
     await recipient.reload();
     await expect(recipient.getByRole('heading', { name: 'Committed handoff' })).toBeVisible();
-    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Dashboard saved 2');
+    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 2');
     expect(originalNote).toContain('Saved revision shown to sender: 1');
     expect(originalNote).not.toContain('Committed handoff');
 
@@ -127,7 +127,7 @@ test('unchanged share identifies saved revision; previously copied link opens la
     await recipient.goto('about:blank');
     await recipient.goto(link);
     await expect(recipient.getByRole('heading', { name: 'Newer saved handoff' })).toBeVisible();
-    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Dashboard saved 3');
+    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 3');
     await snap(recipient, info, 'recipient-latest-saved');
   } finally { await recipientContext.close(); }
 });
@@ -147,7 +147,7 @@ test('failed Save, cancelled edits and revision conflict do not publish draft co
     await mock(recipient, server);
     await recipient.goto(route);
     await expect(recipient.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();
-    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Dashboard saved 1');
+    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 1');
     page.once('dialog', d => void d.accept());
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
@@ -161,7 +161,7 @@ test('failed Save, cancelled edits and revision conflict do not publish draft co
     await expect(page.getByRole('button', { name: 'Share', exact: true })).toHaveCount(0);
     await recipient.reload();
     await expect(recipient.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();
-    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Dashboard saved 2');
+    await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 2');
     expect(server.writes).toEqual([503, 409]);
   } finally { await recipientContext.close(); }
 });
@@ -272,7 +272,7 @@ test('embedded consumer displays the saved revision without editing or granting 
   await mock(page, server);
   await page.goto('/embed.html#/organization/northstar/dashboard/' + id);
   await expect(page.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();
-  await expect(page.locator('.dashboard-toolbar')).toContainText('Dashboard saved 1');
+  await expect(page.locator('.dashboard-toolbar')).toContainText('Saved revision 1');
   await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
   const chart = page.getByRole('article', { name: 'Revenue' });
   await chart.locator('.insight-context > summary').click();
@@ -284,7 +284,7 @@ test('embedded consumer displays the saved revision without editing or granting 
   server.saved = { ...server.saved, revision: 2, name: 'Updated embedded view' };
   await page.getByRole('button', { name: 'Reload dashboard definition' }).click();
   await expect(page.getByRole('heading', { name: 'Updated embedded view' })).toBeVisible();
-  await expect(page.locator('.dashboard-toolbar')).toContainText('Dashboard saved 2');
+  await expect(page.locator('.dashboard-toolbar')).toContainText('Saved revision 2');
 });
 
 test('native Chromium 200% and 400% zoom keeps saved revision and copy controls available', async ({}, info) => {
