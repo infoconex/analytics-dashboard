@@ -59,10 +59,14 @@ export function reviewPendingDashboardSave(baseline: Dashboard, draft: Dashboard
       key: change.key, kind: change.kind, label: 'Dashboard description',
       detail: 'Description changed. The current text will be saved.',
     };
-    if (change.kind === 'order') return {
-      key: change.key, kind: change.kind, label: 'Visualization order',
-      detail: 'The remaining existing visualizations will be saved in their current order.',
-    };
+    if (change.kind === 'order') {
+      const baselineOrder = baseline.widgets.filter(widget => current.has(widget.id)).map(widget => widget.id);
+      const shifted = draft.widgets.filter(widget => originals.has(widget.id))
+        .filter((widget, index) => widget.id !== baselineOrder[index]).map(widget => widget.title);
+      const names = shifted.slice(0, 4).join(', ');
+      return { key: change.key, kind: change.kind, label: 'Visualization order',
+        detail: `Order changes affect: ${names}${shifted.length > 4 ? ` and ${shifted.length - 4} more` : ''}. The current order will be saved.` };
+    }
     const id = change.key.slice('widget:'.length);
     const before = originals.get(id), next = current.get(id);
     if (!before && next) return {
