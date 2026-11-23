@@ -182,7 +182,7 @@ test('selected conflict recovery reviews only local changes relative to the new 
   expect(api.saved().widgets.map(item => item.title)).toEqual(['Local revenue', 'Remote orders', 'Sessions']);
 });
 
-test('failure, successful retry and a second revision conflict never claim a draft was saved', async ({ page }) => {
+test('failed save and a second revision conflict never claim a draft was saved', async ({ page }) => {
   const api = await mockApi(page);
   await edit(page);
   await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Local name');
@@ -236,6 +236,41 @@ test('viewer is read-only; revocation during authoring fails server-side and kee
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(pending(page)).toContainText('Pending: name');
   expect(api.writes.at(-1)?.status).toBe(403);
+});
+
+test('transient failed Save keeps review intact until a successful explicit retry', async ({ page }) => {
+  const api = await mockApi(page);
+  await edit(page);
+  await page.getByRole('textbox', { name: 'Dashboard description' }).fill('Recoverable draft');
+  api.failWrite(true);
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByRole('alert')).toContainText('Your unsaved work is still available');
+  await expect(pending(page)).toContainText('Pending: description');
+  expect(api.saved().description).toBe('Original description');
+  api.failWrite(false);
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
+  await expect(pending(page)).toHaveCount(0);
+  expect(api.writes.map(write => write.status)).toEqual([503, 200]);
+  expect(api.saved().description).toBe('Recoverable draft');
+});
+
+test('Cancel and navigation preserve or discard pending edits only after explicit choice', async ({ page }) => {
+  const api = await mockApi(page);
+  await edit(page);
+  await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Uncommitted name');
+  await expect(pending(page)).toContainText('Pending: name');
+  page.once('dialog', dialog => void dialog.dismiss());
+  await page.getByRole('button', { name: 'Back to dashboards' }).click();
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Uncommitted name');
+  await expect(pending(page)).toBeVisible();
+  page.once('dialog', dialog => void dialog.accept());
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
+  await expect(pending(page)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Shared dashboard');
+  expect(api.writes).toHaveLength(0);
 });
 
 test('responsive, forced-colors and CSS zoom review remain navigable with no horizontal overflow', async ({ page }, info) => {
