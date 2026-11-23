@@ -1044,3 +1044,20 @@ button:disabled { opacity:.6; }
 .visualization-saved-key { color:#475c78; font-size:11px; line-height:1.5; margin:-10px 0 16px; overflow-wrap:anywhere; }
 .visualization-saved-key code { font-family:ui-monospace, SFMono-Regular, Consolas, monospace; white-space:normal; overflow-wrap:anywhere; color:inherit; }
 @media (forced-colors:active) { .visualization-saved-key, .visualization-saved-key code { color:CanvasText; } }
+
+/* UX-39: optional, in-flow save review. The ordinary Save action remains unchanged. */
+.pending-save-review { margin:0 0 16px; padding:12px 16px; border:1px solid var(--color-border); border-radius:10px; background:var(--color-surface); min-width:0; }
+.pending-save-intro { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 14px; font-size:13px; line-height:1.55; }
+.pending-save-intro strong { font-size:13px; }
+.pending-save-intro p { margin:0; color:var(--color-muted); overflow-wrap:anywhere; }
+.pending-save-details { margin-top:9px; padding-top:9px; border-top:1px solid var(--color-border); }
+.pending-save-details summary { cursor:pointer; width:fit-content; max-width:100%; font-size:13px; font-weight:700; line-height:1.55; overflow-wrap:anywhere; }
+.pending-save-details summary:focus-visible { outline:2px solid currentColor; outline-offset:3px; }
+.pending-save-details > p { font-size:13px; line-height:1.55; margin:10px 0; overflow-wrap:anywhere; }
+.pending-save-list { display:grid; gap:8px; list-style:none; margin:12px 0; padding:0; }
+.pending-save-list li { border:1px solid var(--color-border); border-radius:8px; padding:10px 12px; min-width:0; display:grid; gap:3px; font-size:13px; line-height:1.5; }
+.pending-save-list strong,.pending-save-list span { overflow-wrap:anywhere; }
+.pending-save-list span { color:var(--color-muted); }
+.pending-save-details .pending-save-removal { font-weight:650; }
+@media (max-width:600px) { .pending-save-review { padding:11px; } .pending-save-intro { display:block; } .pending-save-intro p { margin-top:3px; } }
+@media (forced-colors:active) { .pending-save-review,.pending-save-list li { border-color:CanvasText; background:Canvas; color:CanvasText; } .pending-save-intro p,.pending-save-list span { color:CanvasText; } }
