@@ -4,7 +4,7 @@ import {
   CalendarDays, Check, ChevronDown, ChevronRight, CircleHelp,
   Cloud, Database, Ellipsis, ExternalLink, FileBarChart, Filter, FolderKanban,
   Gauge, LayoutDashboard, LockKeyhole, Menu, Plus, Search,
-  Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Undo2, Redo2,
+  Settings2, Share2, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Undo2, Redo2, Eye,
   Users,
 } from 'lucide-react';
 import { dashboardApi, visualizationApi } from './api';
@@ -73,6 +73,7 @@ export default function App() {
   const [selectedTask, setSelectedTask] = useState<{ organizationId: string; dashboardId: string; questionId: string; widgetId: string } | null>(null);
   const [period, setPeriod] = useState('12m');
   const [editMode, setEditMode] = useState(false);
+  const [viewerPreview, setViewerPreview] = useState(false);
   const [draft, setDraft] = useState<DashboardDraft | null>(null);
   const [undoHistory, setUndoHistory] = useState(emptyWidgetHistory);
   const [undoFeedback, setUndoFeedback] = useState('');
@@ -109,6 +110,8 @@ export default function App() {
   const sidebar = useRef<HTMLElement>(null);
   const mainContent = useRef<HTMLElement>(null);
   const saveChangesButton = useRef<HTMLButtonElement>(null);
+  const previewReturnScroll = useRef<number | null>(null);
+  const previewFocusTransition = useRef<'preview' | 'edit' | null>(null);
   const dashboardConflictRegion = useRef<HTMLElement>(null);
   const skipNextHashPrompt = useRef(false);
   const acceptedHash = useRef(window.location.hash);
@@ -174,7 +177,7 @@ export default function App() {
 
   // Only outside text fields and dialogs: never steal native input undo.
   useEffect(() => {
-    if (!editMode || !canEdit || !draft || saving || widgetDraft || libraryOpen || librarySource || createOpen) return;
+    if (!editMode || viewerPreview || !canEdit || !draft || saving || widgetDraft || libraryOpen || librarySource || createOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.altKey || event.repeat || event.isComposing) return;
       if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable="true"], dialog')) return;
@@ -191,7 +194,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [editMode, canEdit, draft, saving, widgetDraft, libraryOpen, librarySource, createOpen, undoHistory]);
+  }, [editMode, viewerPreview, canEdit, draft, saving, widgetDraft, libraryOpen, librarySource, createOpen, undoHistory]);
 
   useEffect(() => { if (createOpen) setCreateError(''); }, [createOpen]);
 
@@ -287,10 +290,26 @@ export default function App() {
     setDraft(null);
   }
 
+  // Preview is a presentation of the existing in-memory draft, never another
+  // editable snapshot or a published dashboard. Keep Save/Cancel in edit mode.
+  function enterViewerPreview() {
+    if (!editMode || viewerPreview || !canEdit || !draft || saving || widgetDraft || libraryOpen || librarySource || createOpen) return;
+    previewReturnScroll.current = window.scrollY;
+    previewFocusTransition.current = 'preview';
+    setViewerPreview(true);
+  }
+
+  function returnFromViewerPreview() {
+    if (!viewerPreview) return;
+    previewFocusTransition.current = 'edit';
+    setViewerPreview(false);
+  }
+
   function stopEditing() {
     if (!confirmDiscard()) return;
     widgetBaseline.current = null;
     focusAfterEditTransition.current = 'view';
+    setViewerPreview(false);
     setEditMode(false);
     setDraft(null);
     resetWidgetUndo();
@@ -306,6 +325,7 @@ export default function App() {
 
   function startEditing(openGallery = false) {
     if (!canEdit || !activeDashboard) return;
+    setViewerPreview(false);
     resetWidgetUndo();
     setReturnToLibrary(false);
     setDraft({ name: activeDashboard.name, description: activeDashboard.description,
@@ -395,7 +415,8 @@ export default function App() {
         }
       }
       widgetBaseline.current = null;
-      setEditMode(false);
+      setViewerPreview(false);
+    setEditMode(false);
       setDraft(null);
       resetWidgetUndo();
       setReturnToLibrary(false);
@@ -429,6 +450,23 @@ export default function App() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [editMode, loading, view]);
+
+  // The invoking preview toggle is replaced by its return action. Focusing it
+  // without a page-scroll side effect keeps keyboard users oriented; returning
+  // to editing restores the previous authoring scroll position.
+  useEffect(() => {
+    const transition = previewFocusTransition.current;
+    if (!transition || !editMode || !canEdit || loading || (transition === 'preview') !== viewerPreview) return;
+    previewFocusTransition.current = null;
+    const frame = window.requestAnimationFrame(() => {
+      const selector = transition === 'preview' ? '.dashboard-preview-exit' : '.dashboard-preview-enter';
+      mainContent.current?.querySelector<HTMLButtonElement>(selector)?.focus({ preventScroll: true });
+      if (transition === 'preview') window.scrollTo({ top: 0, behavior: 'instant' });
+      else if (previewReturnScroll.current !== null)
+        window.scrollTo({ top: previewReturnScroll.current, behavior: 'instant' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [viewerPreview, editMode, canEdit, loading]);
 
   // Navigation replaces the previous control; place keyboard focus on the new
   // page heading instead of leaving it on a detached element. The question
@@ -576,6 +614,7 @@ export default function App() {
     setOrganizationNotice('');
     setView({ page: next, id });
     widgetBaseline.current = null;
+    setViewerPreview(false);
     setEditMode(false);
     setDraft(null);
     resetWidgetUndo();
@@ -671,7 +710,8 @@ export default function App() {
         ? { ...current, items: current.items.map(item => item.id === updated.id ? updated : item) } : current);
       setDraft(null);
       focusAfterEditTransition.current = 'view';
-      setEditMode(false);
+      setViewerPreview(false);
+    setEditMode(false);
       resetWidgetUndo();
       setDashboardConflict(null);
       setToast('All changes saved');
@@ -709,7 +749,8 @@ export default function App() {
         ? { ...current, items: current.items.map(item => item.id === latest.id ? latest : item) } : current);
       setDraft(null);
       focusAfterEditTransition.current = 'view';
-      setEditMode(false);
+      setViewerPreview(false);
+    setEditMode(false);
       resetWidgetUndo();
       setDashboardConflict(null);
       setSaveError('');
@@ -1024,7 +1065,7 @@ export default function App() {
     }
   }
 
-  const preview = editMode && draft && activeDashboard
+  const preview = editMode && canEdit && draft && activeDashboard
     ? { ...activeDashboard, ...draft } : activeDashboard;
   const featured = dashboards[0];
   const questionMatches = questionFilter ? findQuestionMatches(dashboards, organizationId, questionFilter) : [];
@@ -1119,22 +1160,23 @@ export default function App() {
               <>
                 <div className="page-heading dashboard-heading">
                   <div className="heading-left"><button className="back-button dashboard-return" aria-label="Back to dashboards" onClick={() => navigate('dashboards')}><ArrowLeft size={18} /><span>Dashboards</span></button>
-                    <div><div className="eyebrow">DASHBOARD <span>·</span> {editMode ? 'EDITING DRAFT' : 'VIEWING SAVED'}</div>
-                      {editMode && draft ? <input className="title-edit" aria-label="Dashboard name" value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} /> : <h1>{preview.name}</h1>}
-                      {editMode && draft ? <input className="description-edit" aria-label="Dashboard description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /> : <p>{preview.description}</p>}</div>
+                    <div><div className="eyebrow">DASHBOARD <span>·</span> {editMode ? viewerPreview ? 'UNSAVED VIEWER PREVIEW' : 'EDITING DRAFT' : 'VIEWING SAVED'}</div>
+                      {editMode && !viewerPreview && draft ? <input className="title-edit" aria-label="Dashboard name" value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} /> : <h1>{preview.name}</h1>}
+                      {editMode && !viewerPreview && draft ? <input className="description-edit" aria-label="Dashboard description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /> : <p>{preview.description}</p>}</div>
                   </div>
                   <div className="heading-actions">
-                    {editMode ? <>
+                    {editMode ? viewerPreview ? <button type="button" className="button button-primary dashboard-preview-exit" onClick={returnFromViewerPreview}><ArrowLeft size={16} aria-hidden="true" /> Return to editing</button> : <>
                        {(Boolean(draft?.widgets.length) || undoHistory.past.length > 0 || undoHistory.future.length > 0) && <div className="dashboard-undo-controls" role="group" aria-label="Dashboard widget history">
                          <button type="button" className="button button-light" aria-label="Undo widget change" title="Undo widget change (Ctrl/Cmd+Z)" disabled={!undoHistory.past.length || saving} onClick={undoDashboardWidgets}><Undo2 size={16} /> Undo</button>
                          <button type="button" className="button button-light" aria-label="Redo widget change" title="Redo widget change (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled={!undoHistory.future.length || saving} onClick={redoDashboardWidgets}><Redo2 size={16} /> Redo</button>
                        </div>}
+                       {canEdit && <button type="button" className="button button-light dashboard-preview-enter" disabled={saving} onClick={enterViewerPreview}><Eye size={16} aria-hidden="true" /> Preview as viewer</button>}
                        <button className="button button-quiet" disabled={saving} onClick={stopEditing}>Cancel</button><button ref={saveChangesButton} className="button button-primary" disabled={!hasChanges || !draft?.name.trim() || saving || Boolean(dashboardConflict)} onClick={() => void saveDashboard()}><Check size={16} /> {saving ? 'Saving…' : 'Save changes'}</button></>
                       : <><button className="button button-light" onClick={() => share(preview)}><Share2 size={16} /> Share</button>{canEdit && <button className="button button-primary" onClick={() => startEditing()}><SlidersHorizontal size={16} /> Edit dashboard</button>}</>}
                   </div>
                 </div>
-                {editMode && <>{(Boolean(draft?.widgets.length) || hasChanges) && <div className="composition-status"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Undo and Redo reverse widget edits in this tab. Save changes to keep your dashboard draft; library templates save separately.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}<span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{undoFeedback}</span></>}
-                {editMode && canEdit && hasChanges && pendingSaveReview && <section className="pending-save-review" aria-label="Pending dashboard changes">
+                {editMode && !viewerPreview && <>{(Boolean(draft?.widgets.length) || hasChanges) && <div className="composition-status"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Undo and Redo reverse widget edits in this tab. Save changes to keep your dashboard draft; library templates save separately.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}<span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{undoFeedback}</span></>}
+                {editMode && canEdit && hasChanges && pendingSaveReview && <section hidden={viewerPreview} className="pending-save-review" aria-label="Pending dashboard changes">
                   <div className="pending-save-intro">
                     <strong>Before you save</strong>
                     <p>{pendingSaveReview.summary}</p>
@@ -1153,8 +1195,14 @@ export default function App() {
                     <p>Changes to dashboard copies never update saved visualization templates. Templates use a separate Save template action.</p>
                   </details>
                 </section>}
-                {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available in this tab.</div>}
-                {dashboardConflict && editMode && <section ref={dashboardConflictRegion} className="conflict-recovery" aria-label="Dashboard conflict recovery" tabIndex={-1}>
+                {viewerPreview && editMode && canEdit && <section className="dashboard-preview-banner" aria-label="Unsaved dashboard preview">
+                  <strong>Unsaved viewer preview — not published</strong>
+                  <p>{hasChanges ? pendingSaveReview?.summary : 'No dashboard changes pending.'} This is how the current in-memory draft appears in the ordinary dashboard viewer. Only Save changes commits the draft. Return to editing to review, save or discard it.</p>
+                  {dashboardConflict && <p>The saved dashboard changed while you edited. Return to editing to resolve the conflict before Save.</p>}
+                  <p>Embedded dashboards use their own host presentation and continue to load authorized saved revisions only.</p>
+                </section>}
+                {saveError && editMode && !viewerPreview && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available in this tab.</div>}
+                {dashboardConflict && editMode && !viewerPreview && <section ref={dashboardConflictRegion} className="conflict-recovery" aria-label="Dashboard conflict recovery" tabIndex={-1}>
                   <h2>Review newer dashboard changes</h2>
                   {dashboardConflict === 'unavailable'
                     ? <p>The latest dashboard or editing permission could not be confirmed. Your draft is still in this tab. Check access or try again; no recovery or save is allowed yet.</p>
@@ -1185,12 +1233,12 @@ export default function App() {
                 </section>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
                   && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} editing={editMode} canEdit={canEdit} onStartEdit={() => startEditing(true)} onRepair={beginVisualizationRepair} onEdit={widget => beginWidgetEditor(widget)} onAdd={() => beginWidgetEditor(createWidget())}
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} draftPreview={editMode && viewerPreview} editing={editMode && !viewerPreview} canEdit={canEdit && !viewerPreview} onStartEdit={() => startEditing(true)} onRepair={beginVisualizationRepair} onEdit={widget => beginWidgetEditor(widget)} onAdd={() => beginWidgetEditor(createWidget())}
                    onAddSaved={() => void openSavedLibrary()}
                    onDuplicate={widget => { if (draft) commitWidgets(duplicateWidget(draft.widgets, widget.id, crypto.randomUUID())); }}
                    onSaveToLibrary={offerSaveToLibrary} onChange={commitWidgets}
                   onFiltersChange={filters => { viewingSnapshot.current = { key: `${organizationId}:${preview.id}`, filters }; }}
-                  onShareInsight={(widget, filters) => share(preview, widget, filters)} />
+                  onShareInsight={viewerPreview ? undefined : (widget, filters) => share(preview, widget, filters)} />
               </>
             ) : <div><EmptyState title="Dashboard not found" message="This dashboard is unavailable in the selected organization. Return to its dashboard list to choose an accessible view." /><button type="button" className="button button-light recovery-action" onClick={() => navigate('dashboards')}>Back to dashboards</button></div>
             : view.page === 'dashboards' ? (
