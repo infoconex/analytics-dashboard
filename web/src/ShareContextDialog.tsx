@@ -39,10 +39,11 @@ export function ShareContextDialog({ dashboard, organizationName, filters, widge
     <div className="handoff-context">
       <div><strong>Organization</strong><span>{organizationName}</span></div>
       <div><strong>Saved dashboard</strong><span>{dashboard.name}</span></div>
+      <div><strong>Revision in this view</strong><span>Saved revision {dashboard.revision}</span></div>
       {widget && <div><strong>Selected visualization</strong><span>{widget.title}</span></div>}
       <div><strong>Data source</strong><span>Deterministic fictional sample · No live data or refresh timestamp</span></div>
     </div>
-    <p className="handoff-explainer">This link opens the <strong>saved dashboard</strong> with default filters for people authorized to view this organization. It does not reopen your current selections or expanded interpretation.</p>
+    <p className="handoff-explainer">This link opens the <strong>saved dashboard</strong> at the <strong>latest saved revision</strong> available when a recipient opens or reloads it, with default filters for people authorized to view this organization. It does not pin this revision, publish unsaved edits, carry temporary filters or expanded interpretation, or grant access.</p>
     <label className="handoff-field">Saved dashboard link
       <input className="share-link-field" ref={linkField} readOnly value={link} onFocus={event => event.currentTarget.select()} />
     </label>

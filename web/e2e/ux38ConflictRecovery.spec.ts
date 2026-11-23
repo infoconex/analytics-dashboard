@@ -64,6 +64,10 @@ async function conflict(page: Page) {
   await expect(region).toBeVisible();
   await expect(region).toBeFocused();
   await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  // The conflict region can receive focus before its authorized latest-revision
+  // lookup finishes. Wait for the recovery controls to settle before selecting
+  // changes so a late response cannot collapse the open review disclosure.
+  await expect(region.getByRole('button', { name: 'Check latest version' })).toBeEnabled();
   return region;
 }
 
@@ -169,6 +173,8 @@ test('newer revision during recovery forces renewed review; another stale save i
   await expect(region).toContainText('latest saved revision 3');
   await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Local name');
   await expect(region.getByRole('button', { name: 'Recover selected edits (0)' })).toBeDisabled();
+  // The first recheck is asynchronous; do not race its final busy-state update.
+  await expect(region.getByRole('button', { name: 'Check latest version' })).toBeEnabled();
   await region.getByRole('checkbox', { name: /Dashboard name/ }).check();
   page.once('dialog', dialog => void dialog.accept());
   await region.getByRole('button', { name: 'Recover selected edits (1)' }).click();

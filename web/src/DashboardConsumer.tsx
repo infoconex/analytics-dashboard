@@ -10,6 +10,7 @@ import type { DashboardWidget } from './model';
 interface Props {
   widgets: DashboardWidget[];
   updatedAt: string;
+  savedRevision: number;
   /** A local view of unsaved dashboard composition, never a saved revision. */
   draftPreview?: boolean;
   editing: boolean;
@@ -29,7 +30,7 @@ interface Props {
 
 // Mount with a dashboard-and-organization key to keep unsaved consumer filters
 // scoped to one open dashboard, not to a link or server-persisted draft.
-export function DashboardConsumer({ widgets, updatedAt, draftPreview = false, editing, canEdit, onStartEdit, onRepair, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight, initialFilters }: Props) {
+export function DashboardConsumer({ widgets, updatedAt, savedRevision, draftPreview = false, editing, canEdit, onStartEdit, onRepair, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight, initialFilters }: Props) {
   const [filters, setFilters] = useState({ ...(initialFilters ?? defaultConsumerFilters) });
   const hasFilters = widgets.some(widget => widget.datasetKey === 'commerce' || widget.datasetKey === 'channels');
   const availability = summarizeSampleAvailability(widgets, filters);
@@ -41,7 +42,7 @@ export function DashboardConsumer({ widgets, updatedAt, draftPreview = false, ed
   }
 
   return <>
-    {(!editing || widgets.length > 0) && <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Static fictional sample</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> {draftPreview ? 'Last saved revision' : 'Dashboard saved'} {new Date(updatedAt).toLocaleDateString()}{draftPreview ? ' · Draft not saved' : ''} · Sample freshness unavailable</span></div></div>}
+    {(!editing || widgets.length > 0) && <div className="dashboard-toolbar"><div className="toolbar-left"><span className="live-indicator"><span /> Static fictional sample</span><span className="toolbar-separator" /><span className="toolbar-muted"><Clock3 size={15} /> {draftPreview ? 'Last saved revision' : 'Saved revision'} {savedRevision} · Dashboard updated {new Date(updatedAt).toLocaleDateString()}{draftPreview ? ' · Draft not saved' : ''} · Sample freshness unavailable</span></div></div>}
     {!editing && <details className="consumer-guidance"><summary>How to explore this dashboard</summary>
       <ul><li>Start with a visualization's title and “At a glance” insight when available.</li>
         <li>Choose “View data table” below a chart to see exact fictional values and use keyboard-accessible controls.</li>

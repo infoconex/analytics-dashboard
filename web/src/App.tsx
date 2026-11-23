@@ -1233,7 +1233,7 @@ export default function App() {
                 </section>}
                 {!editMode && selectedTask?.organizationId === organizationId && selectedTask.dashboardId === preview.id
                   && <DashboardTaskGuide dashboard={preview} questionId={selectedTask.questionId} widgetId={selectedTask.widgetId} />}
-                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} draftPreview={editMode && viewerPreview} editing={editMode && !viewerPreview} canEdit={canEdit && !viewerPreview} onStartEdit={() => startEditing(true)} onRepair={beginVisualizationRepair} onEdit={widget => beginWidgetEditor(widget)} onAdd={() => beginWidgetEditor(createWidget())}
+                <DashboardConsumer key={`${organizationId}:${preview.id}`} widgets={preview.widgets} updatedAt={preview.updatedAt} savedRevision={preview.revision} draftPreview={editMode && viewerPreview} editing={editMode && !viewerPreview} canEdit={canEdit && !viewerPreview} onStartEdit={() => startEditing(true)} onRepair={beginVisualizationRepair} onEdit={widget => beginWidgetEditor(widget)} onAdd={() => beginWidgetEditor(createWidget())}
                    onAddSaved={() => void openSavedLibrary()}
                    onDuplicate={widget => { if (draft) commitWidgets(duplicateWidget(draft.widgets, widget.id, crypto.randomUUID())); }}
                    onSaveToLibrary={offerSaveToLibrary} onChange={commitWidgets}
