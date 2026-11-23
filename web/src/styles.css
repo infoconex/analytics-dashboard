@@ -1061,3 +1061,24 @@ button:disabled { opacity:.6; }
 .pending-save-details .pending-save-removal { font-weight:650; }
 @media (max-width:600px) { .pending-save-review { padding:11px; } .pending-save-intro { display:block; } .pending-save-intro p { margin-top:3px; } }
 @media (forced-colors:active) { .pending-save-review,.pending-save-list li { border-color:CanvasText; background:Canvas; color:CanvasText; } .pending-save-intro p,.pending-save-list span { color:CanvasText; } }
+
+/* UX-40: distinguish an in-memory consumer rendering from the saved revision.
+   Reuse the existing viewer and avoid adding a second canvas or overlay. */
+.dashboard-preview-banner {
+  border:1px solid var(--color-border);
+  border-left:4px solid #4c65b7;
+  border-radius:10px;
+  background:var(--color-surface);
+  color:var(--color-text);
+  padding:14px 18px;
+  margin:0 0 16px;
+  min-width:0;
+}
+.dashboard-preview-banner strong { display:block; font-size:14px; line-height:1.5; }
+.dashboard-preview-banner p { margin:7px 0 0; font-size:13px; line-height:1.55; color:var(--color-muted); overflow-wrap:anywhere; }
+.pending-save-review[hidden] { display:none; }
+@media(max-width:480px) { .dashboard-preview-banner { padding:12px; } }
+@media(forced-colors:active) {
+  .dashboard-preview-banner { border-color:CanvasText; background:Canvas; color:CanvasText; }
+  .dashboard-preview-banner p { color:CanvasText; }
+}
