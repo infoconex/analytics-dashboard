@@ -57,7 +57,7 @@ export function DashboardConsumer({ widgets, updatedAt, draftPreview = false, ed
       <p>Available visualizations remain usable. Unavailable cards are not counted as zero, and no dashboard-wide total is calculated.</p>
     </section>}
     <DashboardCanvas widgets={widgets} filters={filters} editing={editing} canEdit={canEdit} onStartEdit={onStartEdit} onRepair={onRepair} onEdit={onEdit} onAdd={onAdd} onAddSaved={onAddSaved} onDuplicate={onDuplicate} onSaveToLibrary={onSaveToLibrary} onChange={onChange}
-      onChannelSelect={channel => changeFilters({ ...filters, channel: toggleChannel(filters.channel, channel) })}
+      draftPreview={draftPreview} onChannelSelect={channel => changeFilters({ ...filters, channel: toggleChannel(filters.channel, channel) })}
       onPeriodReset={() => changeFilters({ ...filters, period: '12m' })}
       onShareInsight={onShareInsight ? widget => onShareInsight(widget, filters) : undefined} />
   </>;
