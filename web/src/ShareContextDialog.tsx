@@ -43,7 +43,7 @@ export function ShareContextDialog({ dashboard, organizationName, filters, widge
       {widget && <div><strong>Selected visualization</strong><span>{widget.title}</span></div>}
       <div><strong>Data source</strong><span>Deterministic fictional sample · No live data or refresh timestamp</span></div>
     </div>
-    <p className="handoff-explainer">This link opens the <strong>latest saved revision</strong> available to an authorized recipient when they open or reload it. It does not pin the revision shown here, publish unsaved edits, carry your temporary filters or expanded interpretation, or grant organization access. The link opens with default filters for people authorized to view this organization.</p>
+    <p className="handoff-explainer">This link opens the <strong>saved dashboard</strong> at the <strong>latest saved revision</strong> available when a recipient opens or reloads it, with default filters for people authorized to view this organization. It does not pin this revision, publish unsaved edits, carry temporary filters or expanded interpretation, or grant access.</p>
     <label className="handoff-field">Saved dashboard link
       <input className="share-link-field" ref={linkField} readOnly value={link} onFocus={event => event.currentTarget.select()} />
     </label>
