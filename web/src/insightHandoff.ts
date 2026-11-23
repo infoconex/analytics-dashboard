@@ -28,7 +28,7 @@ export function viewingScope(filters: ConsumerFilters, widgets: ReadonlyArray<Da
   return scope.length ? scope : ['No sample filters apply to this dashboard'];
 }
 
-const boundary = 'Temporary filters, selected visualizations, expanded explanations and data tables are not preserved by this link. Recipients open the latest authorized saved dashboard revision with default filters; the link does not pin a revision or grant organization access.';
+const boundary = 'Temporary filters, selected visualizations, expanded explanations and data tables are not preserved by this link. Recipients open the latest authorized saved dashboard revision with default filters; the link does not pin a revision or grant organization access, and viewing still requires authorization for the organization.';
 const revisionBoundary = 'This note records the sender’s displayed saved revision and viewing context, not a live or automatically updated report. The link may open a newer saved revision.';
 
 export function dashboardHandoffNote(dashboard: Dashboard, organizationName: string, filters: ConsumerFilters, link: string): string {
