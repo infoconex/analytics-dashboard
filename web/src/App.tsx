@@ -416,7 +416,7 @@ export default function App() {
       }
       widgetBaseline.current = null;
       setViewerPreview(false);
-    setEditMode(false);
+      setEditMode(false);
       setDraft(null);
       resetWidgetUndo();
       setReturnToLibrary(false);
@@ -711,7 +711,7 @@ export default function App() {
       setDraft(null);
       focusAfterEditTransition.current = 'view';
       setViewerPreview(false);
-    setEditMode(false);
+      setEditMode(false);
       resetWidgetUndo();
       setDashboardConflict(null);
       setToast('All changes saved');
@@ -750,7 +750,7 @@ export default function App() {
       setDraft(null);
       focusAfterEditTransition.current = 'view';
       setViewerPreview(false);
-    setEditMode(false);
+      setEditMode(false);
       resetWidgetUndo();
       setDashboardConflict(null);
       setSaveError('');
