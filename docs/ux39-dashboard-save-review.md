@@ -65,10 +65,9 @@ repeated edits, repair, removal/reorder, legacy compatibility, independent
 library copies and recovery onto a newer revision. Chromium scenarios cover
 Save/Cancel, multi-widget work, temporary copies, repair, conflict recovery,
 second conflict, failed Save, library Save, viewer/revocation, keyboard control,
-1440/768/390/320 viewports, forced colors and CSS zoom with screenshot evidence.
+1440/768/390/320 viewports, forced colors and genuine native Chromium 200%/400% tab zoom with screenshot and viewport/DPR evidence.
 Automated axe scans check specified WCAG rule tags, not full conformance.
 
 No claims of human usability studies, manual screen-reader testing or full
-WCAG compliance. CSS zoom is an approximation and is not evidence of native
-browser zoom behavior. No live customer queries, new APIs or library references
+WCAG compliance. Native zoom is verified through the preexisting test-only Chromium extension rather than CSS scaling. Independent human zoom usability remains unverified. No live customer queries, new APIs or library references
 are introduced.
