@@ -8,7 +8,8 @@ import {
   Users,
 } from 'lucide-react';
 import { dashboardApi, visualizationApi } from './api';
-import { copySavedVisualization, duplicateWidget, hasDashboardChanges } from './composition';
+import { copySavedVisualization, duplicateWidget } from './composition';
+import { reviewPendingDashboardSave } from './dashboardSaveReview';
 import { captureWidgetChange, emptyWidgetHistory, redoWidgetChange, undoWidgetChange } from './dashboardUndo';
 import { recoverDashboardChanges, reviewDashboardConflict } from './dashboardConflictReview';
 import { widgetEditorHasChanges } from './authoringWorkflow';
@@ -137,7 +138,9 @@ export default function App() {
   liveDraft.current = draft;
   const liveEditingTarget = useRef<string | null>(null);
   liveEditingTarget.current = editMode && activeDashboard ? `${organizationId}/${activeDashboard.id}` : null;
-  const hasChanges = Boolean(editMode && draft && activeDashboard && hasDashboardChanges(draft, activeDashboard));
+  const pendingSaveReview = editMode && canEdit && draft && activeDashboard
+    ? reviewPendingDashboardSave(activeDashboard, draft) : null;
+  const hasChanges = Boolean(pendingSaveReview?.changes.length);
   const conflictReview = dashboardConflict && dashboardConflict !== 'unavailable' && draft && activeDashboard
     ? reviewDashboardConflict(activeDashboard, draft, dashboardConflict) : null;
   // Configuration edits and a named new dashboard can be lost on refresh even before
@@ -1131,6 +1134,25 @@ export default function App() {
                   </div>
                 </div>
                 {editMode && <>{(Boolean(draft?.widgets.length) || hasChanges) && <div className="composition-status"><div><strong><SlidersHorizontal size={16} /> Composition mode</strong><span>Undo and Redo reverse widget edits in this tab. Save changes to keep your dashboard draft; library templates save separately.</span></div><span className={`draft-status ${hasChanges ? 'draft-dirty' : ''}`}>{hasChanges ? 'Unsaved changes' : 'No changes yet'}</span></div>}<span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{undoFeedback}</span></>}
+                {editMode && canEdit && hasChanges && pendingSaveReview && <section className="pending-save-review" aria-label="Pending dashboard changes">
+                  <div className="pending-save-intro">
+                    <strong>Before you save</strong>
+                    <p>{pendingSaveReview.summary}</p>
+                  </div>
+                  <details className="pending-save-details">
+                    <summary>Review changes before saving ({pendingSaveReview.changes.length})</summary>
+                    <p>These changes are only in this dashboard draft. Only Save changes commits them; Cancel discards them.</p>
+                    <ul className="pending-save-list">
+                      {pendingSaveReview.changes.map(change => <li key={change.key}>
+                        <strong>{change.label}</strong><span>{change.detail}</span>
+                      </li>)}
+                    </ul>
+                    {pendingSaveReview.removedCount > 0 && <p className="pending-save-removal">
+                      Saving removes the listed visualizations from this dashboard. You can Undo a widget change or Cancel before saving. Reusable library templates and other dashboards are unaffected.
+                    </p>}
+                    <p>Changes to dashboard copies never update saved visualization templates. Templates use a separate Save template action.</p>
+                  </details>
+                </section>}
                 {saveError && editMode && <div role="alert" className="error-banner composition-error">{saveError} Your unsaved work is still available in this tab.</div>}
                 {dashboardConflict && editMode && <section ref={dashboardConflictRegion} className="conflict-recovery" aria-label="Dashboard conflict recovery" tabIndex={-1}>
                   <h2>Review newer dashboard changes</h2>
