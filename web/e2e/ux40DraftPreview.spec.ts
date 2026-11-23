@@ -284,7 +284,14 @@ test('responsive consumer preview, keyboard focus and forced-colors accessibilit
     await shot(page, info, 'preview-' + width);
     await leave(page);
     await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Unsaved preview');
+    // Finish this session explicitly; navigating with an unsaved draft is
+    // intentionally guarded by the existing beforeunload prompt.
+    page.once('dialog', dialog => void dialog.accept());
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
   }
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Forced-colors preview');
   await enter(page);
   await page.emulateMedia({ forcedColors: 'active' });
   const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
