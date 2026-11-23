@@ -643,11 +643,14 @@ button:disabled { opacity:.6; }
 .overview-context-note { margin:0 0 var(--space-4); color:var(--color-muted); font-size:var(--type-caption); line-height:1.5; }
 .toolbar-left { flex-wrap:wrap; min-width:0; }
 .toolbar-muted { flex-wrap:wrap; overflow-wrap:anywhere; }
-/* Keep the saved-dashboard icon with its caption when the toolbar stacks. */
-@media(max-width:720px) {
-  .dashboard-toolbar .toolbar-separator { display:none; }
+/* Keep the saved-revision icon with its caption when narrow dashboard
+   content stacks even before the mobile sidebar breakpoint (e.g. 768px). */
+@media(max-width:950px) {
   .dashboard-toolbar .toolbar-muted { display:block; }
   .dashboard-toolbar .toolbar-muted svg { vertical-align:middle; margin-right:var(--space-1); }
+}
+@media(max-width:720px) {
+  .dashboard-toolbar .toolbar-separator { display:none; }
 }
 .chart-data .widget-table th { text-transform:none; }
 @media(forced-colors:active) {
