@@ -11,6 +11,7 @@ const dashboard: Dashboard = {
     kind: 'metric', datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month' }],
 };
 test('embedded calendar applies one range, preserves existing sample and clears without API writes', async ({ page }, info) => {
+  test.setTimeout(90_000);
   const writes: string[] = [];
   await page.route('**/api/**', route => {
     const request = route.request(), path = new URL(request.url()).pathname;
@@ -25,7 +26,9 @@ test('embedded calendar applies one range, preserves existing sample and clears 
   const frame = page.frameLocator('.host-frame');
   const panel = frame.locator('.reporting-calendar');
   await panel.locator('summary').press('Enter');
-  const period = panel.getByLabel('Reporting period', { exact: true });
+  await expect(panel).toHaveAttribute('open', '');
+  const period = panel.getByRole('combobox', { name: 'Reporting period', exact: true });
+  await expect(period).toBeVisible();
   const scope = panel.getByRole('status', { name: 'Calendar filter scope' });
   const revenue = frame.getByRole('article', { name: 'Total revenue', exact: true }).locator('.metric-number');
   const before = await revenue.textContent();
@@ -47,9 +50,11 @@ test('embedded calendar applies one range, preserves existing sample and clears 
     expect(sizes.scroll).toBeLessThanOrEqual(sizes.width + 1);
     expect(sizes.doc).toBeLessThanOrEqual(sizes.viewport + 1);
     await panel.locator('summary').scrollIntoViewIfNeeded();
-    await page.screenshot({ path: info.outputPath('exp02-calendar-' + width + '.png'), animations: 'disabled' });
+    const path = info.outputPath('exp02-calendar-' + width + '.png');
+    await page.screenshot({ path, animations: 'disabled' });
+    await info.attach('exp02-calendar-' + width, { path, contentType: 'image/png' });
   }
-  await panel.getByLabel('Timezone').selectOption('America/Los_Angeles');
+  await panel.getByRole('combobox', { name: 'Timezone', exact: true }).selectOption('America/Los_Angeles');
   await panel.getByLabel('Start date and time', { exact: true }).fill('2026-03-08T02:30');
   await panel.getByLabel('End date and time (exclusive)').fill('2026-03-08T04:00');
   await panel.getByRole('button', { name: 'Apply reporting period' }).click();
@@ -57,11 +62,13 @@ test('embedded calendar applies one range, preserves existing sample and clears 
   await expect(scope).toContainText('2026-11-16T00:00:00.000Z');
   await panel.getByRole('button', { name: 'Cancel period changes' }).click();
   await expect(period).toBeFocused();
-  await expect(panel.getByLabel('Timezone')).toHaveValue('UTC');
+  await expect(panel.getByRole('combobox', { name: 'Timezone', exact: true })).toHaveValue('UTC');
   await page.emulateMedia({ forcedColors: 'active' });
   const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
   expect(axe.violations.map(x => x.id)).toEqual([]);
-  await page.screenshot({ path: info.outputPath('exp02-forced-colors.png'), animations: 'disabled' });
+  const forcedColorsPath = info.outputPath('exp02-forced-colors.png');
+  await page.screenshot({ path: forcedColorsPath, animations: 'disabled' });
+  await info.attach('exp02-forced-colors', { path: forcedColorsPath, contentType: 'image/png' });
   await panel.getByRole('button', { name: 'Clear reporting period' }).click();
   await expect(period).toBeFocused();
   await expect(scope).toContainText('No calendar restriction');

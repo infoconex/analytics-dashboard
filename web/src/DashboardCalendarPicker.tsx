@@ -32,16 +32,16 @@ export function ReportingCalendar() {
     <p>Calendar filtering evaluation only. Fixed fictional Sales and Support event records (November 2025 and 2026). Existing dashboard visualizations remain unchanged; their original samples have no approved calendar timestamps.</p>
     <form onSubmit={event => { event.preventDefault(); apply(); }}>
       <div className="reporting-calendar-fields">
-        <label>Reporting period<select ref={selector} value={draft.preset} onChange={event => change({ preset: event.target.value as Preset })}>
+        <label>Reporting period<select aria-label="Reporting period" ref={selector} value={draft.preset} onChange={event => change({ preset: event.target.value as Preset })}>
           <option value="all">All time</option>
           <optgroup label="Rolling periods">{rollingPresets.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</optgroup>
           <optgroup label="Calendar periods">{calendarPresets.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</optgroup>
           <option value="custom">Custom date/time range</option>
         </select></label>
-        <label>Timezone<select value={draft.zone} onChange={event => change({ zone: event.target.value })}>
+        <label>Timezone<select aria-label="Timezone" value={draft.zone} onChange={event => change({ zone: event.target.value })}>
           {zones.map(zone => <option key={zone} value={zone}>{zone}</option>)}
         </select></label>
-        <label>Week starts on<select value={draft.weekStart} onChange={event => change({ weekStart: Number(event.target.value) })}>
+        <label>Week starts on<select aria-label="Week starts on" value={draft.weekStart} onChange={event => change({ weekStart: Number(event.target.value) })}>
           {weekdays.map((day, index) => <option key={day} value={index}>{day}</option>)}
         </select></label>
         {draft.preset === 'custom' && <>
