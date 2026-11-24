@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Clock3 } from 'lucide-react';
-import { ReportingCalendar } from './ReportingCalendar';
+import { ReportingCalendar } from './DashboardCalendarPicker';
 import { DashboardCanvas } from './DashboardCanvas';
 import { DashboardFiltersBar } from './DashboardFiltersBar';
 import { defaultConsumerFilters, toggleChannel } from './consumerFilters';
