@@ -200,6 +200,8 @@ jobs:
             nuget-${{ runner.os }}-
       - name: Test | Real-provider fixtures, conformance and cleanup
         run: bash ./scripts/ci/verify-providers.sh
+      - name: Test | Elasticsearch Query DSL on a disposable real cluster
+        run: bash ./scripts/ci/verify-elasticsearch.sh
 
   integration:
     name: Integration | Sample host Compose
