@@ -26,3 +26,9 @@ Whole-file longest-processing-time-first estimates for 4 shards: 143569/141804/1
 Hosted CI discovers all tests using Playwright --list, assigns each file deterministically using historical per-test durations and a median fallback for new files, runs exact anchored file filters and verifies actual executed test IDs and successful single executions against discovery. Every shard records the full plan. Local scripts still use Playwright native sharding. Unit tests cover new/renamed files, changed counts, deterministic ties, duplicates and exact execution checks. The plan is a performance hint, not an allowlist.
 
 A temporary PR-only next-week key probe will validate a non-exact APT cache restoration and single-writer refresh. Revert the probe to the actual UTC week before final verification and merge.
+
+## Verified four-shard benchmark and rollover
+
+Run [45342665521](https://github.com/infoconex/analytics-dashboard/actions/runs/45342665521) and CodeQL 45342665586 passed at eedc2ecc5f16bd001cac797e9ee92d2c35f04409. Wall time 4m56s versus 5m26s for instrumentation and 5m35s integrated warm baseline. 45/53/60/64 = 222 tests passed; each shard verified its exact selected IDs and single executions. Browser phase seconds 144.491/186.105/172.305/152.272; Linux dependency phase 77.068/12.981/11.992/59.725. Approximate browser runner-log consumption 17m37s. The simulated W49 primary key restored W48 archives on all four shards (13 each, zero archive downloads); only shard 1 saved W49. The probe is now removed and actual UTC week restored.
+
+Since 4m56s remains above the 3–4 minute target, benchmark six isolated shards using the same planner and test inventory. Compare wall time and aggregate runner time; do not retain extra runners automatically. Eight remains a modeled alternative unless the measured six-shard result warrants further evaluation. No application or regression case changes.
