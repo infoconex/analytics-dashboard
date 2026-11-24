@@ -1,0 +1,14 @@
+.reporting-calendar { margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--color-border, #64748b); border-radius: 10px; min-width: 0; background: var(--color-surface, white); color: var(--color-text, #24324a); overflow-wrap: anywhere; }
+.reporting-calendar summary { cursor: pointer; font-weight: 650; min-height: 24px; }
+.reporting-calendar p { margin: 8px 0; line-height: 1.5; }
+.reporting-calendar-fields, .reporting-calendar-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.reporting-calendar-fields label { display: grid; gap: 6px; min-width: 0; font-weight: 600; }
+.reporting-calendar-fields :is(select,input) { min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box; min-height: 44px; padding: 6px; border: 1px solid #64748b; border-radius: 6px; background: var(--color-surface, white); color: inherit; }
+.reporting-calendar-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.reporting-calendar-actions button { min-height: 44px; white-space: normal; }
+.reporting-calendar-status { margin: 12px 0; }
+.reporting-calendar-results section { border: 1px solid #64748b; border-radius: 8px; padding: 12px; min-width: 0; }
+.reporting-calendar-results h3 { font-size: 1em; margin: 0 0 8px; }
+.reporting-calendar-results strong { font-size: 1.25em; }
+.reporting-calendar :is(summary,button,select,input):focus-visible { outline: 3px solid #3156d3; outline-offset: 2px; }
+@media (forced-colors: active) { .reporting-calendar :is(summary,button,select,input):focus-visible { outline-color: Highlight; } }
