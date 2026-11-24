@@ -99,7 +99,9 @@ public sealed class MySqlQueryCompilerTests
         Assert.Throws<InvalidQueryException>(() => compiler.Compile(
             Bound with { StableOrderField = "unknown" }, query));
         Assert.Throws<InvalidQueryException>(() => compiler.Compile(Bound,
-            new QueryRequest("sales", ["secret"])));
+            new QueryRequest("sales", ["id"],
+                [new QueryFilter("secret", QueryOperator.Equal,
+                    [new QueryScalar(QueryValueType.Text, Text: "x")])])));
         Assert.Throws<InvalidQueryException>(() => compiler.Compile(Bound,
             new QueryRequest("sales", ["id"], Limit: 501)));
         using var connection = new MySqlConnection();
