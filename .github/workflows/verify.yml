@@ -110,7 +110,7 @@ jobs:
         run: ./scripts/ci/verify-lab.ps1
 
   browser:
-    name: Browser | Chromium E2E (shard ${{ matrix.shard }}/4)
+    name: Browser | Chromium E2E (shard ${{ matrix.shard }}/6)
     needs: impact
     if: needs.impact.outputs.browser == 'true'
     runs-on: ubuntu-24.04
@@ -118,7 +118,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - name: Checkout | Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -158,10 +158,12 @@ jobs:
         with:
           path: ${{ runner.temp }}/playwright-apt-debs
           key: playwright-apt-v1-ubuntu-24.04-${{ runner.arch }}-${{ hashFiles('web/package-lock.json') }}-${{ steps.apt_epoch.outputs.week }}
+          restore-keys: |
+            playwright-apt-v1-ubuntu-24.04-${{ runner.arch }}-${{ hashFiles('web/package-lock.json') }}-
       - name: Test | Browser shard and isolated API
         id: browser_tests
         shell: bash
-        run: bash scripts/ci/verify-browser-with-apt-cache.sh ${{ matrix.shard }} 4
+        run: bash scripts/ci/verify-browser-with-apt-cache.sh ${{ matrix.shard }} 6
       - name: Cache | Save Playwright APT archives (single writer)
         if: success() && matrix.shard == 1 && steps.apt.outputs.cache-hit != 'true' && steps.browser_tests.outputs.archives != '0'
         continue-on-error: true

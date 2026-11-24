@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "sourceRun": 45341528564,
+  "sourceHead": "d1b05448d90fab1aac49f0fe1232dfb0c44daa83",
+  "files": {
+    "accessibility.spec.ts": [
+      9773,
+      7
+    ],
+    "consumer.spec.ts": [
+      12845,
+      7
+    ],
+    "customerTasks.spec.ts": [
+      21310,
+      11
+    ],
+    "dashboard.spec.ts": [
+      16747,
+      10
+    ],
+    "dashboardActivation.spec.ts": [
+      17543,
+      4
+    ],
+    "discovery.spec.ts": [
+      15473,
+      13
+    ],
+    "embed.spec.ts": [
+      17645,
+      8
+    ],
+    "exp02Calendar.spec.ts": [
+      2930,
+      1
+    ],
+    "explore.spec.ts": [
+      7184,
+      6
+    ],
+    "handoff.spec.ts": [
+      22072,
+      8
+    ],
+    "interpretation.spec.ts": [
+      18958,
+      7
+    ],
+    "organization.spec.ts": [
+      10540,
+      8
+    ],
+    "readability.spec.ts": [
+      14876,
+      7
+    ],
+    "ux29Discovery.spec.ts": [
+      8496,
+      2
+    ],
+    "ux30Navigation.spec.ts": [
+      14604,
+      5
+    ],
+    "ux31Workflows.spec.ts": [
+      40252,
+      12
+    ],
+    "ux32EmbedNavigation.spec.ts": [
+      15801,
+      5
+    ],
+    "ux33EmbedContinuity.spec.ts": [
+      18695,
+      4
+    ],
+    "ux34DenseWayfinding.spec.ts": [
+      22673,
+      2
+    ],
+    "ux35FilterScope.spec.ts": [
+      19273,
+      2
+    ],
+    "ux36Availability.spec.ts": [
+      14844,
+      4
+    ],
+    "ux37Repair.spec.ts": [
+      17656,
+      6
+    ],
+    "ux38ConflictRecovery.spec.ts": [
+      15094,
+      7
+    ],
+    "ux39SaveReview.spec.ts": [
+      20154,
+      12
+    ],
+    "ux40DraftPreview.spec.ts": [
+      20011,
+      12
+    ],
+    "ux41SavedHandoff.spec.ts": [
+      22698,
+      8
+    ],
+    "visual.spec.ts": [
+      65881,
+      21
+    ],
+    "visualizationAuthoring.spec.ts": [
+      19243,
+      7
+    ],
+    "visualizationReuse.spec.ts": [
+      46955,
+      16
+    ]
+  }
+}
