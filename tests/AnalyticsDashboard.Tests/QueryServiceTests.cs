@@ -261,9 +261,9 @@ public sealed class QueryServiceTests
             [new SharedFieldFilter("customer_region", QueryValueType.Text, QueryOperator.Equal,
                 [new QueryScalar(QueryValueType.Text, Text: "Pacific")])]);
 
-        Assert.ThrowsAsync<ForbiddenException>(async () => await service.PlanDashboardFiltersAsync(
+        await Assert.ThrowsAsync<ForbiddenException>(async () => await service.PlanDashboardFiltersAsync(
             "northstar", sourceId, "outsider", Projection(), context, CancellationToken.None));
-        Assert.ThrowsAsync<ForbiddenException>(async () => await service.PlanDashboardFiltersAsync(
+        await Assert.ThrowsAsync<ForbiddenException>(async () => await service.PlanDashboardFiltersAsync(
             "isolated", sourceId, "demo-owner", Projection(), context, CancellationToken.None));
         Assert.That(datasets.Requests, Is.Zero);
         Assert.That(await service.PlanDashboardFiltersAsync("northstar", Guid.NewGuid(),
@@ -276,7 +276,7 @@ public sealed class QueryServiceTests
         Assert.That(result.Outcomes.Single().Applicability, Is.EqualTo(FilterApplicability.Applied));
         Assert.That(datasets.Requests, Is.EqualTo(1));
 
-        Assert.ThrowsAsync<InvalidQueryException>(async () => await service.PlanDashboardFiltersAsync(
+        await Assert.ThrowsAsync<InvalidQueryException>(async () => await service.PlanDashboardFiltersAsync(
             "northstar", sourceId, "demo-viewer", new QueryRequest("unapproved", ["region"]),
             context, CancellationToken.None));
     }
