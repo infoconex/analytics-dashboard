@@ -113,7 +113,7 @@ jobs:
     name: Browser | Chromium E2E (shard ${{ matrix.shard }}/4)
     needs: impact
     if: needs.impact.outputs.browser == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -148,9 +148,27 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: chromium-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+      - name: Cache | Determine APT archive epoch
+        id: apt_epoch
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+      - name: Cache | Restore Playwright APT archives
+        id: apt
+        continue-on-error: true
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/playwright-apt-debs
+          key: playwright-apt-v1-ubuntu-24.04-${{ runner.arch }}-${{ hashFiles('web/package-lock.json') }}-${{ steps.apt_epoch.outputs.week }}
       - name: Test | Browser shard and isolated API
-        shell: pwsh
-        run: ./scripts/verify-browser.ps1 -ShardIndex ${{ matrix.shard }} -ShardTotal 4
+        id: browser_tests
+        shell: bash
+        run: bash scripts/ci/verify-browser-with-apt-cache.sh ${{ matrix.shard }} 4
+      - name: Cache | Save Playwright APT archives (single writer)
+        if: success() && matrix.shard == 1 && steps.apt.outputs.cache-hit != 'true' && steps.browser_tests.outputs.archives != '0'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/playwright-apt-debs
+          key: playwright-apt-v1-ubuntu-24.04-${{ runner.arch }}-${{ hashFiles('web/package-lock.json') }}-${{ steps.apt_epoch.outputs.week }}
       - name: Cache | Save NuGet packages (single writer)
         if: success() && matrix.shard == 1 && steps.nuget.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6

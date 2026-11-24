@@ -72,11 +72,24 @@ async function layout(page: Page) {
   });
 }
 async function expectContentSized(page: Page) {
+  // The host measures on requestAnimationFrame after ResizeObserver notifications.
+  // Evaluate all geometry constraints against one snapshot in the existing
+  // bounded wait; a second browser round-trip can observe a different layout.
+  let metrics = await layout(page);
   await expect.poll(async () => {
-    const metrics = await layout(page);
-    return Math.abs(metrics.frameHeight - metrics.frameContentHeight);
-  }).toBeLessThanOrEqual(3);
-  const metrics = await layout(page);
+    metrics = await layout(page);
+    return {
+      frameHeightExcess: Math.max(0, Math.abs(metrics.frameHeight - metrics.frameContentHeight) - 3),
+      nestedVerticalExcess: Math.max(0, metrics.embeddedScrollHeight - metrics.embeddedViewportHeight - 3),
+      nestedHorizontalExcess: Math.max(0, metrics.embeddedScrollWidth - metrics.embeddedViewportWidth - 1),
+      hostHorizontalExcess: Math.max(0, metrics.hostWidth - metrics.viewportWidth - 1),
+    };
+  }).toEqual({
+    frameHeightExcess: 0,
+    nestedVerticalExcess: 0,
+    nestedHorizontalExcess: 0,
+    hostHorizontalExcess: 0,
+  });
   expect(metrics.embeddedScrollHeight - metrics.embeddedViewportHeight, 'no nested vertical iframe scroll').toBeLessThanOrEqual(3);
   expect(metrics.embeddedScrollWidth - metrics.embeddedViewportWidth, 'no horizontal iframe overflow').toBeLessThanOrEqual(1);
   expect(metrics.hostWidth - metrics.viewportWidth, 'no host horizontal overflow').toBeLessThanOrEqual(1);
