@@ -158,6 +158,8 @@ jobs:
         with:
           path: ${{ runner.temp }}/playwright-apt-debs
           key: playwright-apt-v1-ubuntu-24.04-${{ runner.arch }}-${{ hashFiles('web/package-lock.json') }}-${{ steps.apt_epoch.outputs.week }}
+          restore-keys: |
+            playwright-apt-v1-ubuntu-24.04-${{ runner.arch }}-${{ hashFiles('web/package-lock.json') }}-
       - name: Test | Browser shard and isolated API
         id: browser_tests
         shell: bash
