@@ -140,7 +140,7 @@ public sealed class ElasticsearchQueryCompiler
             root["sort"] = order;
         }
 
-        return new CompiledElasticsearchQuery(binding.Index,
+        return new CompiledElasticsearchQuery(binding.Index!,
             JsonSerializer.Serialize(root), validated.Columns.ToArray(),
             validated.Limit, validated.Offset);
     }
