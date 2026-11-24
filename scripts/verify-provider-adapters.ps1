@@ -3,7 +3,8 @@ Set-StrictMode -Version Latest
 
 $required = @(
     'ANALYTICS_TEST_SQLSERVER_ADMIN', 'ANALYTICS_TEST_POSTGRES_ADMIN',
-    'ANALYTICS_TEST_SQLSERVER_READER', 'ANALYTICS_TEST_POSTGRES_READER'
+    'ANALYTICS_TEST_SQLSERVER_READER', 'ANALYTICS_TEST_POSTGRES_READER',
+    'ANALYTICS_TEST_MYSQL_ADMIN', 'ANALYTICS_TEST_MYSQL_READER'
 )
 foreach ($variable in $required) {
     if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($variable))) {
