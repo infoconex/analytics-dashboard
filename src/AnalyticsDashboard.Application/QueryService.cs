@@ -1,3 +1,5 @@
+using AnalyticsDashboard.Domain;
+
 namespace AnalyticsDashboard.Application;
 
 /// <summary>Authorizes and validates query shapes; has no query execution dependency.</summary>
@@ -7,6 +9,27 @@ public sealed class QueryService(
     IQueryDatasetCatalog datasets)
 {
     public async Task<QueryValidationResult?> ValidateAsync(
+        string organizationId, Guid dataSourceId, string userId, QueryRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var target = await ResolveAsync(organizationId, dataSourceId, userId, request, cancellationToken);
+        return target is { } resolved
+            ? QueryShapeValidator.Validate(resolved.Provider, resolved.Dataset, request)
+            : null;
+    }
+
+    /// <summary>Offline experimental planning only; not exposed by an API or an execution permit.</summary>
+    public async Task<DashboardFilterPlan?> PlanDashboardFiltersAsync(
+        string organizationId, Guid dataSourceId, string userId, QueryRequest? request,
+        SharedDashboardFilters filters, CancellationToken cancellationToken)
+    {
+        var target = await ResolveAsync(organizationId, dataSourceId, userId, request, cancellationToken);
+        return target is { } resolved
+            ? DashboardFilterPlanner.Plan(resolved.Provider, resolved.Dataset, request, filters)
+            : null;
+    }
+
+    private async Task<(DataSourceProvider Provider, QueryDataset? Dataset)?> ResolveAsync(
         string organizationId, Guid dataSourceId, string userId, QueryRequest? request,
         CancellationToken cancellationToken)
     {
@@ -22,6 +45,6 @@ public sealed class QueryService(
 
         var dataset = await datasets.FindAsync(organizationId, dataSourceId, request.Dataset,
             cancellationToken);
-        return QueryShapeValidator.Validate(source.Provider, dataset, request);
+        return (source.Provider, dataset);
     }
 }

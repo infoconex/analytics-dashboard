@@ -3,7 +3,7 @@ name: Security | CodeQL
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, experiment/dashboard-filtering]
   schedule:
     - cron: '23 12 * * 1'
   workflow_dispatch:

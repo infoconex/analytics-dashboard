@@ -3,7 +3,7 @@ name: CI | Verify
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, experiment/dashboard-filtering]
   workflow_dispatch:
 
 concurrency:

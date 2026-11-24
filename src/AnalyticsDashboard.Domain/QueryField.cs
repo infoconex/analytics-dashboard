@@ -7,4 +7,5 @@ public sealed record QueryField(
     bool Filterable = true,
     bool Groupable = true,
     bool Sortable = true,
-    bool Aggregatable = true);
+    bool Aggregatable = true,
+    string? BusinessDimension = null);

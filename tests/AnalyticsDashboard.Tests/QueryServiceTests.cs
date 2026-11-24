@@ -16,9 +16,9 @@ public sealed class QueryServiceTests
 
     private static readonly QueryDataset Sales = new("sales",
     [
-        new QueryField("region", QueryValueType.Text),
+        new QueryField("region", QueryValueType.Text, BusinessDimension: "customer_region"),
         new QueryField("amount", QueryValueType.Number),
-        new QueryField("date", QueryValueType.Timestamp),
+        new QueryField("date", QueryValueType.Timestamp, BusinessDimension: DashboardFilterPlanner.ReportingTime),
         new QueryField("paid", QueryValueType.Boolean),
         new QueryField("private_note", QueryValueType.Text, Filterable: false,
             Groupable: false, Sortable: false, Aggregatable: false)
@@ -252,6 +252,33 @@ public sealed class QueryServiceTests
             Assert.That(result?.Limit, Is.EqualTo(500));
             Assert.That(result?.Offset, Is.EqualTo(5000));
         });
+    }
+
+    [Test]
+    public async Task SharedPlanningUsesSameMembershipAndSourceBoundary()
+    {
+        var context = new SharedDashboardFilters(Fields:
+            [new SharedFieldFilter("customer_region", QueryValueType.Text, QueryOperator.Equal,
+                [new QueryScalar(QueryValueType.Text, Text: "Pacific")])]);
+
+        await Assert.ThrowsAsync<ForbiddenException>(async () => await service.PlanDashboardFiltersAsync(
+            "northstar", sourceId, "outsider", Projection(), context, CancellationToken.None));
+        await Assert.ThrowsAsync<ForbiddenException>(async () => await service.PlanDashboardFiltersAsync(
+            "isolated", sourceId, "demo-owner", Projection(), context, CancellationToken.None));
+        Assert.That(datasets.Requests, Is.Zero);
+        Assert.That(await service.PlanDashboardFiltersAsync("northstar", Guid.NewGuid(),
+            "demo-viewer", Projection(), context, CancellationToken.None), Is.Null);
+        Assert.That(datasets.Requests, Is.Zero);
+
+        var result = await service.PlanDashboardFiltersAsync("northstar", sourceId,
+            "demo-viewer", Projection(), context, CancellationToken.None);
+        Assert.That(result!.Request.Filters!.Single().Field, Is.EqualTo("region"));
+        Assert.That(result.Outcomes.Single().Applicability, Is.EqualTo(FilterApplicability.Applied));
+        Assert.That(datasets.Requests, Is.EqualTo(1));
+
+        await Assert.ThrowsAsync<InvalidQueryException>(async () => await service.PlanDashboardFiltersAsync(
+            "northstar", sourceId, "demo-viewer", new QueryRequest("unapproved", ["region"]),
+            context, CancellationToken.None));
     }
 
     private QueryRequest Projection() => new("sales", ["region"]);
