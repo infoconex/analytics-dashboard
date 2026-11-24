@@ -104,36 +104,7 @@ public static class QueryShapeValidator
                 || !capabilities.Operators.Contains(filter.Operator))
                 throw Invalid("Filter field or operator is not permitted.");
 
-            var values = filter.Values ?? [];
-            var expected = filter.Operator switch
-            {
-                QueryOperator.IsNull or QueryOperator.IsNotNull => 0,
-                QueryOperator.In => -1,
-                _ => 1
-            };
-            if (values.Count > Limits.MaximumInValues ||
-                (expected >= 0 && values.Count != expected) ||
-                (expected == -1 && (values.Count == 0 || values.Count > Limits.MaximumInValues)))
-                throw Invalid("Invalid filter value count.");
-
-            if ((filter.Operator is QueryOperator.GreaterThan or QueryOperator.GreaterThanOrEqual
-                or QueryOperator.LessThan or QueryOperator.LessThanOrEqual) &&
-                field.Type is not (QueryValueType.Number or QueryValueType.Timestamp))
-                throw Invalid("Comparison is not supported for this field type.");
-
-            if ((filter.Operator is QueryOperator.Contains or QueryOperator.StartsWith)
-                && field.Type != QueryValueType.Text)
-                throw Invalid("Text matching requires a text field.");
-
-            foreach (var value in values)
-                if (!IsValidScalar(value, field.Type))
-                    throw Invalid("Filter value type does not match the field.");
-
-            if ((filter.Operator is QueryOperator.Contains or QueryOperator.StartsWith)
-                && values[0].Text!.Length == 0)
-                throw Invalid("Text matching requires a non-empty value.");
-
-            complexity += 2 + values.Count;
+            complexity += 2 + ValidateFilter(field, filter);
         }
 
         if (HasDuplicates(sorting.Select(sort => sort?.Field)))
@@ -156,6 +127,44 @@ public static class QueryShapeValidator
 
         return new QueryValidationResult(dataset.Name, provider, columns, limit, offset,
             complexity, Limits);
+    }
+
+    // Shared filter planning reuses the same typed predicate validation as query compilation.
+    internal static int ValidateFilter(QueryField field, QueryFilter filter)
+    {
+        if (!Enum.IsDefined(filter.Operator) || !field.Filterable)
+            throw Invalid("Filter field or operator is not permitted.");
+
+        var values = filter.Values ?? [];
+        var expected = filter.Operator switch
+        {
+            QueryOperator.IsNull or QueryOperator.IsNotNull => 0,
+            QueryOperator.In => -1,
+            _ => 1
+        };
+        if (values.Count > Limits.MaximumInValues ||
+            (expected >= 0 && values.Count != expected) ||
+            (expected == -1 && (values.Count == 0 || values.Count > Limits.MaximumInValues)))
+            throw Invalid("Invalid filter value count.");
+
+        if ((filter.Operator is QueryOperator.GreaterThan or QueryOperator.GreaterThanOrEqual
+            or QueryOperator.LessThan or QueryOperator.LessThanOrEqual) &&
+            field.Type is not (QueryValueType.Number or QueryValueType.Timestamp))
+            throw Invalid("Comparison is not supported for this field type.");
+
+        if ((filter.Operator is QueryOperator.Contains or QueryOperator.StartsWith)
+            && field.Type != QueryValueType.Text)
+            throw Invalid("Text matching requires a text field.");
+
+        foreach (var value in values)
+            if (!IsValidScalar(value, field.Type))
+                throw Invalid("Filter value type does not match the field.");
+
+        if ((filter.Operator is QueryOperator.Contains or QueryOperator.StartsWith)
+            && values[0].Text!.Length == 0)
+            throw Invalid("Text matching requires a non-empty value.");
+
+        return values.Count;
     }
 
     private static bool IsValidScalar(QueryScalar? value, QueryValueType fieldType)
