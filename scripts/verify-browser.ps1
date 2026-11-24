@@ -80,7 +80,9 @@ try {
         Measure-Phase 'playwright-including-server-startup' {
             if ($hostedCi) {
                 $env:PLAYWRIGHT_JSON_OUTPUT_FILE = Join-Path $reportDir 'ci-playwright-report.json'
-                npx playwright test "--shard=$ShardIndex/$ShardTotal" --reporter=dot,json
+                node --test scripts/ci-browser-shards.test.mjs
+                if ($LASTEXITCODE -ne 0) { throw 'Browser shard planner tests failed.' }
+                node scripts/ci-browser-shards.mjs $ShardIndex $ShardTotal
             }
             else {
                 npx playwright test "--shard=$ShardIndex/$ShardTotal"

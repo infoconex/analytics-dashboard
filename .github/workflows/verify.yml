@@ -148,9 +148,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: chromium-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+      # Temporary PR-only rollover probe; restore actual UTC week before merge.
       - name: Cache | Determine APT archive epoch
         id: apt_epoch
-        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+        run: echo "week=$(date -u -d '+7 days' +%G-W%V)" >> "$GITHUB_OUTPUT"
       - name: Cache | Restore Playwright APT archives
         id: apt
         continue-on-error: true
