@@ -24,6 +24,7 @@ public sealed class RelationalQueryCompilerTests
 
     [TestCase(DataSourceProvider.SqlServer)]
     [TestCase(DataSourceProvider.PostgreSql)]
+    [TestCase(DataSourceProvider.Sqlite)]
     public void UntrustedValuesNeverBecomeSqlText(DataSourceProvider provider)
     {
         const string attack = "'; DROP TABLE sales; -- %_[]";
@@ -55,6 +56,7 @@ public sealed class RelationalQueryCompilerTests
 
     [TestCase(DataSourceProvider.SqlServer)]
     [TestCase(DataSourceProvider.PostgreSql)]
+    [TestCase(DataSourceProvider.Sqlite)]
     public void GroupingAndAggregatesAreRestrictedToTrustedColumns(DataSourceProvider provider)
     {
         var request = new QueryRequest("sales", ["region"],
@@ -80,6 +82,7 @@ public sealed class RelationalQueryCompilerTests
 
     [TestCase(DataSourceProvider.SqlServer)]
     [TestCase(DataSourceProvider.PostgreSql)]
+    [TestCase(DataSourceProvider.Sqlite)]
     public void TimestampParametersNormalizeToUtc(DataSourceProvider provider)
     {
         var timestamp = new DateTimeOffset(2026, 11, 15, 8, 30, 0, TimeSpan.FromHours(-8));
@@ -94,6 +97,7 @@ public sealed class RelationalQueryCompilerTests
 
     [TestCase(DataSourceProvider.SqlServer)]
     [TestCase(DataSourceProvider.PostgreSql)]
+    [TestCase(DataSourceProvider.Sqlite)]
     public void RejectsInjectedOrMissingPhysicalBinding(DataSourceProvider provider)
     {
         var query = new QueryRequest("sales", ["id"]);
@@ -112,6 +116,7 @@ public sealed class RelationalQueryCompilerTests
 
     [TestCase(DataSourceProvider.SqlServer)]
     [TestCase(DataSourceProvider.PostgreSql)]
+    [TestCase(DataSourceProvider.Sqlite)]
     public void InvalidTypedRequestsFailAtCompilationBoundary(DataSourceProvider provider)
     {
         var compiler = Compiler(provider);
@@ -138,6 +143,7 @@ public sealed class RelationalQueryCompilerTests
 
     [TestCase(DataSourceProvider.SqlServer)]
     [TestCase(DataSourceProvider.PostgreSql)]
+    [TestCase(DataSourceProvider.Sqlite)]
     public void NonSortableGroupingAndAggregateOffsetFail(DataSourceProvider provider)
     {
         var compiler = Compiler(provider);
@@ -165,12 +171,17 @@ public sealed class RelationalQueryCompilerTests
         using var pgConnection = new NpgsqlConnection();
         Assert.Throws<InvalidQueryException>(() => SqlServerCommandFactory.Create(sqlConnection, pgPlan));
         Assert.Throws<InvalidQueryException>(() => PostgreSqlCommandFactory.Create(pgConnection, sqlPlan));
+        using var sqliteConnection = new Microsoft.Data.Sqlite.SqliteConnection();
+        var sqlitePlan = new SqliteQueryCompiler().Compile(BoundSales, query);
+        Assert.Throws<InvalidQueryException>(() => SqliteCommandFactory.Create(sqliteConnection, pgPlan));
+        Assert.Throws<InvalidQueryException>(() => PostgreSqlCommandFactory.Create(pgConnection, sqlitePlan));
     }
 
     private static RelationalQueryCompiler Compiler(DataSourceProvider provider) => provider switch
     {
         DataSourceProvider.SqlServer => new SqlServerQueryCompiler(),
         DataSourceProvider.PostgreSql => new PostgreSqlQueryCompiler(),
+        DataSourceProvider.Sqlite => new SqliteQueryCompiler(),
         _ => throw new ArgumentOutOfRangeException(nameof(provider))
     };
 }
