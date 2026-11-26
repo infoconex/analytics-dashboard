@@ -56,3 +56,13 @@ Each implementation issue owns one PR. Split an increment further when necessary
 | UX-16 — [Issues #58, #60, #62](https://github.com/infoconex/analytics-dashboard/issues/62) | Owner review setup, visual consistency, and filter scope clarity | Fictional-data Docker owner walkthrough, stable category colors and metric formatting, dataset-scoped per-card filter feedback and direct clearing without invented cross-dataset joins; [owner findings](ux16-owner-findings.md) and [filter review](ux16-filter-context.md); independent study/security gates remain |
 
 Usability research targets (not yet measured): first visualization under 3 minutes; first useful dashboard under 10 minutes; filter adjustment under 15 seconds; share under 30 seconds. Recruit representative users, record task success/time/error rates and refine. SQL knowledge must not be required for standard workflows. Production connections and arbitrary query execution remain disabled until their independent security gates are verified. Sample datasets are not registered customer datasets.
+
+## Experimental filtering workstream
+
+| Increment | Status and boundary |
+| --- | --- |
+| EXP-01 — [Issue #135](https://github.com/infoconex/analytics-dashboard/issues/135) | Shared typed filter planning, trusted business-dimension mappings, applicability outcomes, and offline planning across existing providers; no execution endpoint. See [EXP-01 contract](exp01-shared-dashboard-filters.md). |
+| EXP-02 — [Issue #137](https://github.com/infoconex/analytics-dashboard/issues/137) | Calendar date/time controls and separate timestamped fictional fixtures; saved dashboard visualizations remain unchanged. See [EXP-02 calendar](exp02-dashboard-calendar.md). |
+| EXP-03 — [Issue #148](https://github.com/infoconex/analytics-dashboard/issues/148) | UI-based typed field-filter builder over fictional sample fixtures; does not call customer providers or modify saved cards. See [EXP-03 filter builder](exp03-dashboard-filter-builder.md). |
+
+Later integration into authored, query-backed visualizations requires the independently planned EXP-04 and live-query security gates. Do not infer that the experimental UI enables customer data access.

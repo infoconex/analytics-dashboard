@@ -3,6 +3,7 @@ import { Clock3 } from 'lucide-react';
 import { ReportingCalendar } from './DashboardCalendarPicker';
 import { DashboardCanvas } from './DashboardCanvas';
 import { DashboardFiltersBar } from './DashboardFiltersBar';
+import { DashboardFieldFilterBuilder } from './DashboardFieldFilterBuilder';
 import { defaultConsumerFilters, toggleChannel } from './consumerFilters';
 import { summarizeSampleAvailability } from './sampleAvailability';
 import type { ConsumerFilters } from './consumerFilters';
@@ -51,6 +52,7 @@ export function DashboardConsumer({ widgets, updatedAt, savedRevision, draftPrev
         <li>{canEdit ? 'For advanced composition, choose Edit dashboard above. Viewing and filtering never save changes.' : 'This is a read-only view; exploring and filtering never change the saved dashboard.'}</li></ul>
     </details>}
     {!editing && !draftPreview && widgets.length > 0 && <ReportingCalendar />}
+    {!editing && !draftPreview && widgets.length > 0 && <DashboardFieldFilterBuilder />}
     {hasFilters && <DashboardFiltersBar filters={filters} onChange={changeFilters} widgets={widgets} />}
     {!editing && incomplete > 0 && <section className="dashboard-availability" aria-label="Visualization availability">
       <p role="status" aria-live="polite" aria-atomic="true"><strong>Partial dashboard data:</strong> {availability.available} of {widgets.length} visualizations have usable sample records.
