@@ -64,7 +64,7 @@ try {
             # Same locked Playwright dependency installer as --with-deps,
             # measured separately from the browser binary preparation.
             Measure-Phase 'linux-dependencies' {
-                npx playwright install-deps chromium
+                bash (Join-Path $PSScriptRoot 'ci/install-browser-linux-dependencies.sh')
                 if ($LASTEXITCODE -ne 0) { throw 'Chromium system dependency installation failed.' }
             }
             Measure-Phase 'chromium-prepare' {
