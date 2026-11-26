@@ -1,0 +1,416 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Machine-assisted source excerpts; incomplete semantic audit. Check original multiline assertions and helper definitions.",
+ "files": [
+  {
+   "path": "web/src/authoringWorkflow.test.ts",
+   "blob": "c57b005e740983a1a4cc1a5399f4977479796882",
+   "capability": "Authoring workflow state",
+   "cases": [
+    {
+     "line": 16,
+     "declaration": "it('allows pristine editor and identical cloned values to close without confirmation', () => {",
+     "assertions": [
+      "17: expect(widgetEditorHasChanges({ ...widget }, widget)).toBe(false);",
+      "18: expect(widgetEditorHasChanges({ ...widget, appearance: { ...widget.appearance } }, widget, 'description', 'description')).toBe(false);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 20,
+     "declaration": "it('detects title, type, data selection, appearance and layout edits', () => {",
+     "assertions": [
+      "21: expect(widgetEditorHasChanges({ ...widget, title: 'Updated' }, widget)).toBe(true);",
+      "22: expect(widgetEditorHasChanges({ ...widget, kind: 'pie' }, widget)).toBe(true);",
+      "23: expect(widgetEditorHasChanges({ ...widget, metricKey: 'sessions' }, widget)).toBe(true);",
+      "24: expect(widgetEditorHasChanges({ ...widget, appearance: { ...widget.appearance, showLegend: false } }, widget)).toBe(true);",
+      "25: expect(widgetEditorHasChanges({ ...widget, columns: 6 }, widget)).toBe(true);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 27,
+     "declaration": "it('tracks the separately saved template description and restores the clean baseline', () => {",
+     "assertions": [
+      "28: expect(widgetEditorHasChanges(widget, widget, 'New description', 'Original')).toBe(true);",
+      "29: expect(widgetEditorHasChanges(widget, widget, 'Original', 'Original')).toBe(false);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/dashboardConflictReview.test.ts",
+   "blob": "57d8dc21fec32cf3855a1b2787f0f1e3f9b33d2c",
+   "capability": "Conflict review",
+   "cases": [
+    {
+     "line": 22,
+     "declaration": "it('distinguishes independent metadata changes and preserves the remote field', () => {",
+     "assertions": [
+      "26: expect(review.compatible.map(change => change.key)).toEqual(['name']);",
+      "27: expect(review.remote.map(change => change.key)).toEqual(['description']);",
+      "28: expect(recoverDashboardChanges(baseline, local, latest, ['name']))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 32,
+     "declaration": "it('refuses different values for a simultaneously edited metadata field', () => {",
+     "assertions": [
+      "35: expect(reviewDashboardConflict(baseline, local, latest).overlapping.map(change => change.key)).toEqual(['name']);",
+      "36: expect(() => recoverDashboardChanges(baseline, local, latest, ['name'])).toThrow('manual review');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 39,
+     "declaration": "it('recognizes identical concurrent field edits as already saved', () => {",
+     "assertions": [
+      "41: expect(review.alreadySaved.map(change => change.key)).toEqual(['name']);",
+      "42: expect(review.compatible).toHaveLength(0);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 45,
+     "declaration": "it('recovers independent widget edits without modifying the other editor’s widget', () => {",
+     "assertions": [
+      "49: expect(review.compatible.map(change => change.key)).toEqual(['widget:a']);",
+      "50: expect(review.remote.map(change => change.key)).toEqual(['widget:b']);",
+      "52: expect(result.widgets.map(item => item.title)).toEqual(['My repair', 'Their update', 'c']);",
+      "53: expect(result.widgets[0]).not.toBe(local.widgets[0]);",
+      "54: expect(local.widgets[0]?.title).toBe('My repair');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 57,
+     "declaration": "it('rejects simultaneous edits to the same widget, including a UX-37 repair', () => {",
+     "assertions": [
+      "60: expect(reviewDashboardConflict(baseline, local, latest).overlapping[0]?.key).toBe('widget:a');",
+      "61: expect(() => recoverDashboardChanges(baseline, local, latest, ['widget:a'])).toThrow();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 64,
+     "declaration": "it('refuses deletion vs edit and modification vs remote deletion', () => {",
+     "assertions": [
+      "67: expect(reviewDashboardConflict(baseline, localDelete, remoteEdit).overlapping[0]?.key).toBe('widget:a');",
+      "70: expect(reviewDashboardConflict(baseline, localEdit, remoteDelete).overlapping[0]?.key).toBe('widget:a');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 73,
+     "declaration": "it('recovers an independent deletion and leaves unrelated additions untouched', () => {",
+     "assertions": [
+      "77: expect(result.widgets.map(item => item.id)).toEqual(['a', 'c', 'remote-added']);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 80,
+     "declaration": "it('appends a selected local new visualization after the saved order', () => {",
+     "assertions": [
+      "84: expect(review.compatible.map(change => change.key)).toContain('widget:local-added');",
+      "85: expect(review.manual.map(change => change.key)).toEqual([]); // insertion alone is not reordering",
+      "87: expect(recovered.widgets.map(item => item.id)).toEqual(['c', 'a', 'b', 'remote-added', 'local-added']);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 90,
+     "declaration": "it('never automatically reapplies local reorder even when another editor added a widget', () => {",
+     "assertions": [
+      "94: expect(review.manual.map(change => change.key)).toEqual(['order']);",
+      "95: expect(() => recoverDashboardChanges(baseline, local, latest, ['order'])).toThrow();",
+      "96: expect(recoverDashboardChanges(baseline, local, latest, []).widgets.map(item => item.id))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 100,
+     "declaration": "it('recognizes layout, appearance and title differences in whole-widget snapshots', () => {",
+     "assertions": [
+      "104: expect(reviewDashboardConflict(baseline, local, latest).compatible.map(change => change.key)).toEqual(['widget:a']);",
+      "105: expect(recoverDashboardChanges(baseline, local, latest, ['widget:a']).widgets[0])"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 109,
+     "declaration": "it('blocks a 25th visualization instead of creating an unsavable draft', () => {",
+     "assertions": [
+      "112: expect(() => recoverDashboardChanges(baseline, local, full, ['widget:local-added'])).toThrow('24-visualization');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 115,
+     "declaration": "it('rejects identity or revision mismatch and does not mutate any snapshot', () => {",
+     "assertions": [
+      "119: expect(() => recoverDashboardChanges(baseline, local, { ...latest, organizationId: 'other' }, ['name'])).toThrow();",
+      "120: expect(() => recoverDashboardChanges(baseline, local, { ...latest, revision: 0 }, ['name'])).toThrow();",
+      "123: expect(latest).toEqual(before);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/dashboardSaveReview.test.ts",
+   "blob": "550b6a2720a206b3026ca903e083da607a080a77",
+   "capability": "Save review",
+   "cases": [
+    {
+     "line": 22,
+     "declaration": "it('has no changes when opened or a metadata edit is undone', () => {",
+     "assertions": [
+      "23: expect(changes(draft()).changes).toEqual([]);",
+      "24: expect(changes(draft({ name: 'Temporary' })).changes.map(item => item.kind)).toEqual(['name']);",
+      "25: expect(changes(draft({ name: saved.name })).changes).toEqual([]);",
+      "26: expect(hasDashboardChanges(draft(), saved)).toBe(false);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 29,
+     "declaration": "it('describes metadata values without publishing or changing the baseline', () => {",
+     "assertions": [
+      "31: expect(review.changes.map(item => item.label)).toEqual(['Dashboard name', 'Dashboard description']);",
+      "32: expect(review.changes[0]?.detail).toContain('“Overview” → “New name”');",
+      "33: expect(review.summary).toBe('Pending: name · description');",
+      "34: expect(saved.name).toBe('Overview');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 37,
+     "declaration": "it('reports several independent additions, edits and removal with recognizable titles', () => {",
+     "assertions": [
+      "41: expect(review.changes.map(item => item.label)).toEqual([",
+      "45: expect(review.summary).toContain('2 visualizations added');",
+      "46: expect(review.summary).toContain('1 visualization updated');",
+      "47: expect(review.summary).toContain('1 visualization removed');",
+      "48: expect(review.removedCount).toBe(1);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 51,
+     "declaration": "it('elides an added then removed unsaved widget', () => {",
+     "assertions": [
+      "53: expect(changes(draft({ widgets: [...saved.widgets, temporary] })).changes).toHaveLength(1);",
+      "54: expect(changes(draft({ widgets: [...saved.widgets] })).changes).toHaveLength(0);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 57,
+     "declaration": "it('elides a changed widget after undo returns to the authorized snapshot', () => {",
+     "assertions": [
+      "60: expect(changes(edited).changes.map(item => item.kind)).toEqual(['widget-edit']);",
+      "61: expect(changes(draft()).changes).toEqual([]);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 64,
+     "declaration": "it('counts a repeatedly edited widget once, including title, layout and appearance', () => {",
+     "assertions": [
+      "68: expect(review.changes).toHaveLength(1);",
+      "69: expect(review.changes[0]?.label).toBe('Updated: Better revenue');",
+      "70: expect(review.changes[0]?.detail).toContain('Title:');",
+      "71: expect(review.changes[0]?.detail).toContain('Configuration changed');",
+      "72: expect(review.changes[0]?.detail).toContain('Size or layout changed');",
+      "73: expect(review.changes[0]?.detail).toContain('Appearance changed');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 76,
+     "declaration": "it('identifies repaired unavailable configurations only when support is restored', () => {",
+     "assertions": [
+      "81: expect(review.changes).toHaveLength(1);",
+      "82: expect(review.changes[0]?.detail).toContain('Repaired unavailable configuration');",
+      "83: expect(review.changes[0]?.detail).not.toContain('Configuration changed');",
+      "84: expect(changes({ ...repaired, widgets: [{ ...repaired.widgets[0]!, metricKey: 'also-missing' }] }, original)"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 88,
+     "declaration": "it('distinguishes persistent ordering from resize without duplicating a widget edit', () => {",
+     "assertions": [
+      "91: expect(review.changes.map(item => item.kind)).toEqual(['widget-edit', 'order']);",
+      "92: expect(review.changes[0]?.detail).toContain('Size or layout changed');",
+      "93: expect(review.summary).toContain('order');",
+      "94: expect(review.changes[1]?.detail).toContain('Orders, Revenue');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 97,
+     "declaration": "it('does not manufacture a reordering when simply removing an existing widget', () => {",
+     "assertions": [
+      "99: expect(review.changes.map(item => item.kind)).toEqual(['widget-remove']);",
+      "100: expect(review.changes[0]?.label).toBe('Removed: Orders');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 103,
+     "declaration": "it('ignores absent/empty appearance settings on legacy saved widgets', () => {",
+     "assertions": [
+      "105: expect(changes(copy).changes).toEqual([]);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 108,
+     "declaration": "it('treats a copied library template as an added independent widget, not a template mutation', () => {",
+     "assertions": [
+      "112: expect(review.changes.map(item => item.label)).toEqual(['Added: Shared chart']);",
+      "114: expect(template.title).toBe('Shared chart');",
+      "115: expect(changes(draft()).changes).toEqual([]);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 118,
+     "declaration": "it('uses the newer saved revision as the review baseline after selective UX-38 recovery', () => {",
+     "assertions": [
+      "125: expect(review.changes.map(item => item.label)).toEqual(['Dashboard name', 'Updated: Local revenue']);",
+      "126: expect(recovered.description).toBe('Remote description');",
+      "127: expect(recovered.widgets[1]!.title).toBe('Remote orders');",
+      "128: expect(review.summary).not.toContain('description');",
+      "129: expect(changes({ name: latest.name, description: latest.description, widgets: latest.widgets }, latest).changes).toEqual([]);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 132,
+     "declaration": "it('retains the same pending changes across a rejected save until the baseline changes', () => {",
+     "assertions": [
+      "135: expect(before.changes).toHaveLength(1);",
+      "136: expect(changes(local).changes).toEqual(before.changes);",
+      "138: expect(changes(local, latest).changes).toHaveLength(1);",
+      "139: expect(changes(draft({ name: latest.name }), latest).changes).toHaveLength(0);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/dashboardUndo.test.ts",
+   "blob": "f5e8b7faed5e0fc317aaa8e77561d5f28fe18b93",
+   "capability": "Undo/redo",
+   "cases": [
+    {
+     "line": 11,
+     "declaration": "it('undoes and redoes an added widget without regenerating its id or changing the source snapshot', () => {",
+     "assertions": [
+      "15: expect(history.past).toHaveLength(1);",
+      "17: expect(undone.widgets.map(item => item.id)).toEqual(['existing']);",
+      "19: expect(redone.widgets.map(item => item.id)).toEqual(['existing', 'copy-id']);",
+      "20: expect(redone.widgets[1]).not.toBe(added[1]);",
+      "21: expect(redone.widgets[1]!.appearance).not.toBe(added[1]!.appearance);",
+      "22: expect(first).toHaveLength(1);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 25,
+     "declaration": "it('restores removed, reordered and resized widgets and configurations as full snapshots', () => {",
+     "assertions": [
+      "30: expect(restored.widgets.map(item => item.id)).toEqual(['a', 'b', 'c']);",
+      "36: expect(undoWidgetChange(twice, resized)!.widgets).toEqual(reordered);",
+      "37: expect(undoWidgetChange(changed, reordered)!.widgets).toEqual(restored.widgets);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 40,
+     "declaration": "it('does not record no-ops and invalidates redo after a divergent edit', () => {",
+     "assertions": [
+      "42: expect(captureWidgetChange(emptyWidgetHistory(), initial, [...initial])).toBeNull();",
+      "45: expect(undone.history.future).toHaveLength(1);",
+      "47: expect(different.future).toHaveLength(0);",
+      "48: expect(redoWidgetChange(different, [...initial, widget('three')])).toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 51,
+     "declaration": "it('bounds history at twenty actions, and clearing it makes undo and redo unavailable', () => {",
+     "assertions": [
+      "59: expect(history.past).toHaveLength(WIDGET_UNDO_LIMIT);",
+      "65: expect(undoWidgetChange(history, present)).toBeNull();",
+      "66: expect(history.future).toHaveLength(WIDGET_UNDO_LIMIT);",
+      "68: expect(undoWidgetChange(reset, present)).toBeNull();",
+      "69: expect(redoWidgetChange(reset, present)).toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/navigationContinuity.test.ts",
+   "blob": "14655fd95ec13249934923b6ce1f91968863b28f",
+   "capability": "Navigation continuity",
+   "cases": [
+    {
+     "line": 5,
+     "declaration": "it('only accepts safe history entry indices and preserves other state keys', () => {",
+     "assertions": [
+      "6: expect(readNavigationIndex(null)).toBeNull();",
+      "7: expect(readNavigationIndex({ __nexaNavigationIndex: -1 })).toBeNull();",
+      "8: expect(readNavigationIndex({ __nexaNavigationIndex: '1' })).toBeNull();",
+      "9: expect(readNavigationIndex({ __nexaNavigationIndex: Number.NaN })).toBeNull();",
+      "10: expect(readNavigationIndex({ __nexaNavigationIndex: 3.5 })).toBeNull();",
+      "11: expect(readNavigationIndex(withNavigationIndex({ anotherApp: 'keep' }, 4))).toBe(4);",
+      "12: expect(withNavigationIndex({ anotherApp: 'keep' }, 4)).toEqual({"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 17,
+     "declaration": "it('restores only a still-authorized organization-local dashboard', () => {",
+     "assertions": [
+      "23: expect(canRestoreCatalogReturn(point, 'northstar', items)).toBe(true);",
+      "24: expect(canRestoreCatalogReturn(point, 'isolated', items)).toBe(false);",
+      "25: expect(canRestoreCatalogReturn(point, 'northstar', items.slice(1))).toBe(false);",
+      "26: expect(canRestoreCatalogReturn(null, 'northstar', items)).toBe(false);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/dashboardNavigation.test.ts",
+   "blob": "2b361e091b2d2337d92398c71f9fd2d94d16c34a",
+   "capability": "Dashboard navigation",
+   "cases": [
+    {
+     "line": 7,
+     "declaration": "it('accepts an existing widget selected by its stable identifier', () => {",
+     "assertions": [
+      "8: expect(resolveNavigationSelection(widgets, 'twelfth')).toBe('twelfth');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 11,
+     "declaration": "it('refuses empty and removed selections without navigating to the wrong widget', () => {",
+     "assertions": [
+      "12: expect(resolveNavigationSelection(widgets, '')).toBeNull();",
+      "13: expect(resolveNavigationSelection(widgets, 'removed')).toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ]
+}

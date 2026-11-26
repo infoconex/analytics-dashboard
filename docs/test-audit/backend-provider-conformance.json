@@ -1,0 +1,610 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Machine-assisted NUnit method/attribute and assertion source excerpts; parameterized fixture and test counts require runtime reconciliation. Read helper definitions in original source.",
+ "files": [
+  {
+   "path": "tests/AnalyticsDashboard.Tests/ElasticsearchProviderIntegrationTests.cs",
+   "blob": "795e61f9893a91a2ef3fe60b216440335aed5d13",
+   "capability": "Elasticsearch live conformance",
+   "cases": [
+    {
+     "line": 95,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "96: public async Task RealProviderAppliesUtcBoundsAndRegionBeforeAggregation()",
+     "assertions": [
+      "114: Assert.That(result.RootElement.GetProperty(\"aggregations\").GetProperty(\"revenue\")",
+      "116: Assert.That(result.RootElement.GetProperty(\"aggregations\").GetProperty(\"orders\")"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 120,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "121: public async Task GroupedRevenueUsesCompositeAndRespectsFilterContext()",
+     "assertions": [
+      "132: Assert.That(buckets.GetArrayLength(), Is.EqualTo(1));",
+      "133: Assert.That(buckets[0].GetProperty(\"key\").GetProperty(\"region\").GetString(), Is.EqualTo(\"West\"));",
+      "134: Assert.That(buckets[0].GetProperty(\"revenue\").GetProperty(\"value\")"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 138,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "139: public async Task NotEqualExcludesMissingFieldsAndLiteralInjectionIsHarmless()",
+     "assertions": [
+      "147: Assert.That(hits.GetArrayLength(), Is.EqualTo(1));",
+      "148: Assert.That(hits[0].GetProperty(\"_source\").GetProperty(\"doc_id\").GetString(), Is.EqualTo(\"2\"));",
+      "156: Assert.That(empty.RootElement.GetProperty(\"hits\").GetProperty(\"hits\").GetArrayLength(), Is.Zero);",
+      "165: Assert.That(response.IsSuccessStatusCode, Is.True,"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/ElasticsearchQueryCompilerTests.cs",
+   "blob": "fb22c712aae3ecbca68210277b1e3faa7e666e8b",
+   "capability": "Elasticsearch compilation",
+   "cases": [
+    {
+     "line": 31,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "32: public void DateAndCategoryFiltersAreStructuredAndAppliedBeforeAggregation()",
+     "assertions": [
+      "54: Assert.Multiple(() =>",
+      "56: Assert.That(plan.Index, Is.EqualTo(\"nexa_provider_fixture\"));",
+      "57: Assert.That(clauses.GetArrayLength(), Is.EqualTo(3));",
+      "58: Assert.That(clauses[0].GetProperty(\"range\").GetProperty(\"occurred_at\")",
+      "60: Assert.That(clauses[1].GetProperty(\"range\").GetProperty(\"occurred_at\")",
+      "62: Assert.That(clauses[2].GetProperty(\"term\").GetProperty(\"region.keyword\")",
+      "64: Assert.That(root.GetProperty(\"size\").GetInt32(), Is.Zero);",
+      "65: Assert.That(root.GetProperty(\"aggs\").GetProperty(\"revenue\")",
+      "67: Assert.That(root.GetProperty(\"aggs\").GetProperty(\"orders\")"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 72,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "73: public void UserTextCannotInjectDslScriptsOrIndexPaths()",
+     "assertions": [
+      "84: Assert.That(actual, Is.EqualTo(payload));",
+      "85: Assert.That(json.RootElement.TryGetProperty(\"script\", out _), Is.False);",
+      "86: Assert.That(plan.RequestBody, Does.Not.Contain(\"query_string\"));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 89,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "90: public void RawRowsUseApprovedSourcePathsAndStableSort()",
+     "assertions": [
+      "97: Assert.Multiple(() =>",
+      "99: Assert.That(root.GetProperty(\"size\").GetInt32(), Is.EqualTo(7));",
+      "100: Assert.That(root.GetProperty(\"from\").GetInt32(), Is.EqualTo(2));",
+      "101: Assert.That(root.GetProperty(\"_source\").GetProperty(\"includes\").EnumerateArray()",
+      "103: Assert.That(root.GetProperty(\"sort\").GetArrayLength(), Is.EqualTo(2));",
+      "104: Assert.That(root.GetProperty(\"sort\")[1].GetProperty(\"doc_id\")"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 109,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "110: public void GroupingUsesBoundedCompositeBucketsAndPreAggregateFilter()",
+     "assertions": [
+      "121: Assert.Multiple(() =>",
+      "123: Assert.That(root.GetProperty(\"query\").GetProperty(\"bool\").GetProperty(\"filter\")",
+      "125: Assert.That(root.GetProperty(\"size\").GetInt32(), Is.Zero);",
+      "126: Assert.That(root.GetProperty(\"aggs\").GetProperty(\"groups\").GetProperty(\"composite\")",
+      "128: Assert.That(root.GetProperty(\"aggs\").GetProperty(\"groups\").GetProperty(\"aggs\")"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 134,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "135: public void NotEqualRequiresFieldToExistLikeSqlNullSemantics()",
+     "assertions": [
+      "143: Assert.That(predicate.GetProperty(\"filter\")[0].GetProperty(\"exists\")",
+      "145: Assert.That(predicate.GetProperty(\"must_not\").GetArrayLength(), Is.EqualTo(1));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 148,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "149: public void RejectsArbitraryIndexFieldsUnsupportedOperatorsAndPaging()",
+     "assertions": [
+      "153: Assert.Throws<InvalidQueryException>(() => compiler.Compile(Binding with { Index = \"orders-*\" }, query));",
+      "154: Assert.Throws<InvalidQueryException>(() => compiler.Compile(Binding with",
+      "162: Assert.Throws<InvalidQueryException>(() => compiler.Compile(Binding with",
+      "170: Assert.Throws<InvalidQueryException>(() => compiler.Compile(",
+      "172: Assert.Throws<InvalidQueryException>(() => compiler.Compile(Binding, new QueryRequest(\"sales\",",
+      "175: Assert.Throws<InvalidQueryException>(() => compiler.Compile(Binding,",
+      "177: Assert.Throws<InvalidQueryException>(() => compiler.Compile(Binding,"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/MySqlProviderIntegrationTests.cs",
+   "blob": "5d1dee6f4e95b3ea2334a87250c73caf5a39c073",
+   "capability": "MySQL live conformance",
+   "cases": [
+    {
+     "line": 65,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "66: public async Task TimeAndTextFiltersExecuteBeforeAggregation()",
+     "assertions": [
+      "82: Assert.That(await rows.ReadAsync(), Is.True);",
+      "83: Assert.That(rows.GetDecimal(0), Is.EqualTo(43.50m));",
+      "84: Assert.That(Convert.ToInt64(rows.GetValue(1)), Is.EqualTo(2));",
+      "85: Assert.That(await rows.ReadAsync(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 88,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "89: public async Task HalfOpenUtcRangeDoesNotIncludeEndBoundary()",
+     "assertions": [
+      "102: Assert.That(await rows.ReadAsync(), Is.True);",
+      "103: Assert.That(rows.GetInt32(0), Is.EqualTo(1));",
+      "104: Assert.That(await rows.ReadAsync(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 107,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "108: public async Task LiteralUnderscoreAndStablePagination()",
+     "assertions": [
+      "116: Assert.That(await rows.ReadAsync(), Is.True);",
+      "117: Assert.That(rows.GetInt32(0), Is.EqualTo(3));",
+      "118: Assert.That(await rows.ReadAsync(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 121,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "122: public async Task InjectionPayloadRemainsAValue()",
+     "assertions": [
+      "130: Assert.That(command.CommandText, Does.Not.Contain(attack));",
+      "132: Assert.That(await rows.ReadAsync(), Is.False);",
+      "136: Assert.That(Convert.ToInt64(await count.ExecuteScalarAsync()), Is.EqualTo(3));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 139,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "140: public async Task ReadOnlyReaderCannotWrite()",
+     "assertions": [
+      "147: Assert.Fail(\"SELECT-only fixture reader unexpectedly modified the table.\");"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/MySqlQueryCompilerTests.cs",
+   "blob": "3713c98ab9786db8c226351669d0454b1650260e",
+   "capability": "MySQL compilation",
+   "cases": [
+    {
+     "line": 24,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "25: public void ValuesAreBoundAndDialectUsesTrustedIdentifiers()",
+     "assertions": [
+      "38: Assert.Multiple(() =>",
+      "40: Assert.That(plan.CommandText, Does.StartWith(\"SELECT \"));",
+      "41: Assert.That(plan.CommandText, Does.Contain(\"INSTR(\"));",
+      "42: Assert.That(plan.CommandText, Does.Contain(\"LIMIT 2 OFFSET 1\"));",
+      "43: Assert.That(plan.CommandText, Does.Not.Contain(attack));",
+      "44: Assert.That(plan.Parameters.Select(x => x.Name), Is.EqualTo(new[] { \"@p0\", \"@p1\", \"@p2\" }));",
+      "45: Assert.That(plan.Parameters[0].Value, Is.EqualTo(attack));",
+      "46: Assert.That(plan.Limit, Is.EqualTo(2));",
+      "48: Assert.That(plan.CommandText, Does.Contain(\"id\"));",
+      "49: Assert.That(plan.CommandText, Does.Contain(((char)96).ToString()));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 52,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "53: public void FactoryBindsNativeParametersAndNormalizesUtc()",
+     "assertions": [
+      "69: Assert.Multiple(() =>",
+      "71: Assert.That(command.Parameters[0].MySqlDbType, Is.EqualTo(MySqlDbType.DateTime));",
+      "72: Assert.That(command.Parameters[0].Value, Is.EqualTo(timestamp.UtcDateTime));",
+      "73: Assert.That(command.Parameters[1].Value, Is.EqualTo((short)1));",
+      "74: Assert.That(command.Parameters[2].MySqlDbType, Is.EqualTo(MySqlDbType.Decimal));",
+      "75: Assert.That(command.Parameters[2].Value, Is.EqualTo(12.5m));",
+      "76: Assert.That(command.CommandTimeout, Is.EqualTo(new QueryBudget().TimeoutMilliseconds / 1000));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 80,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "81: public void NonMicrosecondBoundaryIsRejectedRatherThanTruncated()",
+     "assertions": [
+      "89: Assert.Throws<InvalidQueryException>(() => MySqlCommandFactory.Create(connection, plan));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 92,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "93: public void RejectsUnapprovedFieldsBindingsAndForeignPlans()",
+     "assertions": [
+      "97: Assert.Throws<InvalidQueryException>(() => compiler.Compile(",
+      "99: Assert.Throws<InvalidQueryException>(() => compiler.Compile(",
+      "101: Assert.Throws<InvalidQueryException>(() => compiler.Compile(Bound,",
+      "105: Assert.Throws<InvalidQueryException>(() => compiler.Compile(Bound,",
+      "109: Assert.Throws<InvalidQueryException>(() => MySqlCommandFactory.Create(connection, foreign));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/RelationalProviderIntegrationTests.cs",
+   "blob": "8be9e07d0e29579bebbb81a66945d7367d025992",
+   "capability": "Relational live conformance",
+   "cases": [
+    {
+     "line": 94,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "95: public async Task NativeCommandExecutesLiteralPrefixAndPagination()",
+     "assertions": [
+      "103: Assert.That(await rows.ReadAsync(), Is.True);",
+      "104: Assert.Multiple(() =>",
+      "106: Assert.That(rows.GetInt32(0), Is.EqualTo(1));",
+      "107: Assert.That(rows.GetString(1), Is.EqualTo(\"Pacific_%\"));",
+      "109: Assert.That(await rows.ReadAsync(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 112,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "113: public async Task InjectionPayloadIsOnlyComparedAsAValue()",
+     "assertions": [
+      "120: Assert.That(await rows.ReadAsync(), Is.False);",
+      "126: Assert.That(Convert.ToInt32(await count.ExecuteScalarAsync()), Is.EqualTo(3));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 129,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "130: public async Task GroupingAndAggregatesExecuteAgainstRealProvider()",
+     "assertions": [
+      "140: Assert.That(await rows.ReadAsync(), Is.True);",
+      "141: Assert.Multiple(() =>",
+      "143: Assert.That(rows.GetBoolean(0), Is.True);",
+      "144: Assert.That(rows.GetDecimal(1), Is.EqualTo(43.50m));",
+      "145: Assert.That(Convert.ToInt32(rows.GetValue(2)), Is.EqualTo(2));",
+      "147: Assert.That(await rows.ReadAsync(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 150,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "151: public async Task NativeInContainsAndNullOperatorsUseLiteralParameters()",
+     "assertions": [
+      "167: Assert.That(ids, Is.EqualTo(new[] { 1, 3 }));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 170,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "171: public async Task AggregateOnlyQueryHasOneResultRow()",
+     "assertions": [
+      "177: Assert.That(await rows.ReadAsync(), Is.True);",
+      "178: Assert.That(Convert.ToInt32(rows.GetValue(0)), Is.EqualTo(3));",
+      "179: Assert.That(await rows.ReadAsync(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 182,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "183: public async Task NativeTimestampParameterUsesUtc()",
+     "assertions": [
+      "193: Assert.That(ids, Is.EqualTo(new[] { 1, 3 }));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 196,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "197: public async Task ReadOnlyPrincipalCannotModifyData()",
+     "assertions": [
+      "205: Assert.Fail(\"Read-only fixture principal unexpectedly modified the table.\");"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/RelationalQueryCompilerTests.cs",
+   "blob": "e01239c230138ddac2d7163af910774875bfab04",
+   "capability": "Relational compilation",
+   "cases": [
+    {
+     "line": 25,
+     "attributes": [
+      "[TestCase(DataSourceProvider.SqlServer)]",
+      "[TestCase(DataSourceProvider.PostgreSql)]",
+      "[TestCase(DataSourceProvider.Sqlite)]"
+     ],
+     "declaration": "28: public void UntrustedValuesNeverBecomeSqlText(DataSourceProvider provider)",
+     "assertions": [
+      "42: Assert.Multiple(() =>",
+      "44: Assert.That(plan.CommandText, Does.StartWith(\"SELECT \"));",
+      "45: Assert.That(plan.CommandText, Does.Not.Contain(attack));",
+      "46: Assert.That(plan.CommandText, Does.Not.Contain(\"DROP TABLE\"));",
+      "47: Assert.That(plan.CommandText, Does.Contain(\"@p0\"));",
+      "48: Assert.That(plan.CommandText, Does.Contain(\"@p1\"));",
+      "49: Assert.That(plan.Parameters.Select(p => p.Name), Is.EqualTo(new[] { \"@p0\", \"@p1\", \"@p2\" }));",
+      "50: Assert.That(plan.Parameters[0].Value, Is.EqualTo(attack));",
+      "51: Assert.That(plan.Limit, Is.EqualTo(3));",
+      "52: Assert.That(plan.Offset, Is.EqualTo(2));",
+      "54: Assert.That(plan.CommandText, Does.Contain(\"id\")); // Stable ordering tie-breaker"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 57,
+     "attributes": [
+      "[TestCase(DataSourceProvider.SqlServer)]",
+      "[TestCase(DataSourceProvider.PostgreSql)]",
+      "[TestCase(DataSourceProvider.Sqlite)]"
+     ],
+     "declaration": "60: public void GroupingAndAggregatesAreRestrictedToTrustedColumns(DataSourceProvider provider)",
+     "assertions": [
+      "72: Assert.Multiple(() =>",
+      "74: Assert.That(plan.CommandText, Does.Contain(\"SUM(\"));",
+      "75: Assert.That(plan.CommandText, Does.Contain(\"COUNT(*)\"));",
+      "76: Assert.That(plan.CommandText, Does.Contain(\" GROUP BY \"));",
+      "77: Assert.That(plan.CommandText, Does.Contain(\" ORDER BY \"));",
+      "78: Assert.That(plan.Parameters.Single().Value, Is.EqualTo(true));",
+      "79: Assert.That(plan.Columns.Select(c => c.Name), Is.EqualTo(new[] { \"region\", \"total\", \"count\" }));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 83,
+     "attributes": [
+      "[TestCase(DataSourceProvider.SqlServer)]",
+      "[TestCase(DataSourceProvider.PostgreSql)]",
+      "[TestCase(DataSourceProvider.Sqlite)]"
+     ],
+     "declaration": "86: public void TimestampParametersNormalizeToUtc(DataSourceProvider provider)",
+     "assertions": [
+      "95: Assert.That(plan.Parameters.Single().Value, Is.EqualTo(timestamp.ToUniversalTime()));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 98,
+     "attributes": [
+      "[TestCase(DataSourceProvider.SqlServer)]",
+      "[TestCase(DataSourceProvider.PostgreSql)]",
+      "[TestCase(DataSourceProvider.Sqlite)]"
+     ],
+     "declaration": "101: public void RejectsInjectedOrMissingPhysicalBinding(DataSourceProvider provider)",
+     "assertions": [
+      "105: Assert.Throws<InvalidQueryException>(() => compiler.Compile(",
+      "107: Assert.Throws<InvalidQueryException>(() => compiler.Compile(",
+      "109: Assert.Throws<InvalidQueryException>(() => compiler.Compile(",
+      "111: Assert.Throws<InvalidQueryException>(() => compiler.Compile("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 117,
+     "attributes": [
+      "[TestCase(DataSourceProvider.SqlServer)]",
+      "[TestCase(DataSourceProvider.PostgreSql)]",
+      "[TestCase(DataSourceProvider.Sqlite)]"
+     ],
+     "declaration": "120: public void InvalidTypedRequestsFailAtCompilationBoundary(DataSourceProvider provider)",
+     "assertions": [
+      "141: Assert.Throws<InvalidQueryException>(() => compiler.Compile(BoundSales, query));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 144,
+     "attributes": [
+      "[TestCase(DataSourceProvider.SqlServer)]",
+      "[TestCase(DataSourceProvider.PostgreSql)]",
+      "[TestCase(DataSourceProvider.Sqlite)]"
+     ],
+     "declaration": "147: public void NonSortableGroupingAndAggregateOffsetFail(DataSourceProvider provider)",
+     "assertions": [
+      "156: Assert.Throws<InvalidQueryException>(() => compiler.Compile(",
+      "161: Assert.Throws<InvalidQueryException>(() => compiler.Compile(BoundSales, aggregate));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 164,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "165: public void NativeCommandFactoriesRejectForeignPlans()",
+     "assertions": [
+      "172: Assert.Throws<InvalidQueryException>(() => SqlServerCommandFactory.Create(sqlConnection, pgPlan));",
+      "173: Assert.Throws<InvalidQueryException>(() => PostgreSqlCommandFactory.Create(pgConnection, sqlPlan));",
+      "176: Assert.Throws<InvalidQueryException>(() => SqliteCommandFactory.Create(sqliteConnection, pgPlan));",
+      "177: Assert.Throws<InvalidQueryException>(() => PostgreSqlCommandFactory.Create(pgConnection, sqlitePlan));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/SqliteQueryConformanceTests.cs",
+   "blob": "d360959113bdf9fe4354b7e16336b688f65676c9",
+   "capability": "SQLite conformance",
+   "cases": [
+    {
+     "line": 40,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "41: public void TimeAndRegionFiltersRunBeforeAggregation()",
+     "assertions": [
+      "57: Assert.That(command.CommandText, Does.Contain(\" WHERE \"));",
+      "59: Assert.That(reader.Read(), Is.True);",
+      "60: Assert.That(Convert.ToDouble(reader.GetValue(0)), Is.EqualTo(43.5).Within(0.0001));",
+      "61: Assert.That(reader.GetInt64(1), Is.EqualTo(2));",
+      "62: Assert.That(reader.Read(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 65,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "66: public void HalfOpenUtcBoundsAreExactAcrossInputOffsets()",
+     "assertions": [
+      "78: Assert.Multiple(() =>",
+      "80: Assert.That(command.Parameters[0].Value, Is.EqualTo(\"2026-11-15T16:30:00.0000000Z\"));",
+      "81: Assert.That(command.Parameters[1].Value, Is.EqualTo(\"2026-11-16T01:00:00.0000000Z\"));",
+      "84: Assert.That(reader.Read(), Is.True);",
+      "85: Assert.That(reader.GetInt64(0), Is.EqualTo(1));",
+      "86: Assert.That(reader.Read(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 89,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "90: public void UntrustedTextNeverEntersSqlAndCannotModifyData()",
+     "assertions": [
+      "97: Assert.That(command.CommandText, Does.Not.Contain(attack));",
+      "98: Assert.That(command.Parameters[0].Value, Is.EqualTo(attack));",
+      "100: Assert.That(reader.Read(), Is.False);",
+      "103: Assert.That(Convert.ToInt32(count.ExecuteScalar()), Is.EqualTo(4));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 106,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "107: public void SubstringIsLiteralAndPaginationIsDeterministic()",
+     "assertions": [
+      "115: Assert.That(command.CommandText, Does.Contain(\"instr(\"));",
+      "117: Assert.That(reader.Read(), Is.True);",
+      "118: Assert.That(reader.GetInt64(0), Is.EqualTo(3));",
+      "119: Assert.That(reader.Read(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 122,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "123: public void NullAndBooleanParametersUseNativeSQLiteSemantics()",
+     "assertions": [
+      "132: Assert.That(command.Parameters[0].SqliteType, Is.EqualTo(SqliteType.Integer));",
+      "133: Assert.That(command.Parameters[0].Value, Is.EqualTo(0L));",
+      "135: Assert.That(reader.Read(), Is.True);",
+      "136: Assert.That(reader.GetInt64(0), Is.EqualTo(4));",
+      "137: Assert.That(reader.Read(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 140,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "141: public void ReadOnlyFixtureRejectsWrites()",
+     "assertions": [
+      "145: Assert.Throws<SqliteException>(() => command.ExecuteNonQuery());"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 148,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "149: public void WrongProviderPlanIsRejectedBeforeAnyExecution()",
+     "assertions": [
+      "153: Assert.Throws<InvalidQueryException>(() => SqliteCommandFactory.Create(connection, pgPlan));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ]
+}
