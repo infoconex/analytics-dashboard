@@ -240,5 +240,30 @@ public sealed class SavedVisualizationTests
         Assert.That(stale.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
         var delete = await client.DeleteAsync($"/api/organizations/northstar/visualizations/{id}?expectedRevision=2");
         Assert.That(delete.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Verify the new nested definition through real HTTP serialization and
+        // persistence, rather than relying solely on direct service tests.
+        var queryDraft = QueryDraft();
+        var queryCreated = await client.PostAsJsonAsync("/api/organizations/northstar/visualizations", queryDraft, ApiJson);
+        Assert.That(queryCreated.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var queryDocument = await queryCreated.Content.ReadFromJsonAsync<JsonElement>();
+        var queryId = queryDocument.GetProperty("id").GetString();
+        var queryFetched = await client.GetAsync($"/api/organizations/northstar/visualizations/{queryId}");
+        Assert.That(queryFetched.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var querySaved = await queryFetched.Content.ReadFromJsonAsync<SavedVisualization>(ApiJson);
+        Assert.That(querySaved!.Definition.QueryDefinition, Is.EqualTo(queryDraft.Definition.QueryDefinition));
+        var queryDashboard = await client.PostAsJsonAsync("/api/organizations/northstar/dashboards",
+            new DashboardDraft("Saved query via HTTP", "", [queryDraft.Definition]), ApiJson);
+        Assert.That(queryDashboard.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var queryDashboardDocument = await queryDashboard.Content.ReadFromJsonAsync<JsonElement>();
+        var queryDashboardId = queryDashboardDocument.GetProperty("id").GetString();
+        var queryDashboardFetched = await client.GetAsync($"/api/organizations/northstar/dashboards/{queryDashboardId}");
+        Assert.That(queryDashboardFetched.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var persistedQuery = await queryDashboardFetched.Content.ReadFromJsonAsync<Dashboard>(ApiJson);
+        Assert.That(persistedQuery!.Widgets.Single().QueryDefinition, Is.EqualTo(queryDraft.Definition.QueryDefinition));
+        var invalid = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(queryDraft, ApiJson))!;
+        invalid["definition"]!["queryDefinition"]!["sql"] = "unapproved";
+        var rejected = await client.PostAsJsonAsync("/api/organizations/northstar/visualizations", invalid, ApiJson);
+        Assert.That(rejected.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 }

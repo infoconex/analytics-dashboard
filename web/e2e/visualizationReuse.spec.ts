@@ -908,6 +908,26 @@ test('EXP-06 persists bounded raw query authoring and independent reusable copie
   await expect(panel.getByLabel('Business dimension')).toBeFocused();
   await calendar.getByRole('button', { name: 'Clear reporting period' }).press('Enter');
   await expect(sumCard).toContainText('4 fictional records');
+  // Leaving the saved viewer unmounts the controls; neither selection may
+  // survive invisibly or alter the saved revision.
+  await page.emulateMedia({ forcedColors: 'none' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await calendar.getByRole('combobox', { name: 'Reporting period', exact: true }).selectOption('custom');
+  await calendar.getByLabel('Start date and time', { exact: true }).fill('2026-11-18T00:00');
+  await calendar.getByLabel('End date and time (exclusive)').fill('2026-11-21T00:00');
+  await calendar.getByRole('button', { name: 'Apply reporting period' }).press('Enter');
+  await panel.getByRole('textbox', { name: 'Filter value' }).fill('C-103');
+  await panel.getByRole('button', { name: 'Apply filter' }).press('Enter');
+  await expect(sumCard).toContainText('1 fictional record');
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
+  await expect(calendar).toHaveCount(0);
+  await expect(sumCard).toContainText('4 fictional records');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(calendar.locator('summary')).toContainText('All time');
+  await expect(sumCard).toContainText('4 fictional records');
+  await panel.locator('summary').press('Enter');
+  await expect(panel.getByRole('region', { name: 'Active business filters' })).toContainText('No field filters');
+  expect(api.dashboards()[0]?.revision).toBe(2);
   await page.reload();
   await expect(countCard).toContainText('4 fictional records');
   expect(api.dashboards()[0]?.widgets[1]?.queryDefinition?.aggregate).toBe('sum');

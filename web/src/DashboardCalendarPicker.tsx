@@ -31,7 +31,7 @@ export function ReportingCalendar({ onRangeChange }: Props) {
   }
   return <details className="reporting-calendar">
     <summary>Experimental reporting period · {presetLabel(applied.preset)}</summary>
-    <p>Calendar filtering evaluation only. Fixed fictional Sales and Support event records (November 2025 and 2026). Existing dashboard visualizations remain unchanged; their original samples have no approved calendar timestamps.</p>
+    <p>Calendar filtering evaluation only. Fixed fictional Sales and Support event records (November 2025 and 2026). Compatible saved query-backed visualizations use the same period. Original aggregated samples remain unchanged; they have no approved calendar timestamps.</p>
     <form onSubmit={event => { event.preventDefault(); apply(); }}>
       <div className="reporting-calendar-fields">
         <label>Reporting period<select aria-label="Reporting period" ref={selector} value={draft.preset} onChange={event => change({ preset: event.target.value as Preset })}>
@@ -60,7 +60,7 @@ export function ReportingCalendar({ onRangeChange }: Props) {
     </form>
     <div role="status" aria-label="Calendar filter scope" className="reporting-calendar-status">
       <strong>{presetLabel(applied.preset)} · {applied.zone}</strong>
-      <p>{range ? 'UTC interval: ' + range.start + ' to ' + range.end + ' (exclusive). Applies to 2 experimental visualizations; undated inventory unchanged.' : 'No calendar restriction. All experimental records.'}</p>
+      <p>{range ? 'UTC interval: ' + range.start + ' to ' + range.end + ' (exclusive). Applies to the 2 calendar samples below; undated inventory unchanged. Saved query-backed cards report their own applicability.' : 'No calendar restriction. All experimental records.'}</p>
     </div>
     <div className="reporting-calendar-results">
       {results.map(result => <section key={result.name} aria-label={result.name}>
