@@ -66,4 +66,6 @@ Usability research targets (not yet measured): first visualization under 3 minut
 | EXP-03 — [Issue #148](https://github.com/infoconex/analytics-dashboard/issues/148) | UI-based typed field-filter builder over fictional sample fixtures; does not call customer providers or modify saved cards. See [EXP-03 filter builder](exp03-dashboard-filter-builder.md). |
 | EXP-04 — [Issue #151](https://github.com/infoconex/analytics-dashboard/issues/151) | Composes typed business filters and applied UTC calendar ranges with bounded authored visualization query previews, applying compatible selections before grouping and aggregation over fixed fictional fixtures. Preserves saved dashboards and provider applicability explanations; no customer query, provider execution, connection, or data access. See [EXP-04 preview](exp04-authored-query-preview.md). |
 
+| EXP-05 — [Issue #153](https://github.com/infoconex/analytics-dashboard/issues/153) | Bounded, temporary authoring of grouping and aggregation over the EXP-04 fictional query fixtures; existing persisted visualization model is unchanged. Verification pending. See [EXP-05 authoring](exp05-bounded-query-authoring.md). |
+
 Live customer query execution remains blocked on its independent security gates. The experimental UI does not enable customer data access.
