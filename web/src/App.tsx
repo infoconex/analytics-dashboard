@@ -13,6 +13,9 @@ import { reviewPendingDashboardSave } from './dashboardSaveReview';
 import { captureWidgetChange, emptyWidgetHistory, redoWidgetChange, undoWidgetChange } from './dashboardUndo';
 import { recoverDashboardChanges, reviewDashboardConflict } from './dashboardConflictReview';
 import { widgetEditorHasChanges } from './authoringWorkflow';
+import { QueryVisualizationFields } from './QueryVisualizationFields';
+import { isQueryWidget, withQueryDefinition } from './queryVisualization';
+import { getQueryPreviewAuthoringOptions } from './fieldFilterFixtures';
 import { createWidget, datasetOptions, dimensions, formatDetailedMetric, formatMetric, metrics } from './demoData';
 import { sampleOverview, type OverviewMetric } from './sampleInterpretation';
 import { ApiError, type CurrentIdentity, type Dashboard, type DashboardDraft, type DashboardWidget, type DatasetKey, type Membership, type SavedVisualization, type WidgetKind } from './model';
@@ -258,8 +261,9 @@ export default function App() {
 
   function beginWidgetEditor(widget: DashboardWidget, template: SavedVisualization | null = null, backToLibrary = false) {
     widgetBaseline.current = { widget: structuredClone(widget), description: template?.description ?? '' };
-    widgetEditorInitialFocus.current = sampleConfigurationIssue(widget) ? '[data-repair-summary]' : '.gallery-card';
-    setWidgetDraft({ ...widget, appearance: widget.appearance ? { ...widget.appearance } : undefined });
+    widgetEditorInitialFocus.current = sampleConfigurationIssue(widget) ? '[data-repair-summary]' : isQueryWidget(widget) ? '.query-source-select' : '.gallery-card';
+    setWidgetDraft({ ...widget, appearance: widget.appearance ? { ...widget.appearance } : undefined,
+      ...(widget.queryDefinition ? { queryDefinition: { ...widget.queryDefinition } } : {}) });
     setLibraryEditing(template);
     setTemplateConflict(null);
     setReturnToLibrary(backToLibrary);
@@ -1345,7 +1349,18 @@ export default function App() {
           <p id="visualization-repair-problem" role="alert">{widgetDraftIssue.explanation} The original saved values are retained until you choose replacements. Preview is unavailable and Update visualization is disabled until the configuration is valid.</p>
           {widgetDraftIssue.field === 'kind' && <p>Saved chart type: <code>{widgetDraft.kind}</code>. Changing the chart type is optional if the metric can instead be made compatible.</p>}
         </section>}
-        <VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
+        {isQueryWidget(widgetDraft) ? <div className="visualization-data-fields"><h2>Query-backed bar chart</h2><p>One grouping and count or approved sum over fictional raw records.</p>
+          <button className="button button-light" type="button" onClick={() => { setWidgetDraft({ ...widgetDraft, kind: 'bar', ...layoutForChangedKind(widgetDraft, 'bar'), datasetKey: 'commerce', metricKey: 'revenue', dimensionKey: 'month', queryDefinition: undefined, appearance: undefined });
+            window.requestAnimationFrame(() => document.querySelector<HTMLElement>('dialog[open] .gallery-card')?.focus());
+          }}>Use aggregated samples</button></div>
+          : <><VisualizationGallery kind={widgetDraft.kind} onSelect={selectVisualizationKind} />
+            <button className="button button-light" type="button" onClick={() => {
+              const options = getQueryPreviewAuthoringOptions('sales');
+              if (options) {
+                setWidgetDraft(withQueryDefinition(widgetDraft, options.defaultDefinition));
+                window.requestAnimationFrame(() => document.querySelector<HTMLElement>('dialog[open] .query-source-select')?.focus());
+              }
+            }}>Use fictional raw records</button></>}
         {libraryEditing && <label className="form-label">Template description<textarea maxLength={500} rows={2}
           value={libraryDescription} onChange={event => setLibraryDescription(event.target.value)} /></label>}
         {libraryEditing && libraryError && <p role="alert" className="error-banner">{libraryError}</p>}
@@ -1360,6 +1375,7 @@ export default function App() {
         <div className="visualization-workspace">
           <div className="visualization-settings">
         <label className="form-label">Title<input maxLength={100} value={widgetDraft.title} onChange={event => setWidgetDraft({ ...widgetDraft, title: event.target.value })} /></label>
+        {isQueryWidget(widgetDraft) ? <QueryVisualizationFields widget={widgetDraft} onChange={setWidgetDraft} /> : <>
         <section className="visualization-data-fields" aria-label="Data and measures">
           <h2>Data and measures</h2>
           <p>Choose an existing fictional sample dataset and measure. Only supported field combinations are available.</p>
@@ -1399,7 +1415,7 @@ export default function App() {
             </>}
             {widgetDraft.kind !== 'histogram' && widgetDraft.kind !== 'pie' && widgetDraft.kind !== 'donut' && !(widgetDraft.datasetKey === 'channels' && widgetDraft.kind === 'bar') && <p>This chart uses source-order observations and descriptive axes. No additional appearance settings are needed.</p>}
           </div>
-        </details>
+        </details></>}
           </div>
         <section className="visualization-preview" aria-label="Live visualization preview">
           <h2>Live preview</h2><p>Original fictional sample records only. This preview does not save changes or query a customer data source.</p>

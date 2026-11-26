@@ -19,6 +19,7 @@ function snapshot(widgets: DashboardWidget[]): DashboardWidget[] {
   return widgets.map(widget => ({
     ...widget,
     appearance: widget.appearance ? { ...widget.appearance } : widget.appearance,
+    ...(widget.queryDefinition ? { queryDefinition: { ...widget.queryDefinition } } : {}),
   }));
 }
 

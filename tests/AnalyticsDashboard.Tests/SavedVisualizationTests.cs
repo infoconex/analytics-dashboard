@@ -137,6 +137,69 @@ public sealed class SavedVisualizationTests
                 await service.CreateAsync("northstar", "demo-owner", item, Token));
     }
 
+    private static SavedVisualizationDraft QueryDraft() => new("Fictional raw records",
+        new DashboardWidget(Guid.NewGuid(), "Sales by status", VisualizationKind.Bar,
+            "fictionalQuery", "query", "query", QueryDefinition:
+            new FictionalQueryDefinition("sales", "bar", "order_status", "sum", "amount")));
+
+    [Test]
+    public async Task QueryDefinitionPersistsInBothSnapshotsAndHonorsRevisions()
+    {
+        var draft = QueryDraft();
+        var saved = await service.CreateAsync("northstar", "demo-owner", draft, Token);
+        var dashboards = new DashboardService(catalog, catalog, TimeProvider.System);
+        var copy = saved.Definition with { Id = Guid.NewGuid() };
+        var dashboard = await dashboards.CreateAsync("northstar", "demo-owner",
+            new DashboardDraft("Fictional query dashboard", "", [copy]), Token);
+        var changed = saved.Definition with { QueryDefinition = saved.Definition.QueryDefinition! with
+            { Aggregate = "count", MeasureDimension = null } };
+        await service.UpdateAsync("northstar", saved.Id, "demo-owner", new("", changed), 1, Token);
+        await Assert.ThrowsAsync<ConflictException>(async () =>
+            await service.UpdateAsync("northstar", saved.Id, "demo-owner", draft, 1, Token));
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await service.CreateAsync("northstar", "demo-viewer", draft, Token));
+        var reopened = new SqliteCatalog(databasePath);
+        await reopened.InitializeAsync();
+        var found = await reopened.FindVisualizationAsync("northstar", saved.Id, Token);
+        var persisted = await reopened.FindAsync("northstar", dashboard.Id, Token);
+        Assert.Multiple(() =>
+        {
+            Assert.That(found?.Definition.QueryDefinition, Is.EqualTo(changed.QueryDefinition));
+            Assert.That(persisted?.Widgets.Single().QueryDefinition, Is.EqualTo(copy.QueryDefinition));
+            Assert.That(found?.Revision, Is.EqualTo(2));
+        });
+        Assert.That(await reopened.FindVisualizationAsync("isolated", saved.Id, Token), Is.Null);
+    }
+
+    [Test]
+    public void BothWritePathsRejectUnsupportedOrMixedQueryDefinitions()
+    {
+        var valid = QueryDraft().Definition;
+        var query = valid.QueryDefinition!;
+        var invalid = new[]
+        {
+            valid with { QueryDefinition = null },
+            valid with { DatasetKey = "commerce" },
+            valid with { Kind = VisualizationKind.Pie },
+            valid with { QueryDefinition = query with { Dataset = "unknown" } },
+            valid with { QueryDefinition = query with { GroupByDimension = "CustomerId" } },
+            valid with { QueryDefinition = query with { Aggregate = "average" } },
+            valid with { QueryDefinition = query with { Aggregate = "count" } },
+            valid with { QueryDefinition = query with { Dataset = "support" } },
+            valid with { QueryDefinition = query with { MeasureDimension = "TotalAmount" } },
+            valid with { Appearance = new VisualizationAppearance(ShowLegend: true) }
+        };
+        var dashboards = new DashboardService(catalog, catalog, TimeProvider.System);
+        foreach (var item in invalid)
+        {
+            Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+                await service.CreateAsync("northstar", "demo-owner", new("", item), Token));
+            Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+                await dashboards.CreateAsync("northstar", "demo-owner",
+                    new DashboardDraft("Invalid", "", [item]), Token));
+        }
+    }
+
     [Test]
     public async Task ApiEnforcesTenantIsolationAndPersistsTemplates()
     {
@@ -177,5 +240,30 @@ public sealed class SavedVisualizationTests
         Assert.That(stale.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
         var delete = await client.DeleteAsync($"/api/organizations/northstar/visualizations/{id}?expectedRevision=2");
         Assert.That(delete.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Verify the new nested definition through real HTTP serialization and
+        // persistence, rather than relying solely on direct service tests.
+        var queryDraft = QueryDraft();
+        var queryCreated = await client.PostAsJsonAsync("/api/organizations/northstar/visualizations", queryDraft, ApiJson);
+        Assert.That(queryCreated.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var queryDocument = await queryCreated.Content.ReadFromJsonAsync<JsonElement>();
+        var queryId = queryDocument.GetProperty("id").GetString();
+        var queryFetched = await client.GetAsync($"/api/organizations/northstar/visualizations/{queryId}");
+        Assert.That(queryFetched.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var querySaved = await queryFetched.Content.ReadFromJsonAsync<SavedVisualization>(ApiJson);
+        Assert.That(querySaved!.Definition.QueryDefinition, Is.EqualTo(queryDraft.Definition.QueryDefinition));
+        var queryDashboard = await client.PostAsJsonAsync("/api/organizations/northstar/dashboards",
+            new DashboardDraft("Saved query via HTTP", "", [queryDraft.Definition]), ApiJson);
+        Assert.That(queryDashboard.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var queryDashboardDocument = await queryDashboard.Content.ReadFromJsonAsync<JsonElement>();
+        var queryDashboardId = queryDashboardDocument.GetProperty("id").GetString();
+        var queryDashboardFetched = await client.GetAsync($"/api/organizations/northstar/dashboards/{queryDashboardId}");
+        Assert.That(queryDashboardFetched.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var persistedQuery = await queryDashboardFetched.Content.ReadFromJsonAsync<Dashboard>(ApiJson);
+        Assert.That(persistedQuery!.Widgets.Single().QueryDefinition, Is.EqualTo(queryDraft.Definition.QueryDefinition));
+        var invalid = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(queryDraft, ApiJson))!;
+        invalid["definition"]!["queryDefinition"]!["sql"] = "unapproved";
+        var rejected = await client.PostAsJsonAsync("/api/organizations/northstar/visualizations", invalid, ApiJson);
+        Assert.That(rejected.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 }

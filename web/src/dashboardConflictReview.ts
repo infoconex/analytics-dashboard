@@ -1,3 +1,4 @@
+import { queryDefinitionSnapshot } from './queryVisualization';
 import type { Dashboard, DashboardDraft, DashboardWidget } from './model';
 
 /**
@@ -30,6 +31,7 @@ const snapshotWidget = (widget: DashboardWidget) => ({
   id: widget.id, title: widget.title, kind: widget.kind,
   datasetKey: widget.datasetKey, metricKey: widget.metricKey, dimensionKey: widget.dimensionKey,
   columns: widget.columns ?? null, height: widget.height ?? null,
+  queryDefinition: queryDefinitionSnapshot(widget),
   appearance: {
     showLegend: widget.appearance?.showLegend ?? null,
     showSliceLabels: widget.appearance?.showSliceLabels ?? null,
@@ -134,6 +136,7 @@ export function recoverDashboardChanges(
   const localWidgets = new Map(local.widgets.map(widget => [widget.id, widget]));
   const clone = (widget: DashboardWidget): DashboardWidget => ({
     ...widget, appearance: widget.appearance ? { ...widget.appearance } : widget.appearance,
+    ...(widget.queryDefinition ? { queryDefinition: { ...widget.queryDefinition } } : {}),
   });
   let widgets = latest.widgets.map(clone);
   for (const change of review.compatible) {

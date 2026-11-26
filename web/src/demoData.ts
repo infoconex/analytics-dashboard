@@ -26,6 +26,8 @@ export const channels = [
 export const datasets: Record<DatasetKey, Record<string, string | number>[]> = {
   commerce,
   channels,
+  // The query-backed variant is evaluated exclusively by the raw fixture evaluator.
+  fictionalQuery: [],
 };
 
 export const datasetOptions: { key: DatasetKey; label: string }[] = [
@@ -34,6 +36,7 @@ export const datasetOptions: { key: DatasetKey; label: string }[] = [
 ];
 
 export const metrics: Record<DatasetKey, { key: string; label: string }[]> = {
+  fictionalQuery: [],
   commerce: [
     { key: 'revenue', label: 'Revenue' },
     { key: 'orders', label: 'Orders' },
@@ -49,6 +52,7 @@ export const metrics: Record<DatasetKey, { key: string; label: string }[]> = {
 export const dimensions: Record<DatasetKey, string> = {
   commerce: 'month',
   channels: 'channel',
+  fictionalQuery: 'query',
 };
 
 export const visualizations: { key: WidgetKind; label: string }[] = [

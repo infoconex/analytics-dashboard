@@ -11,6 +11,7 @@ interface Props {
 }
 
 const datasetDescriptions: Record<DatasetKey, string> = {
+  fictionalQuery: 'Raw records are authored in the dashboard visualization editor.',
   commerce: 'Revenue, orders, and customer activity across the year.',
   channels: 'Sessions, orders, and conversion across acquisition channels.',
 };

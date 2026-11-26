@@ -1,6 +1,9 @@
+import type { QueryPreviewDefinition } from './fieldFilterFixtures';
+
 export type OrganizationRole = 'viewer' | 'editor' | 'owner';
 export type WidgetKind = 'metric' | 'line' | 'area' | 'bar' | 'donut' | 'table' | 'pie' | 'histogram' | 'scatter';
-export type DatasetKey = 'commerce' | 'channels';
+/** fictionalQuery is a definition discriminator, not an aggregated sample dataset. */
+export type DatasetKey = 'commerce' | 'channels' | 'fictionalQuery';
 export type DataSourceProvider = 'sqlServer' | 'mySql' | 'postgreSql' | 'sqlite' | 'elasticsearch';
 
 export interface DataSourceDefinition {
@@ -52,6 +55,7 @@ export interface DashboardWidget {
   columns?: number | null;
   height?: number | null;
   appearance?: VisualizationAppearance | null;
+  queryDefinition?: QueryPreviewDefinition | null;
 }
 
 /** Organization-owned template; inserting it always copies the definition. */

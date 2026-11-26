@@ -15,6 +15,8 @@ import { categoryTooltipLabel, colorForCategory, formatChartAxis, formatChartToo
 import { describeWidgetFilters } from './widgetFilterContext';
 import { sampleAvailability } from './sampleAvailability';
 import { chartAppearance, chartCategoryRows } from './visualizationAppearance';
+import { isQueryWidget, type QueryContext } from './queryVisualization';
+import { QueryWidgetTile } from './QueryWidgetTile';
 
 const axisTick = { fontSize: 12, fill: '#566780' };
 
@@ -70,13 +72,18 @@ interface Props {
   onDuplicate?: (widget: DashboardWidget) => void;
   onSaveToLibrary?: (widget: DashboardWidget) => void;
   filters?: ConsumerFilters;
+  queryContext?: QueryContext;
   onChannelSelect?: (channel: string) => void;
   onPeriodReset?: () => void;
   onReturnToIndex?: () => void;
   onShareInsight?: (widget: DashboardWidget) => void;
 }
 
-export function WidgetTile({ widget, period, preview, position, total, editing, onEdit, onRepair, onRemove, onDuplicate, onSaveToLibrary, filters, onChannelSelect, onPeriodReset, onReturnToIndex, onShareInsight }: Props) {
+export function WidgetTile(props: Props) {
+  return isQueryWidget(props.widget) ? <QueryWidgetTile {...props} /> : <LegacyWidgetTile {...props} />;
+}
+
+function LegacyWidgetTile({ widget, period, preview, position, total, editing, onEdit, onRepair, onRemove, onDuplicate, onSaveToLibrary, filters, onChannelSelect, onPeriodReset, onReturnToIndex, onShareInsight }: Props) {
   const [keyboardIndex, setKeyboardIndex] = useState(0);
   const [chartFocused, setChartFocused] = useState(false);
   const appearance = chartAppearance(widget);

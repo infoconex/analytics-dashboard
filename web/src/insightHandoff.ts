@@ -47,6 +47,7 @@ export function dashboardHandoffNote(dashboard: Dashboard, organizationName: str
 }
 
 export function insightHandoffNote(dashboard: Dashboard, organizationName: string, widget: DashboardWidget, filters: ConsumerFilters, link: string): string | null {
+  if (widget.datasetKey === 'fictionalQuery' || widget.queryDefinition) return null;
   // Only describe a visualization that actually belongs to this authorized dashboard.
   if (!dashboard.widgets.some(item => item.id === widget.id && item.datasetKey === widget.datasetKey
     && item.metricKey === widget.metricKey && item.dimensionKey === widget.dimensionKey)) return null;

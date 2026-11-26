@@ -12,6 +12,7 @@ type Definition = Readonly<{
 }>;
 
 const definitions: Record<DatasetKey, Record<string, Definition>> = {
+  fictionalQuery: {}, // Never interpret a raw-record query as an aggregated sample.
   commerce: {
     revenue: {
       label: 'Revenue', unit: 'USD', additive: true,

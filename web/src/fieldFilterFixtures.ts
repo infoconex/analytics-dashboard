@@ -24,7 +24,7 @@ export interface QueryPreviewDefinition {
   visualization: 'bar';
   groupByDimension: string;
   aggregate: 'sum' | 'count';
-  measureDimension?: string;
+  measureDimension?: string | null;
 }
 
 interface Fixture {
@@ -219,6 +219,8 @@ export function evaluateFieldFilters(filters: readonly FieldFilter[]): FixtureOu
 }
 
 /** Authoring options are derived from trusted fictional fixture metadata, never user identifiers. */
+export const queryFixtureOptions = fixtures.map(fixture => ({ id: fixture.id, title: fixture.title }));
+
 export function getQueryPreviewAuthoringOptions(dataset: string) {
   const fixture = fixtures.find(item => item.id === dataset);
   if (!fixture) return null;
@@ -233,11 +235,11 @@ export function getQueryPreviewAuthoringOptions(dataset: string) {
 }
 
 /** Reject unsupported shapes before evaluating any rows; never fall back to a different definition. */
-function validatePreviewDefinition(definition: QueryPreviewDefinition) {
+export function validatePreviewDefinition(definition: QueryPreviewDefinition) {
   const options = getQueryPreviewAuthoringOptions(definition.dataset);
-  if (!options || definition.visualization !== 'bar'
+  if (!options || Object.keys(definition).some(key => !['dataset', 'visualization', 'groupByDimension', 'aggregate', 'measureDimension'].includes(key)) || definition.visualization !== 'bar'
     || !options.groups.some(group => group.id === definition.groupByDimension)
-    || (definition.aggregate === 'count' ? definition.measureDimension !== undefined
+    || (definition.aggregate === 'count' ? definition.measureDimension != null
       : definition.aggregate !== 'sum' || !options.sumMeasure || definition.measureDimension !== options.sumMeasure.id)) {
     throw new Error('Unsupported fictional query preview definition.');
   }
