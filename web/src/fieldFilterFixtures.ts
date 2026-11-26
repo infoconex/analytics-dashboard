@@ -19,13 +19,21 @@ interface DimensionField {
   filterable: boolean;
 }
 
+export interface QueryPreviewDefinition {
+  dataset: string;
+  visualization: 'bar';
+  groupByDimension: string;
+  aggregate: 'sum' | 'count';
+  measureDimension?: string;
+}
+
 interface Fixture {
   id: string;
   title: string;
   provider: 'SQL Server' | 'PostgreSQL' | 'Elasticsearch' | 'SQLite';
   measureField: string;
   measureLabel: string;
-  query: { dataset: string; visualization: 'bar'; groupByDimension: string; aggregate: 'sum' | 'count'; measureDimension?: string };
+  query: QueryPreviewDefinition;
   reportingTimeField?: string;
   fields: DimensionField[];
   rows: ReadonlyArray<Readonly<Record<string, string | number | boolean | null>>>;
@@ -210,13 +218,48 @@ export function evaluateFieldFilters(filters: readonly FieldFilter[]): FixtureOu
   });
 }
 
+/** Authoring options are derived from trusted fictional fixture metadata, never user identifiers. */
+export function getQueryPreviewAuthoringOptions(dataset: string) {
+  const fixture = fixtures.find(item => item.id === dataset);
+  if (!fixture) return null;
+  const groups = fixture.fields.filter(field => field.type === 'text' && field.filterable)
+    .map(field => ({ id: field.dimension, label: field.label }));
+  const measure = fixture.fields.find(field => field.dimension === fixture.query.measureDimension && field.type === 'number');
+  return {
+    groups,
+    sumMeasure: measure ? { id: measure.dimension, label: measure.label } : null,
+    defaultDefinition: { ...fixture.query },
+  };
+}
+
+/** Reject unsupported shapes before evaluating any rows; never fall back to a different definition. */
+function validatePreviewDefinition(definition: QueryPreviewDefinition) {
+  const options = getQueryPreviewAuthoringOptions(definition.dataset);
+  if (!options || definition.visualization !== 'bar'
+    || !options.groups.some(group => group.id === definition.groupByDimension)
+    || (definition.aggregate === 'count' ? definition.measureDimension !== undefined
+      : definition.aggregate !== 'sum' || !options.sumMeasure || definition.measureDimension !== options.sumMeasure.id)) {
+    throw new Error('Unsupported fictional query preview definition.');
+  }
+}
+
 /**
  * In-memory execution of a small authored-query preview against the fixed
  * fictional provider fixtures. This mirrors filter planning order only; it is
  * neither a provider adapter nor a customer query execution path.
  */
-export function evaluateAuthoredQueryPreviews(filters: readonly FieldFilter[], range: UtcRange | null): QueryPreviewOutcome[] {
+export function evaluateAuthoredQueryPreviews(
+  filters: readonly FieldFilter[], range: UtcRange | null,
+  definitions: readonly QueryPreviewDefinition[] = [],
+): QueryPreviewOutcome[] {
+  const overrides = new Map<string, QueryPreviewDefinition>();
+  for (const definition of definitions) {
+    validatePreviewDefinition(definition);
+    if (overrides.has(definition.dataset)) throw new Error('Duplicate fictional query preview definition.');
+    overrides.set(definition.dataset, definition);
+  }
   return fixtures.map(fixture => {
+    const query = overrides.get(fixture.id) ?? fixture.query;
     const applicable: Array<{ filter: FieldFilter; field: DimensionField }> = [];
     const unapplied: FixtureOutcome['unapplied'] = [];
     for (const filter of filters) {
@@ -236,15 +279,15 @@ export function evaluateAuthoredQueryPreviews(filters: readonly FieldFilter[], r
       return Number.isFinite(timestamp) && timestamp >= Date.parse(range.start) && timestamp < Date.parse(range.end);
     });
     const groups = new Map<string, number>();
-    const groupField = fixture.fields.find(field => field.dimension === fixture.query.groupByDimension);
-    const measureField = fixture.query.measureDimension
-      ? fixture.fields.find(field => field.dimension === fixture.query.measureDimension) : undefined;
+    const groupField = fixture.fields.find(field => field.dimension === query.groupByDimension);
+    const measureField = query.measureDimension
+      ? fixture.fields.find(field => field.dimension === query.measureDimension) : undefined;
     for (const row of rows) {
       const label = String(groupField ? row[groupField.physicalField] ?? '(no value)' : '(no approved group mapping)');
-      const value = fixture.query.aggregate === 'count' ? 1 : Number(measureField ? row[measureField.physicalField] ?? 0 : 0);
+      const value = query.aggregate === 'count' ? 1 : Number(measureField ? row[measureField.physicalField] ?? 0 : 0);
       groups.set(label, (groups.get(label) ?? 0) + value);
     }
-    return { id: fixture.id, title: fixture.title, provider: fixture.provider, query: fixture.query,
+    return { id: fixture.id, title: fixture.title, provider: fixture.provider, query: { ...query },
       count: rows.length, groups: [...groups].map(([label, value]) => ({ label, value })),
       applied: applicable.map(({ filter }) => filter.dimension), unapplied, calendar };
   });

@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   evaluateAuthoredQueryPreviews, evaluateFieldFilters, fieldFilterDimensions, fieldFilterOperatorLabels, fieldFilterValueError,
-  getFieldFilterCapabilities, parseFieldFilterValues, type FieldFilter, type FieldFilterOperator,
+  getFieldFilterCapabilities, getQueryPreviewAuthoringOptions, parseFieldFilterValues, type FieldFilter, type FieldFilterOperator,
+  type QueryPreviewDefinition,
 } from './fieldFilterFixtures';
 import type { UtcRange } from './reportingCalendar';
 import './fieldFilterBuilder.css';
@@ -27,6 +28,8 @@ function formatFilter(filter: FieldFilter) {
 
 export function DashboardFieldFilterBuilder({ range = null }: Props) {
   const [filters, setFilters] = useState<FieldFilter[]>([]);
+  const [definitions, setDefinitions] = useState<QueryPreviewDefinition[]>([]);
+  const [editingPreview, setEditingPreview] = useState<string | null>(null);
   const [dimension, setDimension] = useState(fieldFilterDimensions[0]?.id ?? '');
   const capabilities = useMemo(() => getFieldFilterCapabilities(dimension), [dimension]);
   const [operator, setOperator] = useState<FieldFilterOperator>(capabilities.operators[0] ?? 'Equal');
@@ -35,9 +38,17 @@ export function DashboardFieldFilterBuilder({ range = null }: Props) {
   const [error, setError] = useState('');
   const dimensionRef = useRef<HTMLSelectElement>(null);
   const outcomes = useMemo(() => evaluateFieldFilters(filters), [filters]);
-  const previews = useMemo(() => evaluateAuthoredQueryPreviews(filters, range), [filters, range]);
+  const previews = useMemo(() => evaluateAuthoredQueryPreviews(filters, range, definitions), [filters, range, definitions]);
   const isValueFree = noValueOperators.has(operator);
   const selectedDimension = fieldFilterDimensions.find(item => item.id === dimension);
+
+  function changePreview(definition: QueryPreviewDefinition) {
+    setDefinitions(current => [...current.filter(item => item.dataset !== definition.dataset), definition]);
+  }
+
+  function resetPreview(dataset: string) {
+    setDefinitions(current => current.filter(item => item.dataset !== dataset));
+  }
 
   function changeDimension(next: string) {
     setDimension(next);
@@ -163,11 +174,14 @@ export function DashboardFieldFilterBuilder({ range = null }: Props) {
     </div>
     <section className="query-preview" aria-label="Authored query preview">
       <h3>Authored query preview</h3>
-      <p>These bounded visualization definitions apply the shared selections to fictional raw records before grouping and aggregation. Results are local previews; no provider, query endpoint, or customer data is accessed.</p>
-      {previews.map(preview => <article key={preview.id} aria-label={`${preview.title} query preview`}>
+      <p>These bounded visualization definitions apply the shared selections to fictional raw records before grouping and aggregation. Edit a preview to explore its grouping and aggregate. Changes are temporary and are not saved to dashboards. No provider, query endpoint, or customer data is accessed.</p>
+      {previews.map(preview => {
+        const options = getQueryPreviewAuthoringOptions(preview.query.dataset)!;
+        const expanded = editingPreview === preview.id;
+        return <article key={preview.id} aria-label={`${preview.title} query preview`}>
         <div><strong>{preview.title}</strong><span>{preview.provider}</span></div>
         <code>{preview.query.visualization} · {preview.query.dataset} · group by {fieldFilterDimensions.find(item => item.id === preview.query.groupByDimension)?.label ?? 'supported dimension'} · {preview.query.aggregate === 'sum' ? `sum ${fieldFilterDimensions.find(item => item.id === preview.query.measureDimension)?.label ?? 'measure'}` : 'count records'}</code>
-        <p>{preview.count} fictional {preview.count === 1 ? 'record' : 'records'} · {preview.groups.length === 0 ? 'No matching groups' : preview.groups.map(group => `${group.label}: ${group.value.toLocaleString()}`).join(' · ')}</p>
+        <p aria-live="polite">{preview.count} fictional {preview.count === 1 ? 'record' : 'records'} · {preview.groups.length === 0 ? 'No matching groups' : preview.groups.map(group => `${group.label}: ${group.value.toLocaleString()}`).join(' · ')}</p>
         <p>{preview.applied.length === filters.length && preview.unapplied.length === 0
           ? filters.length ? `Applied ${preview.applied.length} typed ${preview.applied.length === 1 ? 'filter' : 'filters'} before aggregation.` : 'No typed filters selected.'
           : preview.applied.length ? `Partially filtered: ${preview.applied.length} applied; ${preview.unapplied.length} not applied.`
@@ -178,7 +192,36 @@ export function DashboardFieldFilterBuilder({ range = null }: Props) {
           {fieldFilterDimensions.find(d => d.id === item.dimension)?.label ?? item.dimension}: {operatorNames[item.reason]}.
         </p>)}
         {filters.length > 0 && preview.applied.length > 0 && preview.count === 0 && <p role="status">No matching records. Remove or edit a filter to recover results.</p>}
-      </article>)}
+        <button className="button button-light query-preview-edit" type="button" aria-expanded={expanded}
+          onClick={() => setEditingPreview(current => current === preview.id ? null : preview.id)}>
+          {expanded ? 'Close preview editor' : 'Edit preview'}
+        </button>
+        {expanded && <div className="query-preview-editor">
+          <label>Group by
+            <select value={preview.query.groupByDimension} onChange={event => changePreview({
+              ...preview.query, groupByDimension: event.target.value,
+            })}>
+              {options.groups.map(group => <option key={group.id} value={group.id}>{group.label}</option>)}
+            </select>
+          </label>
+          <label>Aggregate
+            <select value={preview.query.aggregate} onChange={event => {
+              const aggregate = event.target.value;
+              if (aggregate === 'count') changePreview({
+                ...preview.query, aggregate, measureDimension: undefined,
+              });
+              else if (aggregate === 'sum' && options.sumMeasure) changePreview({
+                ...preview.query, aggregate, measureDimension: options.sumMeasure.id,
+              });
+            }}>
+              <option value="count">Count records</option>
+              {options.sumMeasure && <option value="sum">Sum {options.sumMeasure.label}</option>}
+            </select>
+          </label>
+          <button className="button button-light" type="button" onClick={() => resetPreview(preview.id)}>Reset preview definition</button>
+        </div>}
+      </article>;
+      })}
     </section>
   </details>;
 }
