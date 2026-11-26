@@ -1,3 +1,5 @@
+import type { UtcRange } from './reportingCalendar';
+
 export type FieldValueType = 'text' | 'number' | 'boolean' | 'timestamp';
 export type FieldFilterOperator = 'Equal' | 'NotEqual' | 'GreaterThan' | 'GreaterThanOrEqual'
   | 'LessThan' | 'LessThanOrEqual' | 'In' | 'IsNull' | 'IsNotNull' | 'Contains' | 'StartsWith';
@@ -23,6 +25,8 @@ interface Fixture {
   provider: 'SQL Server' | 'PostgreSQL' | 'Elasticsearch' | 'SQLite';
   measureField: string;
   measureLabel: string;
+  query: { dataset: string; visualization: 'bar'; groupByDimension: string; aggregate: 'sum' | 'count'; measureDimension?: string };
+  reportingTimeField?: string;
   fields: DimensionField[];
   rows: ReadonlyArray<Readonly<Record<string, string | number | boolean | null>>>;
 }
@@ -39,6 +43,7 @@ const commonOperators: FieldFilterOperator[] = [
 const fixtures: Fixture[] = [
   {
     id: 'sales', title: 'Sales by account', provider: 'SQL Server', measureField: 'TotalAmount', measureLabel: 'revenue',
+    query: { dataset: 'sales', visualization: 'bar', groupByDimension: 'order_status', aggregate: 'sum', measureDimension: 'amount' }, reportingTimeField: 'OrderedAt',
     fields: [
       { dimension: 'customer_id', label: 'Customer', type: 'text', physicalField: 'CustomerId', filterable: true },
       { dimension: 'order_status', label: 'Order status', type: 'text', physicalField: 'Status', filterable: true },
@@ -56,6 +61,7 @@ const fixtures: Fixture[] = [
   },
   {
     id: 'support', title: 'Support by account', provider: 'PostgreSQL', measureField: 'ticket_count', measureLabel: 'tickets',
+    query: { dataset: 'support', visualization: 'bar', groupByDimension: 'order_status', aggregate: 'count' }, reportingTimeField: 'opened_at',
     fields: [
       { dimension: 'customer_id', label: 'Customer', type: 'text', physicalField: 'customer_id', filterable: true },
       { dimension: 'order_status', label: 'Ticket status', type: 'text', physicalField: 'ticket_status', filterable: true },
@@ -72,6 +78,7 @@ const fixtures: Fixture[] = [
   },
   {
     id: 'renewals', title: 'Renewals by account', provider: 'Elasticsearch', measureField: 'renewal.value', measureLabel: 'renewal value',
+    query: { dataset: 'renewals', visualization: 'bar', groupByDimension: 'order_status', aggregate: 'sum', measureDimension: 'amount' }, reportingTimeField: 'renewal.date',
     fields: [
       // A deliberately incompatible typed mapping shows why semantic IDs alone are not enough.
       { dimension: 'customer_id', label: 'Customer', type: 'number', physicalField: 'customer.key', filterable: true },
@@ -88,6 +95,7 @@ const fixtures: Fixture[] = [
   },
   {
     id: 'inventory', title: 'Inventory by category', provider: 'SQLite', measureField: 'stock_value', measureLabel: 'stock value',
+    query: { dataset: 'inventory', visualization: 'bar', groupByDimension: 'category', aggregate: 'sum', measureDimension: 'stock_value' },
     fields: [
       { dimension: 'category', label: 'Product category', type: 'text', physicalField: 'category_name', filterable: true },
       { dimension: 'stock_value', label: 'Stock value', type: 'number', physicalField: 'stock_value', filterable: true },
@@ -143,6 +151,18 @@ export interface FixtureOutcome {
   unapplied: Array<{ dimension: string; reason: 'NoApprovedMapping' | 'FieldNotFilterable' | 'IncompatibleType' | 'UnsupportedOperator' }>;
 }
 
+export interface QueryPreviewOutcome {
+  id: string;
+  title: string;
+  provider: Fixture['provider'];
+  query: Fixture['query'];
+  count: number;
+  groups: Array<{ label: string; value: number }>;
+  applied: string[];
+  unapplied: FixtureOutcome['unapplied'];
+  calendar: 'Applied' | 'All time' | 'No approved reporting time';
+}
+
 function supportsOperator(provider: Fixture['provider'], operator: FieldFilterOperator) {
   return (provider === 'Elasticsearch' ? commonOperators : relationalOperators).includes(operator);
 }
@@ -187,6 +207,46 @@ export function evaluateFieldFilters(filters: readonly FieldFilter[]): FixtureOu
       id: fixture.id, title: fixture.title, provider: fixture.provider, count: rows.length, total: metric, measureLabel: fixture.measureLabel,
       applied: applicable.map(({ filter }) => filter.dimension), unapplied,
     };
+  });
+}
+
+/**
+ * In-memory execution of a small authored-query preview against the fixed
+ * fictional provider fixtures. This mirrors filter planning order only; it is
+ * neither a provider adapter nor a customer query execution path.
+ */
+export function evaluateAuthoredQueryPreviews(filters: readonly FieldFilter[], range: UtcRange | null): QueryPreviewOutcome[] {
+  return fixtures.map(fixture => {
+    const applicable: Array<{ filter: FieldFilter; field: DimensionField }> = [];
+    const unapplied: FixtureOutcome['unapplied'] = [];
+    for (const filter of filters) {
+      const field = fixture.fields.find(candidate => candidate.dimension === filter.dimension);
+      if (!field) unapplied.push({ dimension: filter.dimension, reason: 'NoApprovedMapping' });
+      else if (!field.filterable) unapplied.push({ dimension: filter.dimension, reason: 'FieldNotFilterable' });
+      else if (field.type !== filter.type) unapplied.push({ dimension: filter.dimension, reason: 'IncompatibleType' });
+      else if (!supportsOperator(fixture.provider, filter.operator)) unapplied.push({ dimension: filter.dimension, reason: 'UnsupportedOperator' });
+      else applicable.push({ filter, field });
+    }
+
+    const calendar = range === null ? 'All time' : fixture.reportingTimeField ? 'Applied' : 'No approved reporting time';
+    const rows = fixture.rows.filter(row => {
+      if (!applicable.every(({ filter, field }) => matches(row[field.physicalField], filter))) return false;
+      if (!range || !fixture.reportingTimeField) return true;
+      const timestamp = Date.parse(String(row[fixture.reportingTimeField] ?? ''));
+      return Number.isFinite(timestamp) && timestamp >= Date.parse(range.start) && timestamp < Date.parse(range.end);
+    });
+    const groups = new Map<string, number>();
+    const groupField = fixture.fields.find(field => field.dimension === fixture.query.groupByDimension);
+    const measureField = fixture.query.measureDimension
+      ? fixture.fields.find(field => field.dimension === fixture.query.measureDimension) : undefined;
+    for (const row of rows) {
+      const label = String(groupField ? row[groupField.physicalField] ?? '(no value)' : '(no approved group mapping)');
+      const value = fixture.query.aggregate === 'count' ? 1 : Number(measureField ? row[measureField.physicalField] ?? 0 : 0);
+      groups.set(label, (groups.get(label) ?? 0) + value);
+    }
+    return { id: fixture.id, title: fixture.title, provider: fixture.provider, query: fixture.query,
+      count: rows.length, groups: [...groups].map(([label, value]) => ({ label, value })),
+      applied: applicable.map(({ filter }) => filter.dimension), unapplied, calendar };
   });
 }
 

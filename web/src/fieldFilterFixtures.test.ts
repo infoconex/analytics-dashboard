@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  evaluateFieldFilters, fieldFilterValueError, getFieldFilterCapabilities, parseFieldFilterValues,
+  evaluateAuthoredQueryPreviews, evaluateFieldFilters, fieldFilterValueError, getFieldFilterCapabilities, parseFieldFilterValues,
   type FieldFilter,
 } from './fieldFilterFixtures';
+import { resolveReportingRange } from './reportingCalendar';
 
 const filter = (dimension: string, type: FieldFilter['type'], operator: FieldFilter['operator'], ...values: FieldFilter['values']): FieldFilter =>
   ({ dimension, type, operator, values });
@@ -54,6 +55,36 @@ describe('experimental typed business-dimension filters', () => {
     expect(outcomes.find(item => item.id === 'sales')).toMatchObject({ count: 0, applied: ['customer_id', 'order_status'] });
     expect(outcomes.find(item => item.id === 'support')).toMatchObject({ count: 0, applied: ['customer_id', 'order_status'] });
     expect(outcomes.find(item => item.id === 'renewals')?.unapplied).toEqual([{ dimension: 'customer_id', reason: 'IncompatibleType' }]);
+  });
+
+  it('applies typed predicates and one inclusive-start, exclusive-end range before grouping query previews', () => {
+    const range = resolveReportingRange({ preset: 'custom', zone: 'UTC', weekStart: 1,
+      start: '2026-11-18T00:00', end: '2026-11-21T00:00' }, new Date('2026-11-26T12:00:00Z'));
+    const outcomes = evaluateAuthoredQueryPreviews([filter('customer_id', 'text', 'Equal', 'C-103')], range);
+    expect(outcomes.find(item => item.id === 'sales')).toMatchObject({
+      count: 1, applied: ['customer_id'], calendar: 'Applied', groups: [{ label: 'Open', value: 2400 }],
+      query: { dataset: 'sales', groupByDimension: 'order_status', aggregate: 'sum', measureDimension: 'amount' },
+    });
+    expect(outcomes.find(item => item.id === 'support')).toMatchObject({
+      count: 1, calendar: 'Applied', groups: [{ label: 'Open', value: 1 }],
+    });
+    expect(outcomes.find(item => item.id === 'renewals')).toMatchObject({
+      count: 1, calendar: 'Applied', groups: [{ label: 'Open', value: 1900 }],
+      unapplied: [{ dimension: 'customer_id', reason: 'IncompatibleType' }],
+    });
+    expect(outcomes.find(item => item.id === 'inventory')).toMatchObject({
+      count: 3, calendar: 'No approved reporting time', groups: [
+        { label: 'Adapters', value: 3200 }, { label: 'Cables', value: 900 }, { label: 'Displays', value: 5100 },
+      ], unapplied: [{ dimension: 'customer_id', reason: 'NoApprovedMapping' }],
+    });
+  });
+
+  it('keeps existing base sample rows and authored query definitions unchanged when selections clear', () => {
+    const outcomes = evaluateAuthoredQueryPreviews([], null);
+    expect(outcomes.find(item => item.id === 'sales')).toMatchObject({
+      count: 4, calendar: 'All time', groups: [{ label: 'Open', value: 3600 }, { label: 'Closed', value: 800 }, { label: 'Pending', value: 500 }],
+    });
+    expect(outcomes.find(item => item.id === 'support')).toMatchObject({ count: 4, calendar: 'All time' });
   });
 
   it('supports numeric comparisons, booleans, timestamps, and bounded categorical sets', () => {

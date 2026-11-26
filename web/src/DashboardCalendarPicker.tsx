@@ -4,11 +4,13 @@ import { calendarPresets, defaultCalendarSelection, presetLabel, resolveReportin
 import { evaluateCalendarSamples } from './reportingCalendarSamples';
 import './reportingCalendar.css';
 
+interface Props { onRangeChange?: (range: UtcRange | null) => void; }
+
 const zones = [...new Set(['UTC', Intl.DateTimeFormat().resolvedOptions().timeZone, 'America/Los_Angeles',
   'America/New_York', 'Europe/London', 'Europe/Paris', 'Asia/Kolkata', 'Asia/Tokyo', 'Australia/Sydney'])];
 const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-export function ReportingCalendar() {
+export function ReportingCalendar({ onRangeChange }: Props) {
   const [draft, setDraft] = useState<CalendarSelection>(defaultCalendarSelection);
   const [applied, setApplied] = useState<CalendarSelection>(defaultCalendarSelection);
   const [range, setRange] = useState<UtcRange | null>(null);
@@ -20,12 +22,12 @@ export function ReportingCalendar() {
   function apply() {
     try {
       const next = resolveReportingRange(draft, new Date());
-      setRange(next); setApplied({ ...draft }); setError('');
+      setRange(next); setApplied({ ...draft }); setError(''); onRangeChange?.(next);
     } catch (e) { setError(e instanceof Error ? e.message : 'Invalid reporting period.'); }
   }
   function clear() {
     const next = { ...applied, preset: 'all' as const, start: '', end: '' };
-    setDraft(next); setApplied(next); setRange(null); setError(''); selector.current?.focus();
+    setDraft(next); setApplied(next); setRange(null); setError(''); onRangeChange?.(null); selector.current?.focus();
   }
   return <details className="reporting-calendar">
     <summary>Experimental reporting period · {presetLabel(applied.preset)}</summary>
