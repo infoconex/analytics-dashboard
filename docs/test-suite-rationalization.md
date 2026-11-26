@@ -6,7 +6,7 @@ Status: **in progress** (issue #142). This document records verified findings, n
 
 Review actual assertions and exercised boundaries, then compare coverage across layers. Default to retaining cases unless the equivalent failure signal is established. A title, repeated assertion, or execution cost alone is insufficient evidence of duplication. Record source references, replacement assertions, timing variability and residual risk. Distinguish a standing regression test from scripted evaluation evidence. Do not weaken required CI, security, provider or accessibility checks.
 
-Integrated run [45490259682](https://github.com/infoconex/analytics-dashboard/actions/runs/45490259682) passed in 238 seconds. CodeQL run 45490259648 passed. Measured baseline counts from job logs: 222 browser tests in 29 files; 195 frontend tests in 26 files; 180 backend tests; 19 relational/MySQL provider cases and 3 Elasticsearch cases in provider job (22 total; not assumed disjoint from backend without inspecting filters); 20 lab guards; 18 Python impact/cache orchestration tests in planning; Compose integration passed. Browser planner test count requires separate reconciliation. Sum of CI job start-to-completion intervals was 1,384 seconds (23m04s), of which six browser jobs consumed 1,161 seconds (19m21s); this is elapsed job time, not billed minutes.
+Integrated run [45490259682](https://github.com/infoconex/analytics-dashboard/actions/runs/45490259682) passed in 238 seconds. CodeQL run 45490259648 passed. Measured baseline counts from job logs: 222 browser tests in 29 files; 195 frontend tests in 26 files; 180 backend tests; 19 relational/MySQL provider cases and 3 Elasticsearch cases in provider job (22 total; backend explicitly excludes ProviderIntegration and ElasticsearchIntegration categories); 20 lab guards; 18 Python impact/cache orchestration tests in planning; Compose integration passed. Browser planner has five standing node:test declarations; verify-browser runs them as part of browser verification. Sum of CI job start-to-completion intervals was 1,384 seconds (23m04s), of which six browser jobs consumed 1,161 seconds (19m21s); this is elapsed job time, not billed minutes.
 
 ### Multi-run browser timing
 
@@ -58,7 +58,7 @@ The following are assertion-level initial dispositions, not a blanket declaratio
 | consumer.spec.ts: click bar | Actual SVG chart bar pointer toggles filter and rendered bar count | Keep: chart library pointer event |
 | consumer.spec.ts: mobile filter | 390px body width, filter operability, editor availability | Keep pending responsive review; distinct standalone state |
 | consumer.spec.ts: viewer | Mock organization viewer; no edit, Referral changes table and chip | Keep: UI role control (not substitute for server authorization) |
-| consumer.spec.ts: navigation reset | Back/reopen and reload reset filters | Keep: standalone navigation intentionally differs from host persistence; title claims no saved mutation but does not directly inspect mutation requests or persisted revision, improvement candidate |
+| consumer.spec.ts: navigation reset | Back/reopen and reload reset filters | Keep: standalone navigation intentionally differs from host persistence; baseline title claims no saved mutation but does not inspect mutation requests; improved by observing API requests before the filtering journey and asserting no non-GET /api/ requests after navigation and reload |
 | consumer.spec.ts: recovery focus | Enter on chip and reset, status, table count, independent period/channel and focus restoration | Keep: focus/announcement across control disappearance |
 | ux32EmbedNavigation.spec.ts: switch and history | Mock two authorized dashboards; iframe hash, per-dashboard filters, focused host links, overview, browser back/forward, no writes | Keep: actual browser history |
 | ux32EmbedNavigation.spec.ts: deep links | Valid second dashboard reload, invalid selection hides iframe, authorized recovery, direct URL filter round trip | Keep: actual route integration |
@@ -73,6 +73,10 @@ The following are assertion-level initial dispositions, not a blanket declaratio
 | ux34DenseWayfinding.spec.ts: table readability | Narrow real table region horizontal-only keyboard scroll, exact values and headers, chart details, forced-colors outline and axe | Keep |
 
 Lower layer mapping: web/src/consumerFilters.test.ts verifies exact deterministic row selection, source immutability, compatible counts, unknown dataset handling and category toggling; embedRoute.test.ts validates parsing/formatting and allowed filter keys; sampleHostRoute.test.ts validates host paths and organization-scoped GUID records. DashboardApiTests.cs KnownDashboardIdentifierCannotBypassOrganizationBoundary asserts OK/Forbidden/NotFound with known identifiers, while MembershipLimitsApiAccessToOneOrganization verifies membership restriction. These do not replace real iframe, browser history, DOM focus, browser geometry, or dev-seeded runtime tests. No security test removed.
+
+## Confirmed assertion improvement: read-only consumer filtering
+
+The standalone consumer reset test previously only checked cleared filters, which could pass even if filtering incorrectly issued a mutation. A page request listener now records non-GET /api/ calls before selecting the filter; the test asserts an empty list after navigation and reload. A PUT/PATCH/POST/DELETE request from that journey now produces a nonempty list and fails. This is a static failure-signal comparison; exact-head execution is pending. The test remains at the actual browser/API request boundary. No existing assertion was removed. This does not replace server authorization or database integrity tests.
 
 ## Remaining work and architecture guidance
 
