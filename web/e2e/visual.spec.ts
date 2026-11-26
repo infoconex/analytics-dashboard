@@ -1,6 +1,7 @@
 import { chromium, expect, test, type Page, type TestInfo } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { writeFile } from 'node:fs/promises';
+import { performance } from 'node:perf_hooks';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Dashboard, DashboardDraft } from '../src/model';
@@ -34,6 +35,25 @@ const denseDashboard: Dashboard = {
   }))],
 };
 
+const evidencePhases: Array<{ phase: string; label: string; elapsedMs: number }> = [];
+
+async function measureEvidencePhase<T>(phase: string, label: string, action: () => Promise<T>): Promise<T> {
+  const start = performance.now();
+  try {
+    return await action();
+  } finally {
+    evidencePhases.push({ phase, label, elapsedMs: Math.round(performance.now() - start) });
+  }
+}
+
+test.afterEach(async ({}, testInfo) => {
+  if (evidencePhases.length === 0) return;
+  const path = testInfo.outputPath('browser-evidence-phases.json');
+  const entries = evidencePhases.splice(0);
+  await writeFile(path, JSON.stringify({ schemaVersion: 1, test: testInfo.title, phases: entries }, null, 2));
+  await testInfo.attach('browser-evidence-phases.json', { path, contentType: 'application/json' });
+});
+
 async function fixedDemoApi(page: Page, dashboard = sampleDashboard) {
   const dashboards = [structuredClone(dashboard)];
   await page.route('**/api/identity', route => route.fulfill({ json: { userId: 'demo-owner', displayName: 'Demo Analyst' } }));
@@ -64,8 +84,8 @@ async function capture(page: Page, testInfo: TestInfo, label: string) {
   // scroll offset after the preceding interaction instead of their natural top.
   if (!label.includes('dialog') && !label.includes('keyboard-focus') && !label.includes('tooltip')) await page.evaluate(() => window.scrollTo(0, 0));
   const path = testInfo.outputPath(`${label}.png`);
-  await page.screenshot({ path, fullPage: !label.includes('dialog') && !label.includes('keyboard-focus') && !label.includes('tooltip'), animations: 'disabled' });
-  await testInfo.attach(label, { path, contentType: 'image/png' });
+  await measureEvidencePhase('screenshot-capture', label, () => page.screenshot({ path, fullPage: !label.includes('dialog') && !label.includes('keyboard-focus') && !label.includes('tooltip'), animations: 'disabled' }));
+  await measureEvidencePhase('attachment-copy', label, () => testInfo.attach(label, { path, contentType: 'image/png' }));
 }
 
 async function assertNoDocumentOverflow(page: Page, width: number) {
