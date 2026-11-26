@@ -1,0 +1,857 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Machine-assisted declaration, assertion and boundary line index, not a completed semantic audit. Multiline assertions and helper bodies require source inspection. Counts refer to declarations, not necessarily executed cases.",
+ "files": [
+  {
+   "path": "web/e2e/embed.spec.ts",
+   "blob": "fa8811688a68b4ed79d408aa5ad4b3429d8142f8",
+   "capability": "Embedded consumption/security",
+   "cases": [
+    {
+     "declaration": "test('host integration preserves context, filtering, keyboard exit and standalone journey', async ({ page }, info) => {",
+     "line": 61,
+     "assertions": [
+      "66: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "70: await expect(page.getByRole('heading', { name: 'Customer insights' })).toBeVisible();",
+      "72: expect(embedResponse.headers()['content-security-policy']).toContain(\"frame-ancestors 'self'\");",
+      "73: expect(embedResponse.headers()['x-frame-options']).toBe('SAMEORIGIN');",
+      "75: await expect(frameElement).toHaveAttribute('title', 'Business performance analytics — Northstar Commerce sample');",
+      "77: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "78: await expect(frame.getByText('Northstar Commerce', { exact: false }).first()).toBeVisible();",
+      "79: await expect(frame.getByText('Sample data', { exact: true }).first()).toBeVisible();",
+      "80: await expect(frame.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "81: await expect(frame.getByRole('navigation', { name: 'Workspace navigation' })).toHaveCount(0);",
+      "82: await expect(frame.getByRole('button', { name: /Create|Delete|Register|Save changes/ })).toHaveCount(0);",
+      "86: await expect(frame.getByRole('button', { name: 'Remove Direct filter', exact: true })).toBeVisible();",
+      "87: await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();",
+      "90: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();",
+      "91: await expect(frame.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Channel: all channels');",
+      "102: await expect(embeddedSkip).toBeFocused();",
+      "104: await expect(frame.locator('#embedded-main')).toBeFocused();",
+      "110: await expect(portalLink).toBeFocused();",
+      "113: await expect(after.getByRole('link', { name: 'Return to account overview' })).toBeFocused();",
+      "114: await assertNoOverflow(page);",
+      "115: expect(mutations).toEqual([]);",
+      "117: expect(new URL(activeFrameUrl).origin).toBe(new URL(page.url()).origin);"
+     ],
+     "boundaries": [
+      "62: await page.setViewportSize({ width: 1440, height: 900 });",
+      "64: await routeSample(page, sample, mutations);",
+      "65: await page.goto('/');",
+      "69: await page.goto(hostUrl);",
+      "71: const embedResponse = await page.request.get('/embed.html');",
+      "76: const frame = page.frameLocator('.host-frame');",
+      "99: await page.keyboard.press('Tab');",
+      "107: await page.keyboard.press('Shift+Tab');"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('dense embed: direct navigation to visualization 12, exact index return and no write', async ({ page }, info) => {",
+     "line": 121,
+     "assertions": [
+      "125: await expect(page.locator('.canvas-item')).toHaveCount(12);",
+      "133: await expect(last.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();",
+      "137: await expect(entry).toBeFocused();",
+      "138: await expect(page.locator('.dashboard-index')).toHaveAttribute('open', '');",
+      "139: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "123: await routeSample(page, dense, writes);",
+      "124: await page.goto(embeddedUrl);",
+      "129: await page.keyboard.press('End');",
+      "130: await page.keyboard.press('Tab');",
+      "131: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('empty, server error, retry, and invalid location provide useful outcomes without unauthorized navigation', async ({ page }, info) => {",
+     "line": 142,
+     "assertions": [
+      "146: await expect(page.getByText('No visualizations yet')).toBeVisible();",
+      "147: await expect(page.getByRole('button', { name: 'Add first visualization' })).toHaveCount(0);",
+      "156: await expect(page.getByRole('alert')).toContainText('could not load');",
+      "160: await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "163: await expect(page.getByRole('alert')).toContainText('link is invalid');",
+      "164: await expect(page.getByRole('button', { name: 'Try again' })).toHaveCount(0);",
+      "165: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "167: await expect(page.getByRole('alert')).toBeVisible();",
+      "168: await expect(page.getByRole('heading', { name: 'Business performance' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "144: await routeSample(page, empty);",
+      "145: await page.goto(embeddedUrl);",
+      "152: await page.route('**/api/**', route => fail && route.request().url().includes('/dashboards/')",
+      "155: await page.reload();",
+      "162: await page.goto('/embed.html#/settings');",
+      "166: await page.goto(`/embed.html#/organization/isolated/dashboard/${id}`);"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('host and embed survive mobile, narrow reflow and forced colors with accessible controls', async ({ page }, info) => {",
+     "line": 171,
+     "assertions": [
+      "176: await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "177: await assertNoOverflow(page);",
+      "179: await expect(page.getByRole('button', { name: 'Remove Direct filter', exact: true })).toBeVisible();",
+      "184: await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "186: const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "187: expect(scan.violations, JSON.stringify(scan.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => n.target) })))).toEqual([]);",
+      "190: await assertNoOverflow(page);",
+      "191: await expect(page.frameLocator('.host-frame').getByRole('heading', { name: 'Business performance' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "172: await routeSample(page, dense);",
+      "174: await page.setViewportSize({ width, height });",
+      "175: await page.goto(embeddedUrl);",
+      "182: await page.emulateMedia({ forcedColors: 'active' });",
+      "183: await page.reload();",
+      "188: await page.emulateMedia({ forcedColors: 'none' });",
+      "189: await page.goto(hostUrl);",
+      "191: await expect(page.frameLocator('.host-frame').getByRole('heading', { name: 'Business performance' })).toBeVisible();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('actual API denies cross-tenant dashboard access despite a known resource id', async ({ request }) => {",
+     "line": 194,
+     "assertions": [
+      "197: expect(denied.status()).toBe(403);",
+      "199: expect(wrongResource.status()).toBe(404);"
+     ],
+     "boundaries": [
+      "196: const denied = await request.get(`http://127.0.0.1:5055/api/organizations/isolated/dashboards/${id}`);",
+      "198: const wrongResource = await request.get(`http://127.0.0.1:5055/api/organizations/northstar/dashboards/11111111-1111-4111-8111-111111111111`);"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('documented host example loads the real development-seeded API without write requests', async ({ page }) => {",
+     "line": 202,
+     "assertions": [
+      "210: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "211: await expect(frame.getByText('Northstar Commerce', { exact: false }).first()).toBeVisible();",
+      "213: await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();",
+      "215: await expect(frame.getByRole('article', { name: 'Channel details' }).locator('tbody tr')).toHaveCount(5);",
+      "216: expect(mutations).toEqual([]);"
+     ],
+     "boundaries": [
+      "208: await page.goto(hostUrl);",
+      "209: const frame = page.frameLocator('iframe.host-frame');"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('real Chromium tab zoom at 200% and 400% retains embedded navigation and filter recovery', async ({}, info) => {",
+     "line": 225,
+     "assertions": [
+      "237: await expect(page.locator('.canvas-item')).toHaveCount(12);",
+      "248: expect(await zoom(null)).toBeCloseTo(1, 1);",
+      "251: await expect.poll(async () => (await metrics()).width).toBeLessThanOrEqual(baseline.width / factor + 2);",
+      "253: expect(actual).toBeCloseTo(factor, 1);",
+      "254: expect(observed.dpr / baseline.dpr).toBeCloseTo(factor, 1);",
+      "255: expect(observed.scroll).toBeLessThanOrEqual(observed.width + 1);",
+      "259: await expect(page.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();",
+      "267: await expect(page.getByRole('button', { name: '12. Channel details — regional' })).toBeFocused();",
+      "269: await expect(page.getByRole('row', { name: /Direct.*1,530/ }).last()).toBeVisible();",
+      "271: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();"
+     ],
+     "boundaries": [
+      "227: const context = await chromium.launchPersistentContext('', {",
+      "235: await routeSample(page, dense);",
+      "236: await page.goto(`http://127.0.0.1:5173${embeddedUrl}`);"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('UX-22 saved appearance renders consistently in the read-only sample embed', async ({ page }, info) => {",
+     "line": 283,
+     "assertions": [
+      "297: await expect(donut.locator('.recharts-pie-sector')).toHaveCount(5);",
+      "301: expect(visibleLabels).toBeGreaterThan(0);",
+      "302: expect(visibleLabels).toBeLessThanOrEqual(5);",
+      "303: await expect(donut.locator('.chart-data summary')).toContainText('(5 records)');",
+      "304: await expect(donut.locator('.donut-legend')).toHaveCount(0);",
+      "305: await expect(donut.locator('.chart-order-note')).toContainText('smallest first');",
+      "306: await expect(page.getByRole('article', { name: 'Saved revenue distribution' })",
+      "308: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "312: await expect(donut).toBeVisible();",
+      "313: await assertNoOverflow(page);",
+      "317: expect(mutations).toEqual([]);"
+     ],
+     "boundaries": [
+      "292: await routeSample(page, configured, mutations);",
+      "293: await page.setViewportSize({ width: 1440, height: 900 });",
+      "294: await page.goto(embeddedUrl);",
+      "311: await page.setViewportSize({ width: 390, height: 844 });"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/consumer.spec.ts",
+   "blob": "8adbf8825260f5e9dc9d92a4ed5c6953c1304b4c",
+   "capability": "Standalone filters",
+   "cases": [
+    {
+     "declaration": "test('dashboard consumers coordinate date and channel filters and reset independently', async ({ page }) => {",
+     "line": 8,
+     "assertions": [
+      "14: await expect(channelTable.locator('tbody tr')).toHaveCount(5);",
+      "17: await expect(page.getByRole('button', { name: 'Remove Final 3 sample months filter', exact: true })).toBeVisible();",
+      "18: await expect(page.getByLabel('Filter impact across visualizations')).toContainText('Reporting period:');",
+      "19: await expect(channels.locator('.donut-legend')).toHaveText(initialChannelRows?.trim() ?? '');",
+      "20: await expect(revenue).toBeVisible();",
+      "21: expect(await revenue.locator('.metric-number').allTextContents()).not.toEqual(revenueTotal);",
+      "24: await expect(page.getByRole('button', { name: 'Remove Direct filter', exact: true })).toBeVisible();",
+      "25: await expect(channels.locator('.donut-legend')).toContainText('Direct');",
+      "26: await expect(channels.locator('.donut-legend')).not.toContainText('Organic search');",
+      "27: await expect(channels.locator('.donut-legend').getByRole('button', { name: 'Show all channels instead of Direct' }))",
+      "29: await expect(channelTable.locator('tbody tr')).toHaveCount(1);",
+      "30: await expect(channelTable.getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');",
+      "33: await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');",
+      "34: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "36: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');",
+      "37: await expect(channelTable.locator('tbody tr')).toHaveCount(5);",
+      "38: await expect(page.getByText('All sample records', { exact: true })).toBeVisible();"
+     ],
+     "boundaries": [],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('keyboard-operable category controls filter and toggle without edit access', async ({ page }) => {",
+     "line": 41,
+     "assertions": [
+      "45: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Organic search');",
+      "46: await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Organic search');",
+      "48: await expect(selected).toHaveAttribute('aria-pressed', 'true');",
+      "49: await expect(selected).toBeFocused();",
+      "51: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');",
+      "52: await expect(legend.getByRole('button', { name: 'Show only Organic search' })).toBeFocused();"
+     ],
+     "boundaries": [
+      "44: await page.keyboard.press('Enter');",
+      "50: await page.keyboard.press('Space');"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('clicking a channel bar selects the category, and clicking it again restores the dashboard', async ({ page }) => {",
+     "line": 55,
+     "assertions": [
+      "59: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Organic search');",
+      "60: await expect(chart.locator('.recharts-bar-rectangle')).toHaveCount(1);",
+      "62: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');"
+     ],
+     "boundaries": [],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('mobile filter controls do not overflow and remain operable', async ({ page }) => {",
+     "line": 65,
+     "assertions": [
+      "69: await expect(page.getByRole('button', { name: 'Remove Social filter', exact: true })).toBeVisible();",
+      "70: await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);",
+      "71: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "66: await page.setViewportSize({ width: 390, height: 844 });",
+      "67: await page.reload();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('read-only organization members can use consumer filters', async ({ page }) => {",
+     "line": 74,
+     "assertions": [
+      "79: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "81: await expect(page.locator('.widget-tile').filter({ hasText: 'Channel details' }).locator('tbody tr')).toHaveCount(1);",
+      "82: await expect(page.getByRole('button', { name: 'Remove Referral filter', exact: true })).toBeVisible();"
+     ],
+     "boundaries": [
+      "75: await page.route('**/api/organizations', route => route.fulfill({ json: [",
+      "78: await page.reload();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('consumer filters reset on dashboard navigation and never mutate saved dashboard', async ({ page }) => {",
+     "line": 85,
+     "assertions": [
+      "89: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');",
+      "90: await expect(page.getByText('All sample records', { exact: true })).toBeVisible();",
+      "92: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');"
+     ],
+     "boundaries": [
+      "91: await page.reload();"
+     ],
+     "disposition": "improve"
+    },
+    {
+     "declaration": "test('filter removal and reset restore focus to surviving controls with truthful status', async ({ page }) => {",
+     "line": 95,
+     "assertions": [
+      "105: await expect(chip).toHaveCount(0);",
+      "106: await expect(channel).toBeFocused();",
+      "107: await expect(status).toContainText('Channel: all channels');",
+      "108: await expect(table.getByRole('row')).toHaveCount(6);",
+      "113: await expect(date).toHaveValue('12m');",
+      "114: await expect(channel).toHaveValue('Direct');",
+      "115: await expect(status).toContainText('Direct');",
+      "119: await expect(channel).toBeFocused();",
+      "120: await expect(page.getByRole('button', { name: 'Clear channel filter' })).toHaveCount(0);",
+      "121: await expect(status).toContainText('Channel: all channels');",
+      "124: await expect(page.getByRole('button', { name: 'Clear channel filter' })).toHaveCount(0);",
+      "125: await expect(date).toHaveValue('6m');",
+      "126: await expect(status).toContainText('Reporting period: Final 6 sample months');"
+     ],
+     "boundaries": [
+      "104: await page.keyboard.press('Enter');",
+      "118: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux32EmbedNavigation.spec.ts",
+   "blob": "5635ddd0ac5d88c6e895bac81fdca8020d5f1cd6",
+   "capability": "Host navigation/access",
+   "cases": [
+    {
+     "declaration": "test('host switches authorized dashboards, preserves per-dashboard filters and owns browser history', async ({ page }, info) => {",
+     "line": 45,
+     "assertions": [
+      "51: await expect(choices.getByRole('link', { name: 'Business performance' })).toHaveAttribute('aria-current', 'page');",
+      "52: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "55: await expect.poll(() => page.locator('.host-frame').evaluate((el: HTMLIFrameElement) => el.contentWindow?.location.hash))",
+      "61: await expect(channelChoice).toBeFocused();",
+      "62: await expect(page).toHaveURL(/#insights\\/c730b8e2/);",
+      "63: await expect(frame.getByRole('heading', { name: 'Channel performance' })).toBeVisible();",
+      "69: await expect(firstChoice).toBeFocused();",
+      "70: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "71: await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');",
+      "72: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "76: await expect(accountHeading).toBeVisible();",
+      "77: await expect(accountHeading).toBeFocused();",
+      "78: await expect(accountHeading).toBeInViewport();",
+      "79: await expect(page.getByRole('heading', { name: 'Customer insights' })).toBeHidden();",
+      "80: await expect(page.locator('#analytics-section')).toBeHidden();",
+      "82: await expect(firstChoice).toBeFocused();",
+      "83: await expect(firstChoice).toBeInViewport();",
+      "84: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "86: await expect(page.getByRole('heading', { name: 'Account overview' })).toBeVisible();",
+      "88: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "89: await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');",
+      "90: expect(mutations).toEqual([]);"
+     ],
+     "boundaries": [
+      "47: await mockAuthorizedApi(page, mutations);",
+      "48: await page.goto('/sample-host.html');",
+      "50: const frame = page.frameLocator('.host-frame');",
+      "85: await page.goBack();",
+      "87: await page.goForward();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('host deep links and guarded invalid dashboard selection', async ({ page }) => {",
+     "line": 94,
+     "assertions": [
+      "99: await expect(frame.getByRole('heading', { name: 'Channel performance' })).toBeVisible();",
+      "101: await expect(frame.getByRole('heading', { name: 'Channel performance' })).toBeVisible();",
+      "103: await expect(page.getByRole('status', { name: '' }).filter({ hasText: 'not available to your account' })).toBeVisible();",
+      "104: await expect(page.locator('.host-frame-shell')).toBeHidden();",
+      "107: await expect(frame.getByRole('heading', { name: 'Channel performance' })).toBeVisible();",
+      "109: await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('6m');",
+      "110: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "112: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "113: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "96: await mockAuthorizedApi(page, writes);",
+      "97: await page.goto(`/sample-host.html#insights/${secondId}`);",
+      "98: const frame = page.frameLocator('.host-frame');",
+      "100: await page.reload();",
+      "102: await page.goto('/sample-host.html#insights/11111111-1111-4111-8111-111111111111');",
+      "108: await page.goto(`/embed.html#/organization/northstar/dashboard/${firstId}?period=6m&channel=Direct`);",
+      "111: await page.reload();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('host handles unavailable list and retry; embed denies unauthorized and missing resources', async ({ page }) => {",
+     "line": 116,
+     "assertions": [
+      "129: await expect(page.getByRole('button', { name: 'Retry loading dashboards' })).toBeVisible();",
+      "130: await expect(page.locator('.host-frame-shell')).toBeHidden();",
+      "133: await expect(page.getByRole('navigation', { name: 'Customer dashboards' }).getByRole('link')).toHaveCount(2);",
+      "135: await expect(frame.getByRole('alert')).toContainText('do not have access');",
+      "137: await expect(frame.getByRole('alert')).toContainText('could not be found');",
+      "138: await expect(frame.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "118: await page.route('**/api/**', route => {",
+      "128: await page.goto('/sample-host.html');",
+      "134: const frame = page.frameLocator('.host-frame');"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('desktop, tablet and narrow host view keep controls accessible and without horizontal overflow', async ({ page }, info) => {",
+     "line": 141,
+     "assertions": [
+      "146: await expect(page.frameLocator('.host-frame').getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "148: expect(hostScroll, `host overflow at ${width}px`).toBeLessThanOrEqual(1);",
+      "151: expect(frameScroll, `embed overflow at ${width}px`).toBeLessThanOrEqual(1);",
+      "154: const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();",
+      "155: expect(scan.violations.map(item => item.id)).toEqual([]);"
+     ],
+     "boundaries": [
+      "142: await mockAuthorizedApi(page, []);",
+      "144: await page.setViewportSize({ width, height: 900 });",
+      "145: await page.goto('/sample-host.html');",
+      "146: await expect(page.frameLocator('.host-frame').getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "149: const frameScroll = await page.frameLocator('.host-frame').locator('body').evaluate(body =>"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('real development API exposes two sample dashboards but never authorizes the other tenant', async ({ page, request }) => {",
+     "line": 158,
+     "assertions": [
+      "161: expect(list.status()).toBe(200);",
+      "162: expect((await list.json() as Dashboard[]).map(item => item.id)).toEqual(expect.arrayContaining([firstId, secondId]));",
+      "164: expect(denied.status()).toBe(403);",
+      "167: await expect(page.frameLocator('.host-frame').getByRole('heading', { name: 'Channel performance' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "160: const list = await request.get('http://127.0.0.1:5055/api/organizations/northstar/dashboards');",
+      "163: const denied = await request.get(`http://127.0.0.1:5055/api/organizations/isolated/dashboards/${secondId}`);",
+      "165: await page.goto('/sample-host.html');",
+      "167: await expect(page.frameLocator('.host-frame').getByRole('heading', { name: 'Channel performance' })).toBeVisible();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux33EmbedContinuity.spec.ts",
+   "blob": "39e4123f6fefffae7b398c018864223a3ff36283",
+   "capability": "Host persistence/authorization/sizing",
+   "cases": [
+    {
+     "declaration": "test('long host embed owns scrolling at desktop, tablet, mobile and narrow widths; disclosures resize', async ({ page }, info) => {",
+     "line": 104,
+     "assertions": [
+      "112: await expect(frame.locator('.canvas-item')).toHaveCount(12);",
+      "114: expect(before.frameHeight).toBeGreaterThan(900);",
+      "115: expect(before.hostDocumentHeight).toBeGreaterThan(900);",
+      "117: await expect.poll(async () => (await layout(page)).frameHeight).toBeGreaterThan(before.frameHeight + 20);",
+      "120: await expect.poll(async () => (await layout(page)).frameHeight).toBeLessThan(expanded.frameHeight - 20);",
+      "129: await expect(dialog).toBeVisible();",
+      "136: await expect.poll(async () => (await placement()).top).toBeGreaterThanOrEqual(-1);",
+      "138: expect(positioned.bottom).toBeLessThanOrEqual(positioned.hostHeight + 2);",
+      "144: await expect(after).toBeInViewport();",
+      "151: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "106: const { writes } = await mockApi(page);",
+      "108: const frame = page.frameLocator('.host-frame');",
+      "110: await page.setViewportSize({ width, height: 900 });",
+      "111: await page.goto('/sample-host.html');"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('same-tab host reload preserves only allowed per-dashboard sample filters and keeps host history', async ({ page }, info) => {",
+     "line": 154,
+     "assertions": [
+      "159: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "163: await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');",
+      "164: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "167: await expect(frame.getByRole('heading', { name: 'Channel performance' })).toBeVisible();",
+      "170: await expect(frame.getByRole('heading', { name: 'Channel performance' })).toBeVisible();",
+      "171: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Organic search');",
+      "173: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "175: await expect(page.getByRole('heading', { name: 'Account overview' })).toBeFocused();",
+      "177: await expect(choices.getByRole('link', { name: 'Business performance' })).toBeFocused();",
+      "180: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "155: const { writes } = await mockApi(page, sample);",
+      "156: await page.goto('/sample-host.html');",
+      "158: const frame = page.frameLocator('.host-frame');",
+      "162: await page.reload();",
+      "169: await page.reload();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('authorization is rechecked on reload; denied host cannot pre-render a cached frame', async ({ page }, info) => {",
+     "line": 183,
+     "assertions": [
+      "187: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "190: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "200: await expect(page.getByRole('button', { name: 'Retry loading dashboards' })).toBeVisible();",
+      "201: await expect(page.locator('.host-frame-shell')).toBeHidden();",
+      "202: await expect(page.locator('.host-frame')).toHaveAttribute('src', 'about:blank');",
+      "203: expect(deniedRequests).toEqual(['/api/organizations/northstar/dashboards']);",
+      "209: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "210: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "212: await expect(page.locator('.host-frame-shell')).toBeHidden();",
+      "213: await expect(page.getByRole('status').filter({ hasText: 'not available to your account' })).toBeVisible();",
+      "214: expect(writes).toEqual([]);",
+      "215: expect(requests.some(path => path.includes('/isolated/'))).toBe(false);"
+     ],
+     "boundaries": [
+      "184: const { requests, writes } = await mockApi(page, sample);",
+      "185: await page.goto('/sample-host.html');",
+      "186: const frame = page.frameLocator('.host-frame');",
+      "189: await page.reload();",
+      "194: await page.route('**/api/**', route => {",
+      "199: await page.reload();",
+      "207: await mockApi(page, sample, null);",
+      "211: await page.goto(`/sample-host.html#insights/${secondId}`);"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('embedded short, empty and error states shrink without clipping; forced-colors host remains accessible', async ({ page }, info) => {",
+     "line": 218,
+     "assertions": [
+      "224: await expect(frame.getByText('No visualizations yet')).toBeVisible();",
+      "226: expect(empty.frameHeight).toBeLessThan(900);",
+      "229: const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();",
+      "230: expect(scan.violations.map(item => item.id)).toEqual([]);",
+      "234: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveCount(0);",
+      "236: await expect(page).toHaveURL(/period=6m&channel=Direct/);",
+      "237: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "220: const { writes } = await mockApi(page, { ...sample, widgets: [] });",
+      "221: await page.setViewportSize({ width: 390, height: 844 });",
+      "222: await page.goto('/sample-host.html');",
+      "223: const frame = page.frameLocator('.host-frame');",
+      "227: await page.emulateMedia({ forcedColors: 'active' });",
+      "232: await page.emulateMedia({ forcedColors: 'none' });",
+      "233: await page.goto(`/embed.html#/organization/northstar/dashboard/${firstId}?period=6m&channel=Direct`);",
+      "235: await page.reload();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux34DenseWayfinding.spec.ts",
+   "blob": "96456c5595863b1d59618c954bf289be90b7ddd5",
+   "capability": "Dense navigation/numeric tables",
+   "cases": [
+    {
+     "declaration": "test('18-widget navigation returns to the exact index entry and back without hijacking host scrolling', async ({ page }, info) => {",
+     "line": 89,
+     "assertions": [
+      "100: await expect(frame.locator('.canvas-item')).toHaveCount(18);",
+      "106: await expect(heading).toBeFocused();",
+      "107: const reached = await assertHostOwnedScrolling(page);",
+      "108: expect(reached.hostScrollY, 'host window scrolls to the deep visualization').toBeGreaterThan(0);",
+      "113: await expect(index).toHaveAttribute('open', '');",
+      "114: await expect(index.getByRole('button', { name: `16. ${target.title}` })).toBeFocused();",
+      "116: await expect(heading).toBeFocused();",
+      "117: await expect(finder).toHaveValue(target.id);",
+      "118: await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');",
+      "119: const returned = await assertHostOwnedScrolling(page);",
+      "123: await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');",
+      "124: await expect(page.getByRole('navigation', { name: 'Customer dashboards' })).toBeVisible();",
+      "128: expect(writes).toEqual([]);",
+      "129: expect(paths.some(path => path.includes('/isolated/'))).toBe(false);"
+     ],
+     "boundaries": [
+      "91: const { writes, paths } = await mockApi(page);",
+      "92: const frame = page.frameLocator('.host-frame');",
+      "98: await page.setViewportSize({ width, height: 900 });",
+      "99: await page.goto('/sample-host.html');",
+      "122: await page.reload();"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    },
+    {
+     "declaration": "test('tables preserve headings and full numeric values at 390/320px with horizontal-only region scrolling', async ({ page }, info) => {",
+     "line": 132,
+     "assertions": [
+      "140: await expect(frame.locator('.canvas-item')).toHaveCount(18);",
+      "143: await expect(table.getByRole('columnheader', { name: 'Share (rounded)' })).toBeVisible();",
+      "144: await expect(table.getByRole('row', { name: /Organic search.*1,820/ })).toBeVisible();",
+      "146: await expect(region).toBeVisible();",
+      "151: expect(before.scrollWidth).toBeGreaterThan(before.clientWidth + 1);",
+      "152: expect(before.scrollHeight - before.clientHeight, 'no nested vertical table scrolling').toBeLessThanOrEqual(1);",
+      "153: await expect(article.locator('.table-scroll-hint')).toContainText('More columns to the right');",
+      "159: await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);",
+      "160: await expect(region).toBeFocused();",
+      "161: await expect(article.locator('.table-scroll-hint')).toContainText('left');",
+      "167: await expect(revenue.getByRole('columnheader', { name: 'Revenue (USD)' })).toBeVisible();",
+      "168: await expect(revenue.getByRole('row', { name: /Jan.*\\$18,400/ })).toBeVisible();",
+      "169: await expect(revenue.locator('.table-scroll-hint')).toContainText('More columns to the right');",
+      "174: expect(details.scrollHeight - details.clientHeight, 'expanded chart data flows into host page').toBeLessThanOrEqual(1);",
+      "175: const embed = await assertHostOwnedScrolling(page);",
+      "186: await expect(focus).toBeFocused();",
+      "188: expect(outline).not.toBe('none');",
+      "190: .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "191: expect(scan.violations.map(item => item.id)).toEqual([]);",
+      "196: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "134: const { writes } = await mockApi(page);",
+      "135: const frame = page.frameLocator('.host-frame');",
+      "138: await page.setViewportSize({ width, height: 844 });",
+      "139: await page.goto('/sample-host.html');",
+      "158: await page.keyboard.press('ArrowRight');",
+      "180: await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });",
+      "184: await page.keyboard.press('Tab');",
+      "185: await page.keyboard.press('Shift+Tab');"
+     ],
+     "disposition": "keep (initial review; pending broader overlap comparison)"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/accessibility.spec.ts",
+   "blob": "d08098bf21fa91b336bfe72cada8d95d628a2df6",
+   "capability": "Accessibility",
+   "cases": [
+    {
+     "declaration": "test('dashboard creation dialog contains keyboard focus and returns it to the opener', async ({ page }) => {",
+     "line": 3,
+     "assertions": [
+      "10: await expect(dialog).toBeVisible();",
+      "11: await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toBeFocused();",
+      "14: await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();",
+      "16: await expect(dialog.getByRole('button', { name: 'Create dashboard' })).toBeFocused();",
+      "18: await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();",
+      "22: await expect(dialog).toHaveCount(0);",
+      "23: await expect(trigger).toBeFocused();"
+     ],
+     "boundaries": [
+      "4: await page.goto('/');",
+      "13: await page.keyboard.press('Shift+Tab');",
+      "15: await page.keyboard.press('Shift+Tab');",
+      "17: await page.keyboard.press('Tab');",
+      "20: await page.keyboard.press('Escape');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('visualization dialog and source registration share keyboard-safe dialog behavior', async ({ page }) => {",
+     "line": 26,
+     "assertions": [
+      "33: await expect(visualization).toBeVisible();",
+      "34: await expect(visualization.locator('.gallery-card').first()).toBeFocused();",
+      "36: await expect(add).toBeFocused();",
+      "43: await expect(dialog.getByRole('textbox', { name: 'Display name' })).toBeFocused();",
+      "45: await expect(dialog).toHaveCount(0);",
+      "46: await expect(register).toBeFocused();"
+     ],
+     "boundaries": [
+      "27: await page.goto('/#/dashboards');",
+      "35: await page.keyboard.press('Escape');",
+      "39: await page.goto('/#/sources');",
+      "44: await page.keyboard.press('Escape');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('mobile navigation, forms and active filters remain operable without page overflow', async ({ page }) => {",
+     "line": 49,
+     "assertions": [
+      "56: await expect(page.getByRole('button', { name: 'Remove Organic search filter', exact: true })).toBeVisible();",
+      "57: expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);"
+     ],
+     "boundaries": [
+      "50: await page.setViewportSize({ width: 390, height: 844 });",
+      "51: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('mobile visualization dialog exposes its primary action by natural scrolling', async ({ page }) => {",
+     "line": 60,
+     "assertions": [
+      "69: await expect(action).toBeInViewport();",
+      "71: expect(bounds).not.toBeNull();",
+      "72: expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);"
+     ],
+     "boundaries": [
+      "61: await page.setViewportSize({ width: 390, height: 844 });",
+      "62: await page.goto('/#/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('an empty dashboard gives an editor a direct visual first step', async ({ page }) => {",
+     "line": 75,
+     "assertions": [
+      "81: await expect(page.getByRole('heading', { name: 'Start with your first visualization' })).toBeVisible();",
+      "82: await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();",
+      "83: await expect(page.getByRole('region', { name: 'Dashboard filters' })).toHaveCount(0);",
+      "85: await expect(page.getByRole('dialog', { name: 'Configure visualization' })).toBeVisible();",
+      "87: await expect(page.getByText('Unsaved changes')).toBeVisible();",
+      "88: await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();"
+     ],
+     "boundaries": [
+      "76: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('dashboard creation errors stay visible inside the open dialog', async ({ page }) => {",
+     "line": 91,
+     "assertions": [
+      "99: await expect(dialog.getByRole('alert')).toContainText('Request failed (503)');",
+      "100: await expect(dialog).toBeVisible();",
+      "103: await expect(dialog).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "92: await page.route('**/api/organizations/*/dashboards', route => route.request().method() === 'POST'",
+      "94: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('workspace loading failure reports the real problem and offers a working retry', async ({ page }) => {",
+     "line": 106,
+     "assertions": [
+      "111: await expect(page.getByRole('alert')).toContainText('Request failed (503)');",
+      "112: await expect(page.getByRole('heading', { name: 'Workspace unavailable' })).toBeVisible();",
+      "116: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "117: await expect(page.getByRole('heading', { name: 'Workspace unavailable' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "108: await page.route('**/api/organizations', route => unavailable",
+      "110: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/readability.spec.ts",
+   "blob": "577c363724e13beb4708a86aba1361dde2adeb74",
+   "capability": "Readable layouts",
+   "cases": [
+    {
+     "declaration": "test('WCAG A/AA automated scan finds no detectable violations in primary workflows', async ({ page }) => {",
+     "line": 9,
+     "assertions": [
+      "12: await expect(page.locator('main h1')).toBeVisible();",
+      "15: .analyze();",
+      "16: expect(scan.violations, `${path}: ${JSON.stringify(scan.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => node.target) })))}`)"
+     ],
+     "boundaries": [
+      "11: await page.goto(path);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('chart data table provides a keyboard-operable equivalent of visual values', async ({ page }) => {",
+     "line": 21,
+     "assertions": [
+      "27: await expect(disclosure).toBeFocused();",
+      "30: await expect(table).toBeVisible();",
+      "31: await expect(table.getByRole('columnheader', { name: 'Month' })).toBeVisible();",
+      "32: await expect(table.getByRole('columnheader', { name: 'revenue' })).toBeVisible();",
+      "33: await expect(table.getByRole('rowheader', { name: 'Jan' })).toBeVisible();",
+      "34: await expect(table.getByRole('row', { name: /Jan.*\\$18,400/ })).toBeVisible();",
+      "36: await expect(table).toBeHidden();"
+     ],
+     "boundaries": [
+      "22: await page.goto('/#/dashboards');",
+      "28: await page.keyboard.press('Enter');",
+      "35: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('essential secondary text uses readable semantic size and contrast surfaces', async ({ page }) => {",
+     "line": 39,
+     "assertions": [
+      "41: await expect(page.locator('main h1')).toBeVisible();",
+      "44: expect(size, selector).toBeGreaterThanOrEqual(12);",
+      "50: expect(size, selector).toBeGreaterThanOrEqual(12);"
+     ],
+     "boundaries": [
+      "40: await page.goto('/');",
+      "46: await page.goto('/#/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('desktop, tablet and narrow equivalent reflow widths retain reachable controls', async ({ page }) => {",
+     "line": 54,
+     "assertions": [
+      "58: await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeVisible();",
+      "59: await assertNoPageOverflow(page, width);",
+      "61: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeVisible();",
+      "62: await assertNoPageOverflow(page, width);"
+     ],
+     "boundaries": [
+      "56: await page.setViewportSize({ width, height: 900 });",
+      "57: await page.goto('/#/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('mobile navigation closes via Escape and returns keyboard focus to its trigger', async ({ page }) => {",
+     "line": 66,
+     "assertions": [
+      "72: await expect(overview).toBeFocused();",
+      "74: await expect(page.getByRole('button', { name: 'nexa. ANALYTICS STUDIO home' })).toBeFocused();",
+      "76: await expect(page.getByRole('button', { name: 'Organization' })).toBeFocused();",
+      "78: await expect(page.getByRole('button', { name: 'nexa. ANALYTICS STUDIO home' })).toBeFocused();",
+      "80: await expect(menu).toBeFocused();",
+      "81: await expect(menu).toHaveAttribute('aria-expanded', 'false');"
+     ],
+     "boundaries": [
+      "67: await page.setViewportSize({ width: 390, height: 844 });",
+      "68: await page.goto('/');",
+      "73: await page.keyboard.press('Shift+Tab');",
+      "75: await page.keyboard.press('Shift+Tab');",
+      "77: await page.keyboard.press('Tab');",
+      "79: await page.keyboard.press('Escape');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('skip navigation focuses main content without changing hash route', async ({ page }) => {",
+     "line": 84,
+     "assertions": [
+      "89: await expect(page.locator('main')).toBeFocused();",
+      "90: await expect(page.getByRole('heading', { name: 'Turn data into a story.' })).toBeVisible();",
+      "91: expect(new URL(page.url()).hash).toBe('#/explore');"
+     ],
+     "boundaries": [
+      "85: await page.goto('/#/explore');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('forced-colors mode retains visible focus and chart data alternatives', async ({ page }) => {",
+     "line": 94,
+     "assertions": [
+      "101: expect(outline).not.toBe('none');",
+      "103: await expect(page.locator('details.chart-data').first()).toHaveAttribute('open', '');",
+      "104: await expect(page.locator('details.chart-data').first().locator('table')).toBeVisible();"
+     ],
+     "boundaries": [
+      "95: await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });",
+      "96: await page.goto('/#/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ],
+ "missing": []
+}

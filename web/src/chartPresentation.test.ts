@@ -25,8 +25,12 @@ describe('stable sample chart presentation', () => {
   });
 
   it('assigns stable colors to chronological months', () => {
-    expect(colorForCategory('commerce', 'Jan')).toBe(colorForCategory('commerce', 'Jan'));
-    expect(colorForCategory('commerce', 'Jan')).not.toBe(colorForCategory('commerce', 'Feb'));
+    expect(colorForCategory('commerce', 'Jan')).toBe('#435bc9');
+    expect(colorForCategory('commerce', 'Feb')).toBe('#087b75');
+    expect(colorForCategory('commerce', 'Dec')).toBe('#0a7a82');
+    expect(colorForCategory('commerce', 'unknown')).toBe('#566780');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    expect(new Set(months.map(month => colorForCategory('commerce', month))).size).toBe(12);
   });
 
   it('formats currency, numeric counts, and percentages consistently', () => {

@@ -1,0 +1,863 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Machine-assisted NUnit method/attribute and assertion source excerpts; parameterized fixture and test counts require runtime reconciliation. Read helper definitions in original source.",
+ "files": [
+  {
+   "path": "tests/AnalyticsDashboard.Tests/DashboardApiTests.cs",
+   "blob": "445abbda0fa84833aa71057a9b7338af782d653c",
+   "capability": "Dashboard API",
+   "cases": [
+    {
+     "line": 44,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "45: public async Task MembershipLimitsApiAccessToOneOrganization()",
+     "assertions": [
+      "50: Assert.Multiple(() =>",
+      "52: Assert.That(allowed.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "53: Assert.That(forbidden.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 57,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "58: public async Task KnownDashboardIdentifierCannotBypassOrganizationBoundary()",
+     "assertions": [
+      "66: Assert.Multiple(() =>",
+      "68: Assert.That(authorized.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "69: Assert.That(crossTenant.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));",
+      "70: Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 74,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "75: public async Task DashboardCreationIsAvailableToAuthorizedEditor()",
+     "assertions": [
+      "83: Assert.Multiple(() =>",
+      "85: Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));",
+      "86: Assert.That(persisted.StatusCode, Is.EqualTo(HttpStatusCode.OK));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 90,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "91: public async Task StaleEditsReturnConflict()",
+     "assertions": [
+      "103: Assert.Multiple(() =>",
+      "105: Assert.That(success.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "106: Assert.That(conflict.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 110,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "111: public void ProductionRequiresTrustedAuthenticationConfiguration()",
+     "assertions": [
+      "126: var error = Assert.Throws<InvalidOperationException>(() => productionFactory.CreateClient());",
+      "127: Assert.That(error?.Message, Does.Contain(\"Authentication:Authority\"));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/DashboardFilterPlannerTests.cs",
+   "blob": "2e99ddfc49ad2e3ef9f4fba68402fe3d794586d2",
+   "capability": "Filter planning",
+   "cases": [
+    {
+     "line": 37,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "38: public void SameSemanticSelectionsMapToDifferentPhysicalFieldsAndPreserveBaseFilters()",
+     "assertions": [
+      "53: Assert.Multiple(() =>",
+      "55: Assert.That(filters.Select(f => f.Field), Is.EqualTo(new[] { \"paid\", date, date, region }));",
+      "56: Assert.That(filters.Select(f => f.Operator), Is.EqualTo(new[]",
+      "60: Assert.That(filters[1].Values![0].Timestamp!.Value.Offset, Is.EqualTo(TimeSpan.Zero));",
+      "61: Assert.That(filters[1].Values![0].Timestamp, Is.EqualTo(Start.ToUniversalTime()));",
+      "62: Assert.That(filters[2].Values![0].Timestamp, Is.EqualTo(End));",
+      "63: Assert.That(plan.Outcomes.Select(x => x.Applicability), Is.All.EqualTo(FilterApplicability.Applied));",
+      "64: Assert.That(baseline.Filters, Has.Count.EqualTo(1));",
+      "65: Assert.That(plan.Request.Aggregates, Is.EqualTo(baseline.Aggregates));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 70,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "71: public void MissingMappingNeverGuessesFromFieldNameAndResetKeepsBasePredicate()",
+     "assertions": [
+      "80: Assert.That(plan.Outcomes.Select(x => x.Applicability), Is.All.EqualTo(FilterApplicability.NoApprovedMapping));",
+      "81: Assert.That(plan.Request.Filters, Is.EqualTo(query.Filters));",
+      "83: Assert.That(cleared.Request.Filters, Is.EqualTo(query.Filters));",
+      "84: Assert.That(cleared.Outcomes, Is.Empty);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 87,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "88: public void MappingPermissionTypeAndProviderLimitAreDistinct()",
+     "assertions": [
+      "96: Assert.That(DashboardFilterPlanner.Plan(DataSourceProvider.Sqlite, blocked, Aggregate(\"sales\"), Context())",
+      "98: Assert.That(DashboardFilterPlanner.Plan(DataSourceProvider.Sqlite, mismatched, Aggregate(\"sales\"), Context())",
+      "100: Assert.That(DashboardFilterPlanner.Plan(DataSourceProvider.Elasticsearch, dataset, Aggregate(\"sales\"), substring)",
+      "102: Assert.That(DashboardFilterPlanner.Plan(DataSourceProvider.Sqlite, dataset, Aggregate(\"sales\"), substring)"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 106,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "107: public void InvalidSelectionsAndAmbiguousMappingsFailClosedEvenWithoutApplicableFields()",
+     "assertions": [
+      "114: Assert.Throws<InvalidQueryException>(() => DashboardFilterPlanner.Plan(DataSourceProvider.Sqlite, ambiguous, query, Context()));",
+      "127: Assert.Throws<InvalidQueryException>(() => DashboardFilterPlanner.Plan(DataSourceProvider.Sqlite, empty, query, context));",
+      "129: Assert.Throws<InvalidQueryException>(() => DashboardFilterPlanner.Plan(DataSourceProvider.Sqlite, dataset, crowded, Context()));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 132,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "133: public void JsonTimeRequiresExplicitOffset()",
+     "assertions": [
+      "135: Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SharedDateRange>(",
+      "139: Assert.That(range!.Start, Is.EqualTo(Start));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 142,
+     "attributes": [
+      "[TestCase(DataSourceProvider.SqlServer)]",
+      "[TestCase(DataSourceProvider.PostgreSql)]",
+      "[TestCase(DataSourceProvider.MySql)]",
+      "[TestCase(DataSourceProvider.Sqlite)]"
+     ],
+     "declaration": "146: public void SharedPredicatesCompileToBoundWhereBeforeGrouping(DataSourceProvider provider)",
+     "assertions": [
+      "160: Assert.Multiple(() =>",
+      "162: Assert.That(compiled.CommandText, Does.Contain(\"OrderDate\").And.Contain(\" >= @p0\").And.Contain(\" < @p1\"));",
+      "163: Assert.That(compiled.CommandText.IndexOf(\" WHERE \", StringComparison.Ordinal),",
+      "165: Assert.That(compiled.CommandText, Does.Not.Contain(Attack));",
+      "166: Assert.That(compiled.Parameters.Select(p => p.Value), Is.EqualTo(new object[] { Start.ToUniversalTime(), End, Attack }));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 170,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "171: public void ElasticsearchUsesApprovedPhysicalPathsAndStructuredFilterBeforeMetrics()",
+     "assertions": [
+      "183: Assert.Multiple(() =>",
+      "185: Assert.That(filters.GetArrayLength(), Is.EqualTo(3));",
+      "186: Assert.That(filters[0].GetProperty(\"range\").GetProperty(\"event.opened\").GetProperty(\"gte\").GetString(),",
+      "188: Assert.That(filters[1].GetProperty(\"range\").GetProperty(\"event.opened\").GetProperty(\"lt\").GetString(),",
+      "190: Assert.That(filters[2].GetProperty(\"term\").GetProperty(\"customer.region.keyword\").GetProperty(\"value\").GetString(),",
+      "192: Assert.That(root.GetProperty(\"aggs\").GetProperty(\"total\").GetProperty(\"sum\").GetProperty(\"field\").GetString(),"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 197,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "198: public void DisposableSqliteAggregatesOnlyRowsInsideHalfOpenRangeAndMatchingRegion()",
+     "assertions": [
+      "221: Assert.That(reader.Read(), Is.True);",
+      "222: Assert.That(Convert.ToDouble(reader.GetValue(0)), Is.EqualTo(20));",
+      "223: Assert.That(reader.GetInt64(1), Is.EqualTo(2));",
+      "224: Assert.That(reader.Read(), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/DashboardServiceTests.cs",
+   "blob": "6ed4c11a42f701342d45e15e08551965c069e6aa",
+   "capability": "Dashboard persistence",
+   "cases": [
+    {
+     "line": 30,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "31: public async Task UserWithoutMembershipCannotReadOtherOrganizationsDashboards()",
+     "assertions": [
+      "33: await Assert.ThrowsAsync<ForbiddenException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 37,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "38: public async Task ViewerCannotModifyDashboards()",
+     "assertions": [
+      "40: await Assert.ThrowsAsync<ForbiddenException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 44,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "45: public async Task OrganizationIdsAlwaysScopeDashboardLookups()",
+     "assertions": [
+      "49: Assert.That(other, Is.Null);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 52,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "53: public async Task UpdateRejectsStaleRevisionWithoutOverwritingChanges()",
+     "assertions": [
+      "59: Assert.That(updated, Is.Not.Null);",
+      "60: Assert.That(updated!.Revision, Is.EqualTo(2));",
+      "61: await Assert.ThrowsAsync<ConflictException>(async () =>",
+      "66: Assert.That(persisted?.Name, Is.EqualTo(\"Current\"));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 69,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "70: public async Task DashboardsSurviveCatalogRecreation()",
+     "assertions": [
+      "77: Assert.Multiple(() =>",
+      "79: Assert.That(persisted?.Name, Is.EqualTo(\"Test dashboard\"));",
+      "80: Assert.That(persisted?.Widgets, Has.Count.EqualTo(1));",
+      "81: Assert.That(persisted?.Revision, Is.EqualTo(1));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 85,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "86: public async Task ExpandedVisualizationDefinitionsRoundTripWithoutChangingExistingEnumValues()",
+     "assertions": [
+      "88: Assert.Multiple(() =>",
+      "90: Assert.That((int)VisualizationKind.Metric, Is.EqualTo(0));",
+      "91: Assert.That((int)VisualizationKind.Table, Is.EqualTo(5));",
+      "92: Assert.That((int)VisualizationKind.Pie, Is.EqualTo(6));",
+      "93: Assert.That((int)VisualizationKind.Histogram, Is.EqualTo(7));",
+      "94: Assert.That((int)VisualizationKind.Scatter, Is.EqualTo(8));",
+      "107: Assert.That(persisted?.Widgets.Select(widget => widget.Kind), Is.EqualTo(new[] {"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 112,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "113: public async Task OptionalWidgetLayoutSurvivesPersistenceAndRejectsInvalidSizes()",
+     "assertions": [
+      "122: Assert.Multiple(() =>",
+      "124: Assert.That(persisted?.Widgets[0].Columns, Is.EqualTo(9));",
+      "125: Assert.That(persisted?.Widgets[0].Height, Is.EqualTo(420));",
+      "136: await Assert.ThrowsAsync<InvalidDashboardException>(async () =>",
+      "141: await Assert.ThrowsAsync<ForbiddenException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 146,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "147: public async Task AppearanceConfigurationSurvivesPersistenceAndRespectsAuthorization()",
+     "assertions": [
+      "161: Assert.Multiple(() =>",
+      "163: Assert.That(found?.Widgets[0].Appearance?.ShowLegend, Is.False);",
+      "164: Assert.That(found?.Widgets[0].Appearance?.ShowSliceLabels, Is.True);",
+      "165: Assert.That(found?.Widgets[0].Appearance?.MaxSliceLabels, Is.EqualTo(8));",
+      "166: Assert.That(found?.Widgets[0].Appearance?.CategorySort, Is.EqualTo(\"valueAsc\"));",
+      "167: Assert.That(found?.Widgets[1].Appearance?.HistogramBins, Is.EqualTo(6));",
+      "168: Assert.That(found?.Widgets[0].Columns, Is.Null);",
+      "176: Assert.That(changed?.Widgets[0].Appearance?.MaxSliceLabels, Is.EqualTo(12));",
+      "177: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "180: await Assert.ThrowsAsync<ForbiddenException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 184,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "185: public async Task AppearanceRejectsInvalidAndIncompatibleInputs()",
+     "assertions": [
+      "206: await Assert.ThrowsAsync<InvalidDashboardException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 212,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "213: public async Task DuplicateWidgetIdsAreRejected()",
+     "assertions": [
+      "217: await Assert.ThrowsAsync<InvalidDashboardException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 221,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "222: public async Task NullDashboardDefinitionIsRejected()",
+     "assertions": [
+      "224: await Assert.ThrowsAsync<InvalidDashboardException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 228,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "229: public async Task NullWidgetIsRejected()",
+     "assertions": [
+      "232: await Assert.ThrowsAsync<InvalidDashboardException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 236,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "237: public async Task ViewerCannotUpdateOrDeleteDashboard()",
+     "assertions": [
+      "241: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "244: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "247: Assert.That(await service.FindAsync(\"northstar\", dashboard.Id, \"demo-owner\", CancellationToken.None),"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/DataSourceServiceTests.cs",
+   "blob": "b4d0c2df985898affa300f0b397b02c75f50ea4d",
+   "capability": "Data sources",
+   "cases": [
+    {
+     "line": 37,
+     "attributes": [
+      "[TestCase(DataSourceProvider.SqlServer)]",
+      "[TestCase(DataSourceProvider.MySql)]",
+      "[TestCase(DataSourceProvider.PostgreSql)]",
+      "[TestCase(DataSourceProvider.Sqlite)]",
+      "[TestCase(DataSourceProvider.Elasticsearch)]"
+     ],
+     "declaration": "42: public async Task AllProvidersCanBeRegisteredAndPersistAcrossRepositoryRestart(DataSourceProvider provider)",
+     "assertions": [
+      "50: Assert.Multiple(() =>",
+      "52: Assert.That(saved?.OrganizationId, Is.EqualTo(\"northstar\"));",
+      "53: Assert.That(saved?.Provider, Is.EqualTo(provider));",
+      "54: Assert.That(saved?.Name, Is.EqualTo(\"Revenue reporting\"));",
+      "55: Assert.That(saved?.Revision, Is.EqualTo(1));",
+      "56: Assert.That(saved?.CreatedBy, Is.EqualTo(\"demo-owner\"));",
+      "57: Assert.That(saved?.CreatedAt, Is.EqualTo(created.CreatedAt));",
+      "58: Assert.That(saved?.UpdatedAt, Is.EqualTo(created.UpdatedAt));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 62,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "63: public async Task TenantIsolationAppliesToEveryOperationIncludingGuessedIds()",
+     "assertions": [
+      "68: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "70: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "72: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "75: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "78: Assert.That(await repository.FindAsync(\"isolated\", source.Id, CancellationToken.None), Is.Null);",
+      "79: Assert.That(await repository.DeleteAsync(\"isolated\", source.Id, 1, CancellationToken.None), Is.False);",
+      "80: Assert.That(await repository.ReplaceAsync(source with { OrganizationId = \"isolated\" }, 1,"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 84,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "85: public async Task ViewerCanReadButCannotMutateMetadata()",
+     "assertions": [
+      "90: Assert.That((await service.ListAsync(\"northstar\", \"demo-viewer\", CancellationToken.None)),",
+      "92: Assert.That(await service.FindAsync(\"northstar\", source.Id, \"demo-viewer\", CancellationToken.None),",
+      "94: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "97: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "100: await Assert.ThrowsAsync<ForbiddenException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 104,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "105: public async Task EditorCanManageDefinitions()",
+     "assertions": [
+      "127: Assert.Multiple(() =>",
+      "129: Assert.That(renamed?.Name, Is.EqualTo(\"Finance\"));",
+      "130: Assert.That(renamed?.Provider, Is.EqualTo(DataSourceProvider.PostgreSql));",
+      "131: Assert.That(removed, Is.True);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 135,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "136: public async Task RevisionsPreventStaleRenamesAndDeletes()",
+     "assertions": [
+      "143: Assert.That(renamed?.Revision, Is.EqualTo(2));",
+      "144: await Assert.ThrowsAsync<ConflictException>(async () =>",
+      "147: await Assert.ThrowsAsync<ConflictException>(async () =>",
+      "149: Assert.That((await repository.FindAsync(\"northstar\", source.Id, CancellationToken.None))?.Name,",
+      "151: Assert.That(await service.DeleteAsync(\"northstar\", source.Id, \"demo-owner\", 2,"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 155,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "156: public async Task DatabaseCompareAndSwapRejectsRaceAgainstStaleRevision()",
+     "assertions": [
+      "163: Assert.That(await repository.ReplaceAsync(next, 1, CancellationToken.None), Is.True);",
+      "164: Assert.That(await repository.ReplaceAsync(stale, 1, CancellationToken.None), Is.False);",
+      "165: Assert.That(await repository.DeleteAsync(\"northstar\", source.Id, 1, CancellationToken.None), Is.False);",
+      "166: Assert.That((await repository.FindAsync(\"northstar\", source.Id, CancellationToken.None))?.Name,"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 170,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "171: public async Task InvalidNamesAndProvidersAreRejected()",
+     "assertions": [
+      "174: await Assert.ThrowsAsync<InvalidDataSourceException>(async () =>",
+      "177: await Assert.ThrowsAsync<InvalidDataSourceException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/QueryApiTests.cs",
+   "blob": "26e9f928abaeec31509c399848056f94d46abef1",
+   "capability": "Query API",
+   "cases": [
+    {
+     "line": 57,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "58: public async Task DefaultCatalogRejectsEveryDatasetWithoutConnecting()",
+     "assertions": [
+      "66: Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));",
+      "67: Assert.That((await response.Content.ReadAsStringAsync()),"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 71,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "72: public async Task GuessedSourceAndOtherOrganizationDoNotExposeSchemas()",
+     "assertions": [
+      "80: Assert.Multiple(() =>",
+      "82: Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));",
+      "83: Assert.That(foreign.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 87,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "88: public async Task UnknownFieldsAndRawExecutionInputsFailAtJsonBoundary()",
+     "assertions": [
+      "117: Assert.Multiple(() =>",
+      "119: Assert.That(rawSql.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));",
+      "120: Assert.That(dsl.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));",
+      "121: Assert.That(endpoint.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));",
+      "122: Assert.That(secret.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));",
+      "123: Assert.That(nested.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));",
+      "124: Assert.That(numericEnum.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 128,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "129: public async Task AllowedDatasetReturnsValidationSchemaButNotRows()",
+     "assertions": [
+      "139: Assert.Multiple(() =>",
+      "141: Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "142: Assert.That(body.GetProperty(\"executable\").GetBoolean(), Is.False);",
+      "143: Assert.That(body.GetProperty(\"limit\").GetInt32(), Is.EqualTo(20));",
+      "144: Assert.That(body.GetProperty(\"columns\")[0].GetProperty(\"type\").GetString(), Is.EqualTo(\"text\"));",
+      "145: Assert.That(body.TryGetProperty(\"rows\", out _), Is.False);",
+      "146: Assert.That(body.TryGetProperty(\"connectionString\", out _), Is.False);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 150,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "151: public async Task TimestampLiteralsRequireExplicitTimezoneOffsets()",
+     "assertions": [
+      "173: Assert.Multiple(() =>",
+      "175: Assert.That(valid.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "176: Assert.That(utc.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "177: Assert.That(ambiguous.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 181,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "182: public void FutureResultContractRetainsTypedCellsAndTruncation()",
+     "assertions": [
+      "187: Assert.Multiple(() =>",
+      "189: Assert.That(result.Rows[0][0]?.Text, Is.EqualTo(\"north\"));",
+      "190: Assert.That(result.Columns[0].Type, Is.EqualTo(QueryValueType.Text));",
+      "191: Assert.That(result.HasMore, Is.True);",
+      "192: Assert.That(result.Truncated, Is.True);",
+      "200: Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/QueryServiceTests.cs",
+   "blob": "2ab290c0f3dc7c4ad73047eef8ff547658983caa",
+   "capability": "Query application",
+   "cases": [
+    {
+     "line": 64,
+     "attributes": [
+      "[TestCase(\"demo-owner\")]",
+      "[TestCase(\"test-editor\")]",
+      "[TestCase(\"demo-viewer\")]"
+     ],
+     "declaration": "67: public async Task MembersCanValidateTypedProjectionAndFiltersWithoutExecution(string user)",
+     "assertions": [
+      "76: Assert.Multiple(() =>",
+      "78: Assert.That(result?.Executable, Is.False);",
+      "79: Assert.That(result?.Provider, Is.EqualTo(DataSourceProvider.Sqlite));",
+      "80: Assert.That(result?.Limit, Is.EqualTo(100));",
+      "81: Assert.That(result?.Offset, Is.Zero);",
+      "82: Assert.That(result?.Columns, Is.EqualTo(new[]",
+      "87: Assert.That(result?.Budget.MaximumResultBytes, Is.EqualTo(1048576));",
+      "88: Assert.That(result?.Budget.TimeoutMilliseconds, Is.EqualTo(10000));",
+      "89: Assert.That(result?.Budget.MaximumConcurrentQueries, Is.EqualTo(2));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 93,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "94: public async Task NonMemberIsRejectedBeforeSourceAndDatasetLookup()",
+     "assertions": [
+      "96: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "98: Assert.That(datasets.Requests, Is.Zero);",
+      "100: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "102: Assert.That(datasets.Requests, Is.Zero);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 105,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "106: public async Task GuessedOrForeignSourceNeverReachesDatasetCatalog()",
+     "assertions": [
+      "110: Assert.That(result, Is.Null);",
+      "111: Assert.That(datasets.Requests, Is.Zero);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 114,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "115: public void UnallowlistedDatasetOrFieldFailsClosed()",
+     "assertions": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 126,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "127: public void InvalidScalarShapesAndOperatorsFail()",
+     "assertions": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 149,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "150: public async Task ProviderCapabilitiesDifferAndAreEnforced()",
+     "assertions": [
+      "160: Assert.That(await ValidateAsync(request), Is.Not.Null);",
+      "161: await Assert.ThrowsAsync<InvalidQueryException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 166,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "167: public async Task GroupedAggregatesReturnTypedColumns()",
+     "assertions": [
+      "175: Assert.That(result?.Columns, Is.EqualTo(new[]"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 183,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "184: public void IllegalAggregationMixesAndAliasesFail()",
+     "assertions": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 203,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "204: public void SortingRequiresAllowlistedOutputFieldsAndPermission()",
+     "assertions": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 217,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "218: public void PaginationAndShapeLimitsAreHardCeilings()",
+     "assertions": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 231,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "232: public void ComplexityBudgetRejectsDenseValidQuery()",
+     "assertions": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 240,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "241: public async Task ValidNullAndInOperatorsAndUpperPageLimitAreSupported()",
+     "assertions": [
+      "250: Assert.Multiple(() =>",
+      "252: Assert.That(result?.Limit, Is.EqualTo(500));",
+      "253: Assert.That(result?.Offset, Is.EqualTo(5000));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 257,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "258: public async Task SharedPlanningUsesSameMembershipAndSourceBoundary()",
+     "assertions": [
+      "264: await Assert.ThrowsAsync<ForbiddenException>(async () => await service.PlanDashboardFiltersAsync(",
+      "266: await Assert.ThrowsAsync<ForbiddenException>(async () => await service.PlanDashboardFiltersAsync(",
+      "268: Assert.That(datasets.Requests, Is.Zero);",
+      "269: Assert.That(await service.PlanDashboardFiltersAsync(\"northstar\", Guid.NewGuid(),",
+      "271: Assert.That(datasets.Requests, Is.Zero);",
+      "275: Assert.That(result!.Request.Filters!.Single().Field, Is.EqualTo(\"region\"));",
+      "276: Assert.That(result.Outcomes.Single().Applicability, Is.EqualTo(FilterApplicability.Applied));",
+      "277: Assert.That(datasets.Requests, Is.EqualTo(1));",
+      "279: await Assert.ThrowsAsync<InvalidQueryException>(async () => await service.PlanDashboardFiltersAsync(",
+      "295: Assert.ThrowsAsync<InvalidQueryException>(async () => await ValidateAsync(request));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "tests/AnalyticsDashboard.Tests/SavedVisualizationTests.cs",
+   "blob": "92e258504ed43aa30d5d908e6bf2370f74fb304c",
+   "capability": "Saved visualizations",
+   "cases": [
+    {
+     "line": 47,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "48: public async Task SnapshotPersistsAcrossCatalogRecreationWithoutDashboardGeometry()",
+     "assertions": [
+      "56: Assert.Multiple(() =>",
+      "58: Assert.That(found?.OrganizationId, Is.EqualTo(\"northstar\"));",
+      "59: Assert.That(found?.Definition.Kind, Is.EqualTo(VisualizationKind.Pie));",
+      "60: Assert.That(found?.Definition.Appearance?.CategorySort, Is.EqualTo(\"valueAsc\"));",
+      "61: Assert.That(found?.Definition.Appearance?.ShowSliceLabels, Is.True);",
+      "62: Assert.That(found?.Definition.Appearance?.MaxSliceLabels, Is.EqualTo(8));",
+      "63: Assert.That(found?.Definition.Columns, Is.Null);",
+      "64: Assert.That(found?.Definition.Height, Is.Null);",
+      "65: Assert.That(found?.Revision, Is.EqualTo(1));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 69,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "70: public async Task LibraryIsOrganizationScopedAndNeverAffectsExistingDashboardSnapshots()",
+     "assertions": [
+      "76: Assert.That(await catalog.FindVisualizationAsync(\"isolated\", saved.Id, Token), Is.Null);",
+      "77: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "79: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "84: Assert.Multiple(() =>",
+      "86: Assert.That(edited?.Definition.Title, Is.EqualTo(\"Changed template\"));",
+      "87: Assert.That(persistedDashboard?.Widgets[2].Title, Is.EqualTo(original.Title));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 91,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "92: public async Task ViewerCanReadButCannotMutateAndCrossTenantMutationsAreForbidden()",
+     "assertions": [
+      "96: Assert.That(visible.Any(item => item.Id == saved.Id), Is.True);",
+      "97: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "99: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "101: await Assert.ThrowsAsync<ForbiddenException>(async () =>",
+      "103: await Assert.ThrowsAsync<ForbiddenException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 107,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "108: public async Task RevisionConflictNeverOverwritesSavedConfiguration()",
+     "assertions": [
+      "113: Assert.That(updated?.Revision, Is.EqualTo(2));",
+      "114: await Assert.ThrowsAsync<ConflictException>(async () =>",
+      "116: await Assert.ThrowsAsync<ConflictException>(async () =>",
+      "118: Assert.That((await service.FindAsync(\"northstar\", saved.Id, \"demo-owner\", Token))?.Definition.Appearance?.ShowLegend, Is.False);",
+      "119: Assert.That(await service.DeleteAsync(\"northstar\", saved.Id, \"demo-owner\", 2, Token), Is.True);",
+      "120: Assert.That(await service.FindAsync(\"northstar\", saved.Id, \"demo-owner\", Token), Is.Null);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 123,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "124: public void RejectsInvalidTemplateFieldsAndMisleadingSampleAggregations()",
+     "assertions": [
+      "136: Assert.ThrowsAsync<InvalidDashboardException>(async () =>"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 140,
+     "attributes": [
+      "[Test]"
+     ],
+     "declaration": "141: public async Task ApiEnforcesTenantIsolationAndPersistsTemplates()",
+     "assertions": [
+      "155: Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));",
+      "158: Assert.That(id, Is.Not.Null);",
+      "164: Assert.Multiple(() =>",
+      "166: Assert.That(fetched.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "167: Assert.That(saved.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "168: Assert.That(unauthorized.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));",
+      "169: Assert.That(unauthorizedList.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));",
+      "170: Assert.That(unauthorizedCreate.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));",
+      "176: Assert.That(update.StatusCode, Is.EqualTo(HttpStatusCode.OK));",
+      "177: Assert.That(stale.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));",
+      "179: Assert.That(delete.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ]
+}

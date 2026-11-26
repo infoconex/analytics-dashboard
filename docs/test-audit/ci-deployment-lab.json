@@ -1,0 +1,387 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Source excerpts; check complete helper implementations and runtime inventory.",
+ "files": [
+  {
+   "path": "scripts/ci/tests/test_browser_apt_cache.py",
+   "blob": "dfa8d4528aae7b5b806900f6d27bb18932cd1eb6",
+   "capability": "APT caching",
+   "cases": [
+    {
+     "line": 11,
+     "declaration": "def test_shell_syntax(self):",
+     "assertions": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 14,
+     "declaration": "def test_refuses_non_hosted_invocation_before_privileged_operations(self):",
+     "assertions": [
+      "18: self.assertEqual(result.returncode, 2)",
+      "19: self.assertIn(\"hosted Linux CI only\", result.stderr)"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "scripts/ci/tests/test_change_impact.py",
+   "blob": "d0ee156367a67b6e0ef49e512afac83d01a2ad67",
+   "capability": "Impact and gates",
+   "cases": [
+    {
+     "line": 23,
+     "declaration": "def test_documentation_only_skips_expensive_suites(self):",
+     "assertions": [
+      "24: self.assertEqual(impact.classify([\"docs/guide.md\", \"README.md\"]), set())"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 26,
+     "declaration": "def test_frontend_requires_ui_tests_and_security(self):",
+     "assertions": [
+      "27: self.assertEqual("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 32,
+     "declaration": "def test_backend_api_requires_real_browser_and_dotnet(self):",
+     "assertions": [
+      "33: self.assertEqual("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 38,
+     "declaration": "def test_infrastructure_triggers_real_providers(self):",
+     "assertions": [
+      "39: self.assertEqual("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 44,
+     "declaration": "def test_integration_routing_for_runtime_but_not_docs_or_browser_specs(self):",
+     "assertions": [
+      "48: self.assertIn(\"integration\", impact.classify([path]))",
+      "49: self.assertNotIn(\"integration\", impact.classify([\"web/e2e/embed.spec.ts\"]))",
+      "50: self.assertNotIn(\"integration\", impact.classify([\"docs/notes.md\"]))",
+      "51: self.assertEqual(impact.classify([\"compose.ux16-owner.yml\"]), set(impact.SUITES))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 53,
+     "declaration": "def test_backend_tests_preserve_provider_coverage(self):",
+     "assertions": [
+      "54: self.assertIn(\"providers\", impact.classify([\"tests/AnalyticsDashboard.Tests/A.cs\"]))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 56,
+     "declaration": "def test_browser_test_only_does_not_run_dotnet_unit_suite(self):",
+     "assertions": [
+      "57: self.assertEqual("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 61,
+     "declaration": "def test_lockfile_adds_lab_validation(self):",
+     "assertions": [
+      "62: self.assertIn(\"lab\", impact.classify([\"web/package-lock.json\"]))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 64,
+     "declaration": "def test_fictional_sample_source_requires_lab_provenance_guard(self):",
+     "assertions": [
+      "65: self.assertEqual(",
+      "69: self.assertNotIn(\"lab\", impact.classify([\"web/src/App.tsx\"]))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 71,
+     "declaration": "def test_ci_scripts_and_unknown_paths_fail_safe(self):",
+     "assertions": [
+      "76: self.assertEqual(impact.classify([path]), set(impact.SUITES))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 78,
+     "declaration": "def test_invalid_or_traversing_paths_fail_closed(self):",
+     "assertions": [
+      "83: self.assertEqual(impact.classify([path]), set(impact.SUITES))",
+      "84: self.assertEqual(impact.classify([\"./docs/guide.md\"]), set())"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 86,
+     "declaration": "def test_compose_failure_rejects_required_integration(self):",
+     "assertions": [
+      "90: self.assertTrue(gate.evaluate(\"success\", expected, actual))",
+      "92: self.assertTrue(gate.evaluate(\"success\", expected, actual))",
+      "94: self.assertFalse(gate.evaluate(\"success\", expected, actual))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 96,
+     "declaration": "def test_missing_diff_fails_safe(self):",
+     "assertions": [
+      "97: self.assertEqual(impact.classify([]), set(impact.SUITES))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 99,
+     "declaration": "def test_mixed_paths_union(self):",
+     "assertions": [
+      "102: self.assertEqual("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 107,
+     "declaration": "def test_gate_rejects_missing_or_failed_required_jobs(self):",
+     "assertions": [
+      "111: self.assertTrue(gate.evaluate(\"success\", expected, actual))",
+      "113: self.assertFalse(gate.evaluate(\"success\", expected, actual))",
+      "114: self.assertTrue(gate.evaluate(\"failure\", expected, actual))",
+      "116: self.assertTrue(gate.evaluate(\"success\", expected, actual))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 118,
+     "declaration": "def test_security_gate_is_stable_for_docs_and_language_changes(self):",
+     "assertions": [
+      "119: self.assertFalse(security_gate.evaluate(\"success\", \"false\", \"false\", \"skipped\"))",
+      "120: self.assertFalse(security_gate.evaluate(\"success\", \"false\", \"true\", \"success\"))",
+      "121: self.assertTrue(security_gate.evaluate(\"success\", \"true\", \"false\", \"skipped\"))",
+      "122: self.assertTrue(security_gate.evaluate(\"success\", \"true\", \"false\", \"failure\"))",
+      "123: self.assertTrue(security_gate.evaluate(\"failure\", \"false\", \"false\", \"skipped\"))"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ci-browser-shards.test.mjs",
+   "blob": "ce3de085a7908f59b7d05923a0f2d51f283409cd",
+   "capability": "Shard completeness",
+   "cases": [
+    {
+     "line": 12,
+     "declaration": "test('discovers nested suites, balances by duration and handles new and renamed files', () => {",
+     "assertions": [
+      "12: test('discovers nested suites, balances by duration and handles new and renamed files', () => {",
+      "16: assert.deepEqual(plan.flatMap(s => s.files.map(f => f.file)).sort(), [...files.keys()].sort());",
+      "17: assert.equal(plan.reduce((sum, s) => sum + s.testCount, 0), 4);",
+      "18: assert.equal(plan.flatMap(s => s.files).filter(f => !f.historical).length, 2);",
+      "19: assert.deepEqual(makePlan(new Map([...files].reverse()), weights, 2), plan);",
+      "20: assert(!plan.flatMap(s => s.files).some(f => f.file === 'old.spec.ts'));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 23,
+     "declaration": "test('uses test counts to scale historical weight and never splits a file', () => {",
+     "assertions": [
+      "23: test('uses test counts to scale historical weight and never splits a file', () => {",
+      "27: assert.equal(plan[0].estimatedMs, 18000);",
+      "28: assert.equal(plan[0].testCount, 2);",
+      "29: assert.equal(plan[1].testCount, 1);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 32,
+     "declaration": "test('rejects duplicate discovery IDs, empty inventory and invalid shard totals', () => {",
+     "assertions": [
+      "32: test('rejects duplicate discovery IDs, empty inventory and invalid shard totals', () => {",
+      "33: assert.throws(() => getInventory(report(spec('a.spec.ts', 'a'), spec('b.spec.ts', 'a'))));",
+      "34: assert.throws(() => getInventory(report()));",
+      "35: assert.throws(() => makePlan(getInventory(report(spec('a.spec.ts', 'a'))), weights, 2));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 38,
+     "declaration": "test('verifies exact selected IDs, rejects missing, extra, skipped or repeated execution', () => {",
+     "assertions": [
+      "38: test('verifies exact selected IDs, rejects missing, extra, skipped or repeated execution', () => {",
+      "42: assert.throws(() => verifyRun(good, [...expected, 'missing']));",
+      "43: assert.throws(() => verifyRun(report(spec('a.spec.ts', 'a'), spec('b.spec.ts', 'b')), expected));",
+      "44: assert.throws(() => verifyRun(report(spec('a.spec.ts', 'a', 'skipped')), expected));",
+      "47: assert.throws(() => verifyRun(report(repeated), expected));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 50,
+     "declaration": "test('literal anchored filters distinguish similarly named and nested files', () => {",
+     "assertions": [
+      "50: test('literal anchored filters distinguish similarly named and nested files', () => {",
+      "52: assert(filter.test('/checkout/e2e/a[1].spec.ts'));",
+      "53: assert(!filter.test('/checkout/e2e/nested/a[1].spec.ts'));",
+      "54: assert(!filter.test('/checkout/e2e/a1.spec.ts'));",
+      "55: assert(!filter.test('/checkout/e2e/a[1].spec.ts.extra'));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "scripts/ci/verify-compose-smoke.sh",
+   "blob": "d3f54be57df1735024d89603055382fd90cec15b",
+   "capability": "Deployment smoke",
+   "cases": [
+    {
+     "line": 1,
+     "declaration": "Shell smoke verification",
+     "assertions": [
+      "2: # Local sample-host Compose smoke test; always removes disposable containers.",
+      "7: if [[ \"$code\" -ne 0 ]]; then",
+      "16: exit \"$code\"",
+      "22: response=$(curl --silent --fail --max-time 3 http://127.0.0.1:5173/api/organizations || true)",
+      "26: if [[ \"$attempt\" -eq 120 ]]; then",
+      "28: exit 1",
+      "32: # Avoid curl | grep -q with pipefail: grep may exit early and produce EPIPE.",
+      "33: index_html=$(curl --silent --show-error --fail http://127.0.0.1:5173/)",
+      "34: [[ \"$index_html\" == *root* ]] || { echo 'Vite root was not served.' >&2; exit 1; }",
+      "35: host_html=$(curl --silent --show-error --fail http://127.0.0.1:5173/sample-host.html)",
+      "36: [[ \"$host_html\" == *Insights* && \"$host_html\" == *host-dashboard-picker* && \"$host_html\" == *sampleHostMain.ts* && \"$host_html\" == *about:blank* && \"$host_html\" == *host-frame-loading* ]] || {",
+      "37: echo 'Sample host navigation content was not served.' >&2; exit 1;",
+      "39: dashboard=$(curl --silent --show-error --fail http://127.0.0.1:5173/api/organizations/northstar/dashboards)",
+      "41: channel=$(curl --silent --show-error --fail http://127.0.0.1:5173/api/organizations/northstar/dashboards/c730b8e2-4990-42b7-80cc-71b47290aec4)",
+      "43: denied=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:5173/api/organizations/isolated/dashboards/c730b8e2-4990-42b7-80cc-71b47290aec4)",
+      "44: [[ \"$denied\" == 403 ]] || { echo \"Cross-tenant dashboard was not denied: $denied\" >&2; exit 1; }",
+      "45: if curl --silent --fail --max-time 2 http://127.0.0.1:5055/api/organizations >/dev/null; then",
+      "47: exit 1"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ux13/elastic-lab.test.mjs",
+   "blob": "80d973a730e49c0a281460bd336abc6e7c2c31c4",
+   "capability": "Elasticsearch lab",
+   "cases": [
+    {
+     "line": 49,
+     "declaration": "it('refuses non-loopback or alternate lab destinations before a network request', async () => {",
+     "assertions": [
+      "50: await assert.rejects(api('https://example.com', '/', 'user', 'password'), /fixed loopback/);",
+      "51: await assert.rejects(api('http://127.0.0.1:9200', '/', 'user', 'password'), /fixed loopback/);",
+      "52: await assert.rejects(api('http://127.0.0.1:19200', '//elsewhere', 'user', 'password'), /fixed loopback/);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 55,
+     "declaration": "it('requires nonempty throwaway credentials', () => {",
+     "assertions": [
+      "56: assert.throws(() => basicHeader('elastic', ''), /Missing disposable credential/);",
+      "57: assert.match(basicHeader('viewer', 'fictional-secret'), /^Basic /);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 60,
+     "declaration": "it('does not accept a different version or an unrelated cluster', async () => {",
+     "assertions": [
+      "65: await assert.rejects(requireLabVersion('http://127.0.0.1:19200', 'elastic', 'secret'), /different Elastic version/);",
+      "68: await assert.rejects(requireLabVersion('http://127.0.0.1:19200', 'elastic', 'secret'), /Unexpected cluster/);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 74,
+     "declaration": "it('verifies every imported row, direct saved-object denial and empty-list behavior', async () => {",
+     "assertions": [
+      "85: assert.equal(observed.isolatedSavedViewStatus, 400, 'Kibana may reject unknown Spaces with HTTP 400');",
+      "87: await assert.rejects(verifyViewer({ report: false }), /Unexpected isolated index disclosure/);",
+      "89: await assert.rejects(verifyViewer({ report: false }), /Unexpected isolated saved-object disclosure/);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ux13/kibana-dashboard.test.mjs",
+   "blob": "3cc7f6e57a1907eef5593e82fc9fbaffffbac85f",
+   "capability": "Kibana fixture",
+   "cases": [
+    {
+     "line": 5,
+     "declaration": "it('builds 12 title/order-matched fictional charts without crossing data sets or inventing timestamps', () => {",
+     "assertions": [
+      "8: assert.equal(definition.panels[0].config.title, 'Revenue over time');",
+      "9: assert.equal(definition.panels[11].config.title, 'Insight 12');",
+      "10: assert.match(definition.description, /fictional/);",
+      "11: assert.equal(dashboardDigest(definition), dashboardDigest(createComparisonDashboard()));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ux13/lab-fixtures.test.mjs",
+   "blob": "26fbad7c71e3b14a7f6eef1c6de8abdafa0e9575",
+   "capability": "Lab fixtures",
+   "cases": [
+    {
+     "line": 9,
+     "declaration": "it('extracts precisely the two authoritative datasets with the original sentinel values', () => {",
+     "assertions": [
+      "11: assert.equal(commerce.length, 12);",
+      "12: assert.equal(channels.length, 5);",
+      "13: assert.equal(commerce[9].revenue, 41400);",
+      "14: assert.equal(channels.find(row => row.channel === 'Direct').orders, 1530);",
+      "15: assert.equal(channels.find(row => row.channel === 'Direct').conversion, 5.4);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 18,
+     "declaration": "it('does not create a year, date, joined channel data or computed conversion', () => {",
+     "assertions": [
+      "22: assert.deepEqual(monthly.map(row => row.monthOrdinal), Array.from({ length: 12 }, (_, i) => i + 1));",
+      "23: assert.equal(Object.keys(monthly[0]).join(','), 'month,revenue,orders,customers,monthOrdinal');",
+      "24: assert.deepEqual(Object.keys(channels[0]), ['channel', 'orders', 'sessions', 'conversion']);",
+      "26: assert.equal(manifest.observationYear, null);",
+      "27: assert.equal(manifest.observationDates, null);",
+      "28: assert.equal(manifest.channels.observationDates, null);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 31,
+     "declaration": "it('fails closed on source drift and executable expressions', () => {",
+     "assertions": [
+      "32: assert.throws(() => buildFixtures(source.replace('revenue: 41400', 'revenue: 41401')), /sentinel/);",
+      "33: assert.throws(() => buildFixtures(source.replace('revenue: 41400', 'revenue: 41399 + 1')), /nonliteral/);",
+      "34: assert.throws(() => buildFixtures(source.replace('revenue: 41400', 'revenue: 41400, revenue: 41400')), /Duplicate field/);",
+      "35: assert.throws(() => buildFixtures(source.replace(\"month: 'Jan'\", \"month: 'Feb'\")), /Invalid commerce/);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 38,
+     "declaration": "it('matches all reviewed, checked-in payloads byte-for-byte', async () => {",
+     "assertions": [],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ]
+}

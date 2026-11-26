@@ -1,0 +1,333 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Machine-assisted source excerpts; incomplete semantic audit. Check original multiline assertions and helper definitions.",
+ "files": [
+  {
+   "path": "web/src/contentDiscovery.test.ts",
+   "blob": "1ac4e4f2e9390cb1288e14b2836dbe4b81e7ac41",
+   "capability": "Catalog discovery",
+   "cases": [
+    {
+     "line": 17,
+     "declaration": "it('matches case-insensitive query words across name and description and ignores extra whitespace', () => {",
+     "assertions": [
+      "18: expect(discoverDashboards(["
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 22,
+     "declaration": "it('sorts recent and same-name results deterministically without changing the source', () => {",
+     "assertions": [
+      "28: expect(discoverDashboards(original, 'northstar', '', 'recent').map(item => item.id)).toEqual(['a', 'b', 'z']);",
+      "29: expect(discoverDashboards(original, 'northstar', '', 'name-asc').map(item => item.id)).toEqual(['a', 'b', 'z']);",
+      "30: expect(discoverDashboards(original, 'northstar', '', 'name-desc').map(item => item.id)).toEqual(['z', 'a', 'b']);",
+      "31: expect(original.map(item => item.id)).toEqual(['z', 'a', 'b']);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 33,
+     "declaration": "it('never includes another tenant regardless of search or order', () => {",
+     "assertions": [
+      "35: expect(discoverDashboards(items, 'northstar', '', 'recent').map(item => item.id)).toEqual(['own']);",
+      "36: expect(discoverDashboards(items, '', '', 'recent')).toEqual([]);",
+      "37: expect(discoverDashboards(items, 'northstar', 'not-present', 'recent')).toEqual([]);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 42,
+     "declaration": "it('combines description search, type filtering and deterministic sorting', () => {",
+     "assertions": [
+      "48: expect(discoverVisualizations(items, 'northstar', 'revenue market', 'bar', 'name-asc')",
+      "50: expect(discoverVisualizations(items, 'northstar', '', 'all', 'recent')",
+      "52: expect(items.map(item => item.id)).toEqual(['a', 'b', 'c']);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 54,
+     "declaration": "it('protects tenant boundary and empty results without changing templates', () => {",
+     "assertions": [
+      "57: expect(discoverVisualizations([foreign, own], 'northstar', 'revenue', 'all', 'recent')).toEqual([own]);",
+      "58: expect(discoverVisualizations([foreign], 'northstar', '', 'all', 'recent')).toEqual([]);",
+      "59: expect(discoverVisualizations([own], 'northstar', '', 'donut', 'recent')).toEqual([]);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 61,
+     "declaration": "it('displays a stable UTC date, with a fallback for malformed server data', () => {",
+     "assertions": [
+      "62: expect(savedDateLabel('2026-11-21T23:45:00Z')).toBe('Nov 21, 2026');",
+      "63: expect(savedDateLabel('invalid')).toBe('Unknown date');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/dashboardDiscovery.test.ts",
+   "blob": "6c7d3ab8353634ccba578c466e48b9382f9a3aa0",
+   "capability": "Dashboard discovery",
+   "cases": [
+    {
+     "line": 15,
+     "declaration": "it('offers three specific business questions with distinct metric/dataset contracts', () => {",
+     "assertions": [
+      "16: expect(businessQuestions.map(item => item.id)).toEqual(['revenue-trend', 'orders-channel', 'traffic-channel']);",
+      "17: expect(new Set(businessQuestions.map(item => `${item.datasetKey}/${item.metricKey}`)).size).toBe(3);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 20,
+     "declaration": "it('finds a relevant visualization by its dataset and metric, regardless of dashboard title', () => {",
+     "assertions": [
+      "22: expect(choice?.dashboard.id).toBe('unexpected-name');",
+      "23: expect(choice?.widget.id).toBe('rev');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 26,
+     "declaration": "it('filters recommendations by authorized organization even if mixed-tenant data is supplied', () => {",
+     "assertions": [
+      "29: expect(findQuestionMatches([foreign, own], 'northstar', 'revenue-trend').map(item => item.dashboard.id)).toEqual(['own']);",
+      "30: expect(matchQuestion([foreign], 'northstar', 'revenue-trend')).toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 33,
+     "declaration": "it('rejects unmatched/unknown questions and does not guess from title or unsupported dimensions', () => {",
+     "assertions": [
+      "36: expect(matchQuestion([titled], 'northstar', 'revenue-trend')).toBeNull();",
+      "37: expect(matchQuestion([dashboard('empty', 'northstar', [])], 'northstar', 'orders-channel')).toBeNull();",
+      "38: expect(matchQuestion([dashboard('ready', 'northstar', [revenue])], 'northstar', 'untrusted')).toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 41,
+     "declaration": "it('provides deterministic, non-mutating matches for catalog filtering', () => {",
+     "assertions": [
+      "44: expect(matches.map(item => item.dashboard.id)).toEqual(['first', 'second']);",
+      "45: expect(matches[1]?.widget.id).toBe('rev');",
+      "46: expect(list.map(item => item.id)).toEqual(['first', 'second']);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 49,
+     "declaration": "it('prefers an explanatory chart over a metric tile for a revenue-trend starting point', () => {",
+     "assertions": [
+      "52: expect(chosen?.widget.id).toBe('rev');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 55,
+     "declaration": "it('recommends the most informative matching dashboard over an earlier one-chart draft', () => {",
+     "assertions": [
+      "60: expect(matchQuestion([draft, richer], 'northstar', 'revenue-trend')?.dashboard.id).toBe('business-overview');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/embedRoute.test.ts",
+   "blob": "c3a3c3ca5293e1c02dae4d1f4e141d8fcb0b448c",
+   "capability": "Embedded URL parsing",
+   "cases": [
+    {
+     "line": 7,
+     "declaration": "it('accepts only a single organization and GUID resource locator', () => {",
+     "assertions": [
+      "8: expect(parseEmbedTarget(`#/organization/northstar/dashboard/${dashboard}`))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 12,
+     "declaration": "it('round-trips permitted sample filters without authorization or arbitrary query keys', () => {",
+     "assertions": [
+      "15: expect(hash).toBe(`#/organization/northstar/dashboard/${dashboard}?period=3m&channel=Organic+search`);",
+      "16: expect(parseEmbedTarget(hash)).toEqual(target);",
+      "17: expect(formatEmbedTarget({ ...target, filters: { period: '12m', channel: null } }))"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/insightHandoff.test.ts",
+   "blob": "c427a6685dc7e22b06109ee5fbb608f8ca426ae6",
+   "capability": "Insight handoff",
+   "cases": [
+    {
+     "line": 18,
+     "declaration": "it('links only to the existing organization-scoped saved dashboard route', () => {",
+     "assertions": [
+      "19: expect(link).toBe('https://example.test/app#/organization/northstar/dashboard/a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3441');",
+      "20: expect(link).not.toContain('?');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 23,
+     "declaration": "it('describes independent sample selection and states missing filters explicitly', () => {",
+     "assertions": [
+      "24: expect(viewingScope(defaultConsumerFilters, dashboard.widgets)).toEqual([",
+      "28: expect(viewingScope({ period: '3m', channel: 'Direct' }, dashboard.widgets)).toEqual([",
+      "32: expect(viewingScope({ period: '3m', channel: 'Direct' }, dashboard.widgets.slice(0, 1))).toEqual(["
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 37,
+     "declaration": "it('warns that a copied dashboard link never includes transient selections or access rights', () => {",
+     "assertions": [
+      "39: expect(note).toContain('Organization: Northstar Commerce');",
+      "40: expect(note).toContain('Dashboard: Business performance');",
+      "41: expect(note).toContain('Commerce: Final 3 sample months (year unspecified)');",
+      "42: expect(note).toContain('Marketing channels: Direct (no dates)');",
+      "43: expect(note).toContain('not preserved by this link');",
+      "44: expect(note).toContain('requires authorization');",
+      "45: expect(note).toContain(link);",
+      "46: expect(note).not.toContain('2026-01-02');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 49,
+     "declaration": "it('includes UX-9 meaning, limitations, filter-aware coverage, and exact fictional chart values', () => {",
+     "assertions": [
+      "51: expect(note).toContain('Visualization: Revenue over time');",
+      "52: expect(note).toContain('Metric: Revenue (USD)');",
+      "53: expect(note).toContain('Oct–Dec (3 fictional sample months; year unspecified)');",
+      "54: expect(note).toContain('Oct: $41,400');",
+      "55: expect(note).toContain('Dec: $48,300');",
+      "56: expect(note).not.toContain('Jan: $18,400');",
+      "57: expect(note).toContain('channel filter does not apply to commerce');",
+      "58: expect(note).toContain('no customer data, live connection or refresh timestamp');",
+      "59: expect(note).toContain('not preserved by this link');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 62,
+     "declaration": "it('refuses to fabricate unknown insight values and does not blend rates', () => {",
+     "assertions": [
+      "64: expect(insightHandoffNote(dashboard, 'Northstar Commerce', unavailable, defaultConsumerFilters, link)).toBeNull();",
+      "67: expect(note).toContain('Direct: 5.4%');",
+      "68: expect(note).toContain('Adding or averaging rates cannot establish a combined rate');",
+      "69: expect(note).not.toContain('Total conversion:');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 72,
+     "declaration": "it('keeps the saved link unpinned while identifying the revision displayed to the sender', () => {",
+     "assertions": [
+      "75: expect(dashboardHandoffLink('https://example.test', '/app', newer)).toBe(earlierLink);",
+      "76: expect(earlierLink).not.toContain('revision');",
+      "79: expect(earlierNote).toContain('Saved revision shown to sender: 1');",
+      "80: expect(earlierNote).toContain('link may open a newer saved revision');",
+      "81: expect(earlierNote).toContain('not a live or automatically updated report');",
+      "82: expect(newerNote).toContain('Saved revision shown to sender: 2');",
+      "83: expect(newerNote).toContain('Dashboard: Revised business performance');",
+      "84: expect(earlierNote).not.toContain('Saved revision shown to sender: 2');",
+      "85: expect(earlierNote).toContain(earlierLink);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 88,
+     "declaration": "it('labels exact fictional insight values with the sender-viewed saved revision', () => {",
+     "assertions": [
+      "91: expect(snapshot).toContain('Saved revision shown to sender: 1');",
+      "92: expect(snapshot).toContain('link may open a newer saved revision');",
+      "93: expect(snapshot).toContain('not a live or automatically updated report');",
+      "94: expect(snapshot).toContain('Oct: $41,400');",
+      "95: expect(snapshot).toContain('Marketing channels: Direct');",
+      "96: expect(snapshot).not.toContain('refresh timestamp: 2026');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/organizationRoute.test.ts",
+   "blob": "71fce7b7304d36ba31cf0918d143165166be473a",
+   "capability": "Organization route safety",
+   "cases": [
+    {
+     "line": 5,
+     "declaration": "it('keeps an explicit organization on overview, dashboards, sources and settings', () => {",
+     "assertions": [
+      "7: expect(parseOrganizationHash(organizationHash('tenant-a', page))).toEqual({ organizationId: 'tenant-a', page });"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 11,
+     "declaration": "it('preserves existing dashboard deep links', () => {",
+     "assertions": [
+      "12: expect(parseOrganizationHash('#/organization/tenant-a/dashboard/abc-123')).toEqual({ organizationId: 'tenant-a', page: 'dashboards', id: 'abc-123' });",
+      "13: expect(organizationHash('tenant-a', 'dashboards', 'abc-123')).toBe('#/organization/tenant-a/dashboard/abc-123');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 16,
+     "declaration": "it('rejects malformed or ambiguous scoped routes', () => {",
+     "assertions": [
+      "18: expect(parseOrganizationHash(hash)).toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 22,
+     "declaration": "it('recognizes only the existing standalone hash grammar for safe recovery', () => {",
+     "assertions": [
+      "25: expect(isSupportedAppHash(hash)).toBe(true);",
+      "29: expect(isSupportedAppHash(hash)).toBe(false);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/sampleHostRoute.test.ts",
+   "blob": "74a0e0c21fe352a37f631c380afb0e74a015b6e4",
+   "capability": "Host routing and authorized discovery",
+   "cases": [
+    {
+     "line": 5,
+     "declaration": "it('recognizes account, discovery and a shareable dashboard link', () => {",
+     "assertions": [
+      "6: expect(parseHostView('')).toEqual({ page: 'insights', dashboardId: null });",
+      "7: expect(parseHostView('#analytics-section')).toEqual({ page: 'insights', dashboardId: null });",
+      "8: expect(parseHostView('#account-summary')).toEqual({ page: 'account' });",
+      "9: expect(parseHostView(`#insights/${sampleDashboard}`))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 17,
+     "declaration": "it('only accepts organization-scoped, named GUID dashboards from API discovery', () => {",
+     "assertions": [
+      "18: expect(isHostDashboard({ id: sampleDashboard, name: 'Business performance', organizationId: 'northstar' })).toBe(true);",
+      "19: expect(isHostDashboard({ id: sampleDashboard, name: 'Other', organizationId: 'isolated' })).toBe(false);",
+      "20: expect(isHostDashboard({ id: '../../../', name: 'Bad', organizationId: 'northstar' })).toBe(false);",
+      "21: expect(isHostDashboard({ id: sampleDashboard, name: '', organizationId: 'northstar' })).toBe(false);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,778 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Machine-assisted source declaration, assertion and boundary index, not completed semantic audit. Read multiline assertions and helper definitions at baseline. Counts refer to declarations.",
+ "files": [
+  {
+   "path": "web/e2e/customerTasks.spec.ts",
+   "blob": "e4236034622046496be0d5d5ef7ca81e20013cd9",
+   "capability": "Cross-capability customer journeys",
+   "cases": [
+    {
+     "declaration": "test('SC-UX11-01/02/03/04/05: first value through exact data, independent filters, dense index and saved handoff', async ({ page }, info) => {",
+     "line": 61,
+     "assertions": [
+      "75: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "76: await expect(page.getByText(/fictional sample metrics/)).toBeVisible();",
+      "78: await expect(page.getByRole('heading', { name: 'How is revenue changing?' })).toBeFocused();",
+      "81: await expect(chart.getByRole('heading', { name: 'Revenue over time' })).toBeFocused();",
+      "83: await expect(chart.getByText('Cannot conclude')).toBeVisible();",
+      "85: await expect(chart.getByRole('table').getByText('$18,400')).toBeVisible();",
+      "88: await expect(chart.getByRole('table').getByText('$41,400')).toBeVisible();",
+      "89: await expect(chart.getByRole('table').getByText('$18,400')).toHaveCount(0);",
+      "90: await expect(page.getByRole('article', { name: 'Orders by channel' }).locator('.chart-insight')).toContainText('1,530');",
+      "92: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();",
+      "93: await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');",
+      "95: await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');",
+      "98: await expect(page.getByRole('heading', { name: 'Insight 12' })).toBeFocused();",
+      "100: await expect(page.getByRole('button', { name: '12. Insight 12' })).toBeFocused();",
+      "104: await expect(dialog.getByRole('textbox', { name: /Context note/ })).toHaveValue(/Jan: \\$18,400/);",
+      "105: await expect(dialog).toContainText('default filters');",
+      "109: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');",
+      "111: expect(errors).toEqual([]);",
+      "112: expect(milestones).toHaveLength(12);",
+      "113: expect(scriptedInteractions).toHaveLength(15);"
+     ],
+     "boundaries": [
+      "73: await page.setViewportSize({ width: 1440, height: 900 });",
+      "74: await page.goto('/');",
+      "108: await interact('Reload saved dashboard', () => page.reload()); milestones.push('Revisit saved dashboard with default filters');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX11-06: dashboard retrieval failure is not misrepresented as empty content; retry restores it', async ({ page }) => {",
+     "line": 123,
+     "assertions": [
+      "126: await expect(page.getByRole('heading', { name: 'Dashboards temporarily unavailable' })).toBeVisible();",
+      "127: await expect(page.getByText('No matching dashboard here yet')).toHaveCount(0);",
+      "128: await expect(page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: /Dashboards/ })).toHaveText('Dashboards');",
+      "129: await expect(page.getByRole('alert')).not.toContainText('Request failed (503)');",
+      "131: await expect(page.getByRole('button', { name: /Explore answer: How is revenue changing/ })).toBeVisible();",
+      "132: await expect(page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: /Dashboards/ })).toHaveText('Dashboards1');"
+     ],
+     "boundaries": [
+      "125: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX11-06/07: stale dashboard data is hidden after a failed refresh, and navigation gives a focused recovery', async ({ page }) => {",
+     "line": 135,
+     "assertions": [
+      "142: await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "145: await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();",
+      "148: await expect(page.getByRole('heading', { name: 'Dashboards temporarily unavailable' })).toBeVisible();",
+      "149: await expect(page.getByRole('heading', { name: 'Business performance' })).toHaveCount(0);",
+      "150: expect(writes).toContain(`DELETE /api/organizations/northstar/dashboards/${dashboardId}`);",
+      "154: await expect(page.getByRole('heading', { name: 'Business performance' })).toBeFocused();",
+      "157: await expect(page.getByRole('button', { name: 'View dashboard' })).toBeFocused();",
+      "160: await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeFocused();"
+     ],
+     "boundaries": [
+      "139: await page.route('**/api/organizations/northstar/dashboards', route => failList",
+      "141: await page.goto('/#/organization/northstar/dashboards');",
+      "158: await page.goto('/#/organization/northstar/dashboard/not-found');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX11-06/07: malformed destination recovers without echoing the URL or crossing organizations', async ({ page }) => {",
+     "line": 163,
+     "assertions": [
+      "166: await expect(page.getByText(/requested destination is invalid/)).toBeVisible();",
+      "167: await expect(page).toHaveURL(/#\\/organization\\/northstar\\/overview$/);",
+      "169: await expect(page.getByRole('combobox', { name: 'Switch organization' })).toHaveValue('isolated');",
+      "170: await expect(page.locator('.crumb-root')).toHaveText('Isolated Tenant');",
+      "171: await expect(page.getByText('Isolated report')).toBeVisible();",
+      "173: await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeFocused();",
+      "174: await expect(page.getByRole('heading', { name: 'Business performance' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "165: await page.goto('/#/organization/northstar/not-a-page');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX11-05/07: external location changes drop the previous ephemeral question guide', async ({ page }) => {",
+     "line": 177,
+     "assertions": [
+      "181: await expect(page.getByRole('heading', { name: 'How is revenue changing?' })).toBeFocused();",
+      "183: await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeFocused();",
+      "185: await expect(page.getByRole('heading', { name: 'Business performance' })).toBeFocused();",
+      "186: await expect(page.getByRole('heading', { name: 'How is revenue changing?' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "179: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX11-08: same-origin host supports read-only exact values, filter recovery and insight handoff', async ({ page }, info) => {",
+     "line": 189,
+     "assertions": [
+      "194: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "197: await expect(chart.getByRole('table').getByText('$18,400')).toBeVisible();",
+      "200: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();",
+      "203: await expect(frame.getByRole('dialog', { name: 'Share insight context' })).toBeVisible();",
+      "205: await expect(frame.getByRole('button', { name: /New dashboard|Edit dashboard|Save changes/ })).toHaveCount(0);",
+      "206: await expect(page.locator('iframe.host-frame')).toHaveAttribute('referrerpolicy', 'no-referrer');",
+      "207: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "192: await page.goto('/sample-host.html');",
+      "193: const frame = page.frameLocator('iframe.host-frame');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test(`SC-UX11-01/06: focused recovery and reflow at ${name} ${width}x${height}`, async ({ page }, info) => {",
+     "line": 211,
+     "assertions": [
+      "215: await expect(page.getByRole('heading', { name: 'Dashboard not found' })).toBeVisible();",
+      "218: await expect(heading).toBeFocused();",
+      "219: expect(await heading.evaluate(element => getComputedStyle(element).outlineStyle)).not.toBe('none');",
+      "222: const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();",
+      "223: expect(scan.violations).toEqual([]);"
+     ],
+     "boundaries": [
+      "213: await page.setViewportSize({ width, height });",
+      "214: await page.goto(`/#/organization/northstar/dashboard/not-found`);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX11-06: forced colors keep errors and recovery operable', async ({ page }, info) => {",
+     "line": 227,
+     "assertions": [
+      "231: await expect(page.getByRole('heading', { name: 'Dashboards temporarily unavailable' })).toBeVisible();",
+      "234: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();"
+     ],
+     "boundaries": [
+      "229: await page.emulateMedia({ forcedColors: 'active' });",
+      "230: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX11-04: genuine Chromium 200% and 400% tab zoom preserves dense navigation', async ({}, info) => {",
+     "line": 238,
+     "assertions": [
+      "264: await expect.poll(async () => (await metrics()).width).toBeLessThanOrEqual(baseline.width / factor + 2);",
+      "266: expect(actual).toBeCloseTo(factor, 1);",
+      "267: expect(observed.dpr / baseline.dpr).toBeCloseTo(factor, 1);",
+      "268: expect(observed.scroll).toBeLessThanOrEqual(observed.width + 1);",
+      "271: await expect(page.getByRole('heading', { name: 'Insight 12' })).toBeFocused();",
+      "279: await expect(page.getByRole('button', { name: '12. Insight 12' })).toBeFocused();"
+     ],
+     "boundaries": [
+      "240: const context = await chromium.launchPersistentContext('', { channel: 'chromium',",
+      "248: await page.goto(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${dashboardId}`);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/exp02Calendar.spec.ts",
+   "blob": "148d9f4a37a4c691fde6d165f822cb03ebce6836",
+   "capability": "Reporting calendar",
+   "cases": [
+    {
+     "declaration": "test('embedded calendar applies one range, preserves existing sample and clears without API writes', async ({ page }, info) => {",
+     "line": 13,
+     "assertions": [
+      "29: await expect(panel).toHaveAttribute('open', '');",
+      "31: await expect(period).toBeVisible();",
+      "35: await expect(period.locator('option')).toHaveCount(13);",
+      "40: await expect(scope).toContainText('2026-11-16T00:00:00.000Z');",
+      "41: await expect(scope).toContainText('2026-11-17T00:00:00.000Z');",
+      "42: await expect(panel.getByRole('region', { name: 'Sales revenue' })).toContainText('$20');",
+      "43: await expect(panel.getByRole('region', { name: 'Support requests' })).toContainText('1 fictional records');",
+      "44: await expect(panel.getByRole('region', { name: 'Undated inventory' })).toContainText('42');",
+      "45: await expect(revenue).toHaveText(before!);",
+      "50: expect(sizes.scroll).toBeLessThanOrEqual(sizes.width + 1);",
+      "51: expect(sizes.doc).toBeLessThanOrEqual(sizes.viewport + 1);",
+      "61: await expect(panel.getByRole('alert')).toContainText('does not exist');",
+      "62: await expect(scope).toContainText('2026-11-16T00:00:00.000Z');",
+      "64: await expect(period).toBeFocused();",
+      "65: await expect(panel.getByRole('combobox', { name: 'Timezone', exact: true })).toHaveValue('UTC');",
+      "67: const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "68: expect(axe.violations.map(x => x.id)).toEqual([]);",
+      "73: await expect(period).toBeFocused();",
+      "74: await expect(scope).toContainText('No calendar restriction');",
+      "75: await expect(panel.getByRole('region', { name: 'Sales revenue' })).toContainText('$345');",
+      "77: await expect(panel.locator('summary')).toContainText('All time');",
+      "78: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "16: await page.route('**/api/**', route => {",
+      "24: await page.setViewportSize({ width: 1440, height: 900 });",
+      "25: await page.goto('/sample-host.html');",
+      "26: const frame = page.frameLocator('.host-frame');",
+      "47: await page.setViewportSize({ width, height: 900 });",
+      "66: await page.emulateMedia({ forcedColors: 'active' });",
+      "76: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/explore.spec.ts",
+   "blob": "3521f506589ca7eb7a678cfa2a41b97d39d5f5ed",
+   "capability": "Exploration",
+   "cases": [
+    {
+     "declaration": "test('editor explores sample data and saves a dashboard', async ({ page }) => {",
+     "line": 3,
+     "assertions": [
+      "5: await expect(page.getByRole('heading', { name: 'Turn data into a story.' })).toBeVisible();",
+      "6: await expect(page.getByText('These built-in datasets are not connected to customer databases.')).toBeVisible();",
+      "8: await expect(page.getByRole('button', { name: /Marketing channels/ })).toHaveAttribute('aria-pressed', 'true');",
+      "10: await expect(page.getByRole('textbox', { name: 'Visualization title' })).toHaveValue('Sessions by channel');",
+      "13: await expect(page.getByRole('img', { name: /Traffic sources bar chart/ })).toBeVisible();",
+      "16: await expect(page.getByRole('heading', { name: 'Acquisition overview' })).toBeVisible();",
+      "17: await expect(page.getByText('Traffic sources', { exact: true })).toBeVisible();",
+      "20: await expect(dialog.locator('.handoff-explainer')).toContainText(/saved dashboard.*default filters/);",
+      "21: await expect(dialog.locator('.share-link-field')).toHaveValue(/#\\/organization\\/northstar\\/dashboard\\//);",
+      "23: await expect(dialog.getByRole('status')).toContainText(/copied|copy it manually/);",
+      "26: await expect(page.getByText('Traffic sources', { exact: true })).toBeVisible();"
+     ],
+     "boundaries": [
+      "4: await page.goto('/#/explore');",
+      "25: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('viewer can explore but cannot create a dashboard', async ({ page }) => {",
+     "line": 29,
+     "assertions": [
+      "34: await expect(page.getByRole('button', { name: /Commerce performance/ })).toBeVisible();",
+      "35: await expect(page.getByText('Ask an editor to create dashboards.')).toBeVisible();",
+      "36: await expect(page.getByRole('button', { name: 'Create dashboard' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "30: await page.route('**/api/organizations', route => route.fulfill({ json: [",
+      "33: await page.goto('/#/explore');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('exploration is keyboard-operable on a narrow viewport', async ({ page }) => {",
+     "line": 39,
+     "assertions": [
+      "42: await expect(page.getByRole('heading', { name: 'Turn data into a story.' })).toBeVisible();",
+      "45: await expect(page.getByRole('button', { name: /Marketing channels/ })).toHaveAttribute('aria-pressed', 'true');",
+      "47: await expect(page.getByRole('combobox', { name: 'Chart type' })).toBeFocused();",
+      "48: await expect(page.getByRole('img', { name: /Orders by channel area chart/ })).toBeVisible();"
+     ],
+     "boundaries": [
+      "40: await page.setViewportSize({ width: 390, height: 844 });",
+      "41: await page.goto('/#/explore');",
+      "44: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('preview date range is visibly temporary and updates the underlying sample rows', async ({ page }) => {",
+     "line": 51,
+     "assertions": [
+      "54: await expect(page.getByText('These fictional Jan–Dec months have no year.')).toBeVisible();",
+      "55: await expect(page.getByRole('heading', { name: 'Underlying sample records (3)' })).toBeVisible();",
+      "56: await expect(page.getByRole('cell', { name: 'Oct' })).toBeVisible();",
+      "57: await expect(page.getByRole('cell', { name: 'Jan' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "52: await page.goto('/#/explore');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('Explore creates a valid scatter from two measures in the same original rows', async ({ page }) => {",
+     "line": 60,
+     "assertions": [
+      "65: await expect(horizontal).toHaveValue('orders');",
+      "66: await expect(title).toHaveValue('Revenue versus Orders');",
+      "68: await expect(title).toHaveValue('Revenue versus Customers');",
+      "69: await expect(page.getByRole('img', { name: /scatter chart comparing Revenue with Customers/ })).toBeVisible();",
+      "71: await expect(table).toContainText('280');",
+      "72: await expect(table).toContainText('18,400');",
+      "75: await expect(title).toHaveValue('Revenue versus customers');",
+      "77: await expect(title).toHaveValue('Revenue versus customers');",
+      "82: await expect(page).toHaveURL(/#\\/organization\\/northstar\\/dashboard\\/[0-9a-f-]+/);",
+      "83: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "84: await expect(page.getByRole('heading', { name: 'Revenue versus customers' })).toBeVisible();",
+      "86: await expect(page.getByRole('heading', { name: 'Revenue versus customers' })).toBeVisible().catch(async error => {",
+      "95: await expect(page.getByRole('article', { name: 'Revenue versus customers' }).locator('.recharts-scatter-symbol')).toHaveCount(12);"
+     ],
+     "boundaries": [
+      "61: await page.goto('/#/explore');",
+      "85: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('Explore blocks non-additive pie and donut configurations before saving', async ({ page }) => {",
+     "line": 98,
+     "assertions": [
+      "103: await expect(page.getByRole('alert')).toContainText('cannot be summed');",
+      "104: await expect(page.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();",
+      "106: await expect(page.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();",
+      "108: await expect(page.getByRole('alert')).toHaveCount(0);",
+      "109: await expect(page.getByRole('button', { name: 'Create dashboard' })).toBeEnabled();"
+     ],
+     "boundaries": [
+      "99: await page.goto('/#/explore');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/handoff.spec.ts",
+   "blob": "c265b80fcc12bf935576822ba83f768454ca7359",
+   "capability": "Insight handoff",
+   "cases": [
+    {
+     "declaration": "test('SC-UX10-01/02/03: discover, share, interpret, keyboard, copy failure, and revisit', async ({ page }, info) => {",
+     "line": 65,
+     "assertions": [
+      "76: await expect(dialog).toBeVisible();",
+      "77: await expect(dialog.getByText('Northstar Commerce', { exact: true })).toBeVisible();",
+      "78: await expect(dialog.getByText(/default filters for people authorized/)).toBeVisible();",
+      "79: await expect(dialog.locator('.share-link-field')).toBeFocused();",
+      "80: await expect(dialog.locator('.share-link-field')).toHaveValue(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${id}`);",
+      "82: await expect(catalogShare).toBeFocused();",
+      "85: await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "92: await expect(context).toHaveValue(/Commerce: Final 3 sample months/);",
+      "93: await expect(context).toHaveValue(/Marketing channels: Direct \\(no dates\\)/);",
+      "94: await expect(context).toHaveValue(/not preserved by this link/);",
+      "97: await expect(dialog.getByRole('status')).toContainText('copy it manually');",
+      "98: await expect(context).toBeFocused();",
+      "101: await expect(share).toBeFocused();",
+      "109: await expect(note).toHaveValue(/Oct: \\$41,400/);",
+      "110: await expect(note).toHaveValue(/Dec: \\$48,300/);",
+      "111: await expect(note).not.toHaveValue(/Jan: \\$18,400/);",
+      "112: await expect(note).toHaveValue(/channel filter does not apply to commerce/);",
+      "116: await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');",
+      "117: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');",
+      "118: await expect(page.getByRole('article', { name: 'Revenue over time' })).toContainText('Jan–Dec');",
+      "119: expect(errors).toEqual([]);"
+     ],
+     "boundaries": [
+      "70: await page.goto('/');",
+      "74: await page.keyboard.press('Enter'); steps.push('Open catalog share with keyboard');",
+      "89: await share.focus(); await page.keyboard.press('Enter');",
+      "115: await page.reload(); steps.push('Revisit saved dashboard and observe default filters');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX10-04/05: dense keyboard index, organization reset, invalid location recovery', async ({ page }, info) => {",
+     "line": 128,
+     "assertions": [
+      "135: await expect(last.getByRole('heading', { name: 'Regional revenue' })).toBeFocused();",
+      "137: await expect(page.getByRole('button', { name: '12. Regional revenue' })).toBeFocused();",
+      "144: await expect(dialog).toContainText('Isolated Tenant');",
+      "145: await expect(dialog).not.toContainText('Northstar Commerce');",
+      "148: await expect(page.getByText(/requested organization is unavailable/)).toBeVisible();",
+      "149: await expect(page).toHaveURL(/#\\/organization\\/northstar\\/overview$/);",
+      "151: await expect(page.getByRole('heading', { name: 'Dashboard not found' })).toBeVisible();",
+      "153: await expect(page.getByRole('heading', { name: 'Dashboards' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "130: await page.goto(`/#/organization/northstar/dashboard/${id}`);",
+      "133: await page.keyboard.press('Enter');",
+      "147: await page.goto(`/#/organization/unknown/dashboard/${id}`);",
+      "150: await page.goto(`/#/organization/isolated/dashboard/${id}`);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX10-06: same-origin framed viewer can copy context without authoring', async ({ page }, info) => {",
+     "line": 156,
+     "assertions": [
+      "165: await expect(dialog).toContainText('Northstar Commerce');",
+      "167: await expect(dialog.getByRole('textbox', { name: /Context note/ })).toHaveValue(/Jan: \\$18,400/);",
+      "168: await expect(frame.getByRole('button', { name: /Edit dashboard|Save changes|New dashboard/ })).toHaveCount(0);",
+      "170: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "159: await page.goto('/sample-host.html');",
+      "160: const frame = page.frameLocator('iframe.host-frame');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test(`SC-UX10-07: accessible context handoff at ${width}×${height}`, async ({ page }, info) => {",
+     "line": 178,
+     "assertions": [
+      "184: await expect(dialog.locator('.share-link-field')).toBeFocused();",
+      "187: const result = await new AxeBuilder({ page }).include('.share-context-modal').analyze();",
+      "188: expect(result.violations).toEqual([]);"
+     ],
+     "boundaries": [
+      "180: await page.setViewportSize({ width, height });",
+      "181: await page.goto(`/#/organization/northstar/dashboard/${id}`);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX10-07: forced colors preserve labels, scope and focus', async ({ page }, info) => {",
+     "line": 194,
+     "assertions": [
+      "201: await expect(dialog.getByText(/not saved in the link/)).toBeVisible();"
+     ],
+     "boundaries": [
+      "196: await page.emulateMedia({ forcedColors: 'active' });",
+      "197: await page.goto(`/#/organization/northstar/dashboard/${id}`);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX10-07: genuine native Chromium zoom at 200%/400% preserves handoff and focus', async ({}, info) => {",
+     "line": 206,
+     "assertions": [
+      "234: await expect.poll(async () => (await metrics()).viewport).toBeLessThanOrEqual(baseline.viewport / factor + 2);",
+      "236: expect(actual).toBeCloseTo(factor, 1);",
+      "237: expect(observed.dpr / baseline.dpr).toBeCloseTo(factor, 1);",
+      "238: expect(observed.overflow).toBe(false);",
+      "240: await expect(page.getByRole('dialog', { name: 'Share dashboard' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "208: const context = await chromium.launchPersistentContext('', {",
+      "217: await page.goto(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${id}`);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/interpretation.spec.ts",
+   "blob": "a79c8c547b3edc3739c66d892ef77a4a40306b3a",
+   "capability": "Interpretation",
+   "cases": [
+    {
+     "declaration": "test('SC-UX9-01/02/03/08: precise overview, context, filtering, exact values and keyboard inspection', async ({ page }, info) => {",
+     "line": 68,
+     "assertions": [
+      "75: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "77: await expect(figures).toHaveCount(4);",
+      "78: await expect(figures.nth(0)).toContainText('$375.3K');",
+      "79: await expect(figures.nth(1)).toContainText('7,891');",
+      "80: await expect(figures.nth(2)).toContainText('4,994');",
+      "81: await expect(figures.nth(3)).toContainText('26,740');",
+      "82: await expect(page.getByText('vs. previous year')).toHaveCount(0);",
+      "84: await expect(figures.nth(0)).toContainText('Exact value: $375,300');",
+      "86: await expect(figures.nth(0)).toContainText('$128.3K');",
+      "87: await expect(figures.nth(1)).toContainText('2,623');",
+      "88: await expect(figures.nth(3)).toContainText('26,740');",
+      "93: await expect(chart).toContainText('Jan–Dec (12 fictional sample months; year unspecified)');",
+      "97: await expect(chart.locator('.insight-context')).toHaveAttribute('open', '');",
+      "98: await expect(chart).toContainText('no customer data, live connection or refresh timestamp');",
+      "99: await expect(chart).toContainText('channel filter does not apply');",
+      "102: await expect(chart.getByRole('table')).toBeVisible();",
+      "103: await expect(chart.getByRole('row', { name: /Jan.*18,400/ })).toBeVisible();",
+      "105: await expect(chart).toContainText('Oct–Dec (3 fictional sample months; year unspecified)');",
+      "106: await expect(chart.getByRole('row', { name: /Oct.*41,400/ })).toBeVisible();",
+      "107: await expect(chart.getByRole('row', { name: /Jan.*18,400/ })).toHaveCount(0);",
+      "109: await expect(channels).toContainText('5 fictional channels; no dates');",
+      "111: await expect(channels).toContainText('Direct (1 of 5 fictional channels; no dates)');",
+      "112: await expect(channels).toContainText('Showing Direct: 1,530 orders');",
+      "113: await expect(chart).toContainText('Oct–Dec (3 fictional sample months');",
+      "116: await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();",
+      "117: await expect(channels).toContainText('Highest: Organic search, 1,820 orders');",
+      "119: await expect(rate).toContainText('Combined rate unavailable');",
+      "120: await expect(rate).not.toContainText('21.3%');",
+      "122: expect(errors).toEqual([]);"
+     ],
+     "boundaries": [
+      "70: await page.setViewportSize({ width: 1440, height: 900 });",
+      "74: await page.goto('/');",
+      "91: await page.goto(`/#/organization/northstar/dashboard/${dashboardId}`);",
+      "96: await page.keyboard.press('Enter');",
+      "101: await page.keyboard.press('Enter');",
+      "115: await page.keyboard.press('Enter'); steps.push('Remove channel filter and restore focus');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX9-04/05/06: unavailable answer, tenant switch, dense keyboard index and focus return', async ({ page }, info) => {",
+     "line": 131,
+     "assertions": [
+      "134: await expect(page.locator('.canvas-item')).toHaveCount(12);",
+      "140: await expect(last.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();",
+      "142: await expect(page.getByRole('button', { name: '12. Channel details — regional' })).toBeFocused();",
+      "145: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "146: await expect(page.getByRole('heading', { name: 'Business performance' })).toHaveCount(0);",
+      "148: await expect(page.getByRole('heading', { name: 'Isolated insights' })).toBeVisible();",
+      "149: await expect(page.getByText('Insight unavailable.')).toBeVisible();",
+      "150: await expect(page.getByText('No value has been inferred.', { exact: false })).toBeVisible();",
+      "151: await expect(page.getByText('At a glance:')).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "133: await page.goto(`/#/organization/northstar/dashboard/${dashboardId}`);",
+      "138: await page.keyboard.press('Enter');",
+      "147: await page.goto('/#/organization/isolated/dashboard/isolated-dashboard');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX9-07: same-origin host keeps interpretation read-only, keyboard-accessible and transparent', async ({ page }, info) => {",
+     "line": 155,
+     "assertions": [
+      "160: await expect(frame.getByRole('heading', { name: 'Business performance' })).toBeVisible();",
+      "164: await expect(chart.locator('.insight-context')).toHaveAttribute('open', '');",
+      "166: await expect(chart.getByRole('table')).toBeVisible();",
+      "167: await expect(frame.getByText('Sample freshness unavailable')).toBeVisible();",
+      "168: await expect(frame.getByRole('button', { name: /Edit dashboard|Save changes|New dashboard/ })).toHaveCount(0);",
+      "170: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "158: await page.goto('/sample-host.html');",
+      "159: const frame = page.frameLocator('iframe.host-frame');",
+      "163: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test(`SC-UX9-05: interpretation reflows at ${width}×${height}`, async ({ page }, info) => {",
+     "line": 177,
+     "assertions": [
+      "186: const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "187: expect(scan.violations, JSON.stringify(scan.violations.map(item => item.id))).toEqual([]);"
+     ],
+     "boundaries": [
+      "179: await page.setViewportSize({ width, height });",
+      "180: await page.goto(`/#/organization/northstar/dashboard/${dashboardId}`);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX9-05: forced colors retains meaningful text and disclosure focus', async ({ page }, info) => {",
+     "line": 191,
+     "assertions": [
+      "198: await expect(disclosure).toBeFocused();"
+     ],
+     "boundaries": [
+      "193: await page.setViewportSize({ width: 390, height: 844 });",
+      "194: await page.emulateMedia({ forcedColors: 'active' });",
+      "195: await page.goto(`/#/organization/northstar/dashboard/${dashboardId}`);",
+      "199: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('SC-UX9-05/09: genuine Chromium 200% and 400% tab zoom reveals context without overflow', async ({}, info) => {",
+     "line": 204,
+     "assertions": [
+      "216: await expect(page.getByRole('article', { name: 'Revenue over time' })).toBeVisible();",
+      "232: await expect.poll(() => page.evaluate(() => innerWidth)).toBeLessThanOrEqual(baseline.innerWidth / factor + 2);",
+      "234: expect(actual).toBeCloseTo(factor, 1);",
+      "235: expect(measurement.dpr / baseline.dpr).toBeCloseTo(factor, 1);",
+      "236: expect(measurement.scrollWidth).toBeLessThanOrEqual(measurement.cssWidth + 1);",
+      "239: await expect(disclosure).toBeFocused();"
+     ],
+     "boundaries": [
+      "206: const context = await chromium.launchPersistentContext('', {",
+      "215: await page.goto(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${dashboardId}`);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux35FilterScope.spec.ts",
+   "blob": "3769107a6d2ca554c6cc4c7c12a76bd23a131f5a",
+   "capability": "Filter applicability",
+   "cases": [
+    {
+     "declaration": "test('mixed 18-widget dashboard shows precise filter eligibility, unchanged sources and synchronized data across widths', async ({ page }, info) => {",
+     "line": 73,
+     "assertions": [
+      "81: await expect(frame.locator('.canvas-item')).toHaveCount(18);",
+      "88: await expect(dateControl).toHaveValue('12m');",
+      "89: await expect(channelControl).toHaveValue('');",
+      "94: expect(channelBefore).toBe(5);",
+      "97: await expect(revenue.locator('.metric-number')).toHaveText('$128.3K');",
+      "98: await expect(table.locator('tbody tr')).toHaveCount(5);",
+      "100: expect(afterPeriod).not.toBe(before);",
+      "103: await expect(revenue.locator('.metric-number')).toHaveText('$128.3K');",
+      "104: await expect(table.locator('tbody tr')).toHaveCount(1);",
+      "105: await expect(table.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();",
+      "106: await expect(frame.locator('.filter-impact')).toContainText('applies to 9 commerce visualizations; 9 marketing visualizations unchanged (no dates)');",
+      "107: await expect(frame.locator('.filter-impact')).toContainText('applies to 9 marketing visualizations; 9 commerce visualizations unchanged (no channel attribution)');",
+      "108: await expect(frame.getByLabel('Active filters')).toContainText('2 active filters');",
+      "109: await expect(frame.locator('.widget-filter-applied')).toHaveCount(18);",
+      "110: await expect(frame.locator('.widget-filter-unaffected')).toHaveCount(18);",
+      "111: await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Total revenue 1', exact: true })).toBeVisible();",
+      "112: await expect(revenue.getByText('Direct does not apply; commerce records have no channel attribution.')).toBeVisible();",
+      "113: await expect(frame.getByRole('article', { name: 'Traffic sources 4' }).getByText('marketing channel records have no dates.')).toBeVisible();",
+      "115: expect(size.hostWidth - size.hostViewport, 'host document horizontal overflow').toBeLessThanOrEqual(1);",
+      "116: expect(size.childWidth - size.childViewport, 'embedded document horizontal overflow').toBeLessThanOrEqual(1);",
+      "117: expect(size.filterScrollWidth - size.filterWidth, 'filter controls horizontal overflow').toBeLessThanOrEqual(2);",
+      "128: await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toBeFocused();",
+      "129: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "130: await expect(frame.locator('.filter-impact')).not.toContainText('Reporting period:');",
+      "131: await expect(frame.locator('.filter-impact')).toContainText('Marketing channel:');",
+      "134: expect(outline).not.toBe('none');",
+      "135: const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "136: expect(axe.violations.map(item => item.id)).toEqual([]);",
+      "142: expect(writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "75: const { writes } = await mockApi(page);",
+      "76: const frame = page.frameLocator('.host-frame');",
+      "79: await page.setViewportSize({ width, height: 900 });",
+      "80: await page.goto('/sample-host.html');",
+      "124: await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });",
+      "127: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('keyboard recovery, per-card resets, full defaults and host reload preserve only dashboard view filters', async ({ page }, info) => {",
+     "line": 145,
+     "assertions": [
+      "159: await expect(revenue.getByRole('heading', { name: 'Total revenue 1' })).toBeFocused();",
+      "160: await expect(date).toHaveValue('12m');",
+      "161: await expect(channel).toHaveValue('Direct');",
+      "167: await expect(date).toBeFocused();",
+      "168: await expect(date).toHaveValue('12m');",
+      "169: await expect(channel).toHaveValue('');",
+      "170: await expect(frame.getByLabel('Active filters')).toContainText('All sample records');",
+      "171: await expect(frame.locator('.filter-impact')).toHaveCount(0);",
+      "172: await expect(frame.locator('.widget-filter-context')).toHaveCount(0);",
+      "177: await expect(date).toHaveValue('3m');",
+      "178: await expect(channel).toHaveValue('Direct');",
+      "179: await expect(frame.locator('.filter-impact')).toContainText('9 commerce visualizations');",
+      "180: await expect(page.getByRole('navigation', { name: 'Customer dashboards' })).toBeVisible();",
+      "181: await expect(page.getByRole('navigation', { name: 'After the embedded dashboard' })).toBeVisible();",
+      "184: expect(writes).toEqual([]);",
+      "185: expect(requests.some(path => path.includes('/isolated/'))).toBe(false);"
+     ],
+     "boundaries": [
+      "147: const { writes, requests } = await mockApi(page);",
+      "148: await page.setViewportSize({ width: 390, height: 844 });",
+      "149: await page.goto('/sample-host.html');",
+      "150: const frame = page.frameLocator('.host-frame');",
+      "158: await page.keyboard.press('Enter');",
+      "166: await page.keyboard.press('Enter');",
+      "176: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux36Availability.spec.ts",
+   "blob": "37623c1ff2534ea4efd767208b0d8064f4d19dc7",
+   "capability": "Partial availability",
+   "cases": [
+    {
+     "declaration": "test('mixed 12-widget sample keeps valid cards visible, distinguishes errors and survives host layouts', async ({ page }, info) => {",
+     "line": 59,
+     "assertions": [
+      "68: await expect(frame.locator('.canvas-item')).toHaveCount(12);",
+      "69: await expect(frame.locator('[data-availability=\"available\"]')).toHaveCount(9);",
+      "70: await expect(frame.locator('[data-availability=\"unavailable\"]')).toHaveCount(3);",
+      "72: await expect(availability).toContainText('9 of 12 visualizations have usable sample records');",
+      "73: await expect(availability).toContainText('3 are unavailable or unsupported');",
+      "74: await expect(frame.getByRole('article', { name: 'Revenue', exact: true }).locator('.metric-number')).toHaveText('$375.3K');",
+      "75: await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();",
+      "76: await expect(frame.getByRole('article', { name: 'Legacy pipeline' })).toContainText('source unavailable in this sample viewer');",
+      "77: await expect(frame.getByRole('article', { name: 'Unaddable conversion' })).toContainText('cannot be summed');",
+      "78: await expect(frame.getByRole('article', { name: 'Old revenue definition' })).not.toContainText('$0');",
+      "79: await expect(frame.getByRole('article', { name: 'Legacy pipeline' }).getByRole('button', { name: /Retry|Refresh/i })).toHaveCount(0);",
+      "81: await expect(frame.getByRole('article', { name: 'Revenue', exact: true }).locator('.metric-number')).toHaveText('$375.3K');",
+      "82: await expect(frame.getByRole('article', { name: 'Channel details' }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();",
+      "83: await expect(availability).toContainText('9 of 12 visualizations');",
+      "93: expect(bounds.hostOverflow).toBeLessThanOrEqual(1);",
+      "94: expect(bounds.embeddedOverflow).toBeLessThanOrEqual(1);",
+      "95: expect(Math.abs(bounds.iframeHeight - bounds.contentHeight)).toBeLessThanOrEqual(3);",
+      "104: await expect(frame.getByRole('button', { name: 'Reload dashboard definition' })).toBeFocused();",
+      "106: expect(border).not.toBe('none');",
+      "107: const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "108: expect(accessibility.violations.map(violation => violation.id)).toEqual([]);",
+      "114: expect(control.writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "63: const frame = page.frameLocator('.host-frame');",
+      "66: await page.setViewportSize({ width, height: 900 });",
+      "67: await page.goto('/sample-host.html');",
+      "102: await page.emulateMedia({ forcedColors: 'active' });"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('synthetic unmatched channel offers only local clear and returns focus to that card', async ({ page }) => {",
+     "line": 117,
+     "assertions": [
+      "123: await expect(select).toBeVisible();",
+      "132: await expect(card).toContainText('No matching sample data.');",
+      "133: await expect(card).not.toContainText('1,530');",
+      "134: await expect(frame.getByRole('region', { name: 'Visualization availability' })).toContainText('no records matching');",
+      "136: await expect(card.getByRole('heading', { name: 'Channel details' })).toBeFocused();",
+      "137: await expect(select).toHaveValue('');",
+      "138: await expect(card.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();",
+      "139: expect(control.writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "120: await page.goto('/sample-host.html');",
+      "121: const frame = page.frameLocator('.host-frame');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('embedded reload preserves visible cards during recheck, fails closed on 503 and restores URL filters on retry', async ({ page }, info) => {",
+     "line": 142,
+     "assertions": [
+      "148: await expect(frame.getByRole('heading', { name: 'Recovery assessment' })).toBeVisible();",
+      "162: await expect(frame.getByRole('button', { name: 'Checking dashboard…' })).toBeFocused();",
+      "163: await expect(frame.getByRole('article', { name: 'Revenue', exact: true }).locator('.metric-number')).toHaveText('$128.3K');",
+      "164: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "165: await expect(page.getByRole('navigation', { name: 'After the embedded dashboard' })).toBeVisible();",
+      "168: await expect(frame.getByRole('alert')).toContainText('could not load');",
+      "169: await expect(frame.getByRole('article', { name: 'Revenue', exact: true })).toHaveCount(0);",
+      "171: await expect(retry).toBeFocused();",
+      "175: await expect(frame.getByRole('heading', { name: 'Recovery assessment' })).toBeVisible();",
+      "176: await expect(frame.getByRole('button', { name: 'Reload dashboard definition' })).toBeFocused();",
+      "177: await expect(frame.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('Direct');",
+      "178: await expect(frame.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');",
+      "179: expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);",
+      "180: expect(control.writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "145: await page.setViewportSize({ width: 390, height: 844 });",
+      "146: await page.goto('/sample-host.html');",
+      "147: const frame = page.frameLocator('.host-frame');",
+      "155: await page.route(endpoint, async route => {"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('rechecked 403 and failed membership revoke previously loaded embedded content', async ({ page }) => {",
+     "line": 183,
+     "assertions": [
+      "188: await expect(frame.getByRole('heading', { name: 'Recovery assessment' })).toBeVisible();",
+      "191: await expect(frame.getByRole('alert')).toContainText('do not have access');",
+      "192: await expect(frame.getByRole('article', { name: 'Revenue', exact: true })).toHaveCount(0);",
+      "193: await expect(frame.getByRole('button', { name: 'Try again' })).toHaveCount(0);",
+      "194: await expect(page.getByRole('navigation', { name: 'Customer dashboards' })).toBeVisible();",
+      "198: await expect(frame.getByRole('heading', { name: 'Dashboard unavailable' })).toBeVisible();",
+      "199: await expect(frame.getByRole('article', { name: 'Revenue', exact: true })).toHaveCount(0);",
+      "200: expect(control.writes).toEqual([]);"
+     ],
+     "boundaries": [
+      "186: await page.goto('/sample-host.html');",
+      "187: const frame = page.frameLocator('.host-frame');",
+      "197: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ],
+ "missing": []
+}

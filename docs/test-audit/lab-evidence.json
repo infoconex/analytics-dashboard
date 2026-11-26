@@ -1,0 +1,181 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Source excerpts; check complete helper implementations and runtime inventory.",
+ "files": [
+  {
+   "path": "web/scripts/ux13/loopback-proxy.test.mjs",
+   "blob": "f36f90e259ef87b22941b7daa24b20fe7748f419",
+   "capability": "Loopback confinement",
+   "cases": [
+    {
+     "line": 5,
+     "declaration": "test('the disposable proxy has only two fixed targets inside the isolated bridge', () => {",
+     "assertions": [
+      "6: assert.deepEqual(targets, [",
+      "10: assert.ok(targets.every(target => !Object.hasOwn(target, 'credential')));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 13,
+     "declaration": "test('a forwarded socket closes both directions and does not inspect or store data', () => {",
+     "assertions": [
+      "22: assert.equal(createForwarder(targets[0], stub), 'server');",
+      "23: assert.deepEqual(calls.slice(0, 3), [",
+      "28: assert.deepEqual(calls.slice(3), [['upstream-destroy'], ['client-destroy']]);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ux13/network-topology.test.mjs",
+   "blob": "ce9878a4178000fed4bbdc757e8edbfd95a8df6f",
+   "capability": "Network isolation",
+   "cases": [
+    {
+     "line": 20,
+     "declaration": "test('admits only core services on the internal bridge and loopback-only credential-free proxy', () => {",
+     "assertions": [
+      "21: assert.equal(assertIsolation(topology()).proxyLoopbackOnly, true);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 24,
+     "declaration": "test('fails closed if an app can egress, receives a direct published port or proxy gains a secret', () => {",
+     "assertions": [
+      "26: assert.throws(() => assertIsolation(gateway), /default route/);",
+      "28: assert.throws(() => assertIsolation(port), /publish no ports/);",
+      "30: assert.throws(() => assertIsolation(network), /non-internal network/);",
+      "32: assert.throws(() => assertIsolation(password), /credentials/);",
+      "34: assert.throws(() => assertIsolation(publicPort));"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ux14/analytics-fixture.test.mjs",
+   "blob": "1405c5afce71fac6fb681104e5ca85cb3e2a6671",
+   "capability": "Fictional analytics fixtures",
+   "cases": [
+    {
+     "line": 6,
+     "declaration": "test('the Analytics UX14 target has the exact UX11 fictional viewer contract and matched panel order', () => {",
+     "assertions": [
+      "7: assert.equal(dashboardId, 'a8bb1bc7-a1d5-4ea5-9268-6b1b7c0a3441');",
+      "8: assert.equal(fixtureDashboard.organizationId, 'northstar');",
+      "9: assert.equal(fixtureDashboard.widgets.length, 12);",
+      "10: assert.deepEqual(fixtureDashboard.widgets.map(widget => widget.title), titles);",
+      "11: assert.equal(fixtureDashboard.widgets.filter(widget => widget.datasetKey === 'channels').length, 1);",
+      "12: assert.equal(fixtureDashboard.widgets.filter(widget => widget.datasetKey === 'commerce').length, 11);",
+      "13: assert.equal(fixtureDashboard.widgets[11].id, '996e3063-18e9-4ddb-887a-229198c6dd12');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 16,
+     "declaration": "test('blocked external resources are separate from write attempts, and API writes fail closed', () => {",
+     "assertions": [
+      "17: assert.doesNotThrow(() => assertNoApiWrites([{ type: 'external-network-blocked' }]));",
+      "18: assert.throws(() => assertNoApiWrites([{ type: 'external-network-blocked' },"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ux14/browser-observations.test.mjs",
+   "blob": "85bf3d080a2a647cc5f86932d9ce7b501bb32d9b",
+   "capability": "Observation evidence",
+   "cases": [
+    {
+     "line": 5,
+     "declaration": "test('console diagnostics preserve broad cause without copying untrusted text', () => {",
+     "assertions": [
+      "6: assert.equal(classifyConsoleError('Failed to load resource: net::ERR_FAILED https://example/?token=private'), 'network-or-resource');",
+      "7: assert.equal(classifyConsoleError('Content Security Policy: blocked'), 'browser-policy');",
+      "8: assert.equal(classifyConsoleError('Unexpected HTTP 404'), 'http-status');",
+      "9: assert.equal(classifyConsoleError('Uncaught TypeError: cannot read property'), 'other-console-error');",
+      "10: assert.deepEqual(summarizeBrowserErrors(["
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ux14/task-parity.test.mjs",
+   "blob": "629372ba830608d22cb816e9a2579f7207d9ed3e",
+   "capability": "Task parity",
+   "cases": [
+    {
+     "line": 5,
+     "declaration": "test('all UX-12 tasks are classified exactly once and cannot be paired by default', () => {",
+     "assertions": [
+      "6: assert.deepEqual(tasks.map(task => task.id), [",
+      "9: for (const task of tasks) assert.equal(decidePair(task, {}), task.excluded ? 'excluded' : 'unapproved');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 12,
+     "declaration": "test('T02 is conditional on real matching catalog-to-report paths and same synthetic data', () => {",
+     "assertions": [
+      "17: assert.equal(decidePair(task, eligible), 'conditional-scripted-pair');",
+      "18: assert.equal(decidePair(task, { ...eligible, kibana: { ...eligible.kibana, initial: 'direct-dashboard-url' } }), 'unapproved');",
+      "19: assert.equal(decidePair(task, { ...eligible, kibana: { ...eligible.kibana, fixtureSha: 'wrong' } }), 'unapproved');",
+      "20: assert.equal(decidePair(task, { ...eligible, kibana: { ...eligible.kibana, completed: false } }), 'unapproved');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 23,
+     "declaration": "test('security, tenant switching, embedding and service-recovery tasks never become paired by matching flags', () => {",
+     "assertions": [
+      "27: assert.equal(decidePair(tasks.find(task => task.id === id), evidence), 'excluded');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 31,
+     "declaration": "test('review files must never include credential values or participant fields', () => {",
+     "assertions": [
+      "32: assert.doesNotThrow(() => assertEvidenceSafe({ participantCount: 0, role: 'read-only', task: 'T02' }));",
+      "33: assert.throws(() => assertEvidenceSafe({ password: 'example' }), /unsafe/i);",
+      "34: assert.throws(() => assertEvidenceSafe({ authorization: 'Bearer value' }), /unsafe/i);",
+      "35: assert.throws(() => assertEvidenceSafe({ participantName: 'test' }), /unsafe/i);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/scripts/ux13/lab-fixtures.mjs",
+   "blob": "b39755be6f320df1bec916d38257e1231af3cc33",
+   "capability": "Fixture provenance check",
+   "cases": [
+    {
+     "line": 1,
+     "declaration": "Fixture validation implementation; inspect check command",
+     "assertions": [
+      "22: if (matches.length !== 1) throw new Error(`Missing or duplicate literal array: ${name}`);",
+      "25: if (new Set(keys).size !== keys.length) throw new Error(`Duplicate field in ${name}`);",
+      "37: throw new Error(`Fixture source includes a nonliteral or malformed value: ${name}`);",
+      "40: assertFixtureSemantics(result);",
+      "46: throw new Error(`Unexpected fields: ${Object.keys(row)}`);",
+      "49: export function assertFixtureSemantics({ commerce, channels }) {",
+      "51: throw new Error('Expected 12 commerce and 5 channel records');",
+      "55: throw new Error(`Invalid commerce record ${i}`);",
+      "62: throw new Error('Invalid channel record');",
+      "69: })) throw new Error('Northstar fixed sentinel values changed; review UX-12 before accepting this');",
+      "111: throw new Error(`Out-of-sync fixture ${name}; regenerate and review before running a comparison`);",
+      "117: const action = process.argv[2] ?? 'check';",
+      "118: if (!['write', 'check'].includes(action)) throw new Error('Usage: node lab-fixtures.mjs [write|check]');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ]
+}

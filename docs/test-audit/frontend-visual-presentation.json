@@ -1,0 +1,641 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Machine-assisted source excerpts; incomplete semantic audit. Check original multiline assertions and helper definitions.",
+ "files": [
+  {
+   "path": "web/src/WidgetTile.test.ts",
+   "blob": "1515b36c0759c0de82896e465546df22b6c4d059",
+   "capability": "Rendered widget semantics",
+   "cases": [
+    {
+     "line": 20,
+     "declaration": "it('shows the aggregate and clearly qualified comparison without an unlabeled sparkline', () => {",
+     "assertions": [
+      "27: expect(html).toContain('metric-number');",
+      "28: expect(html).toContain('last versus first sample month, not year-over-year');",
+      "29: expect(html).toContain('View data table');",
+      "30: expect(html).toContain('What this means');",
+      "31: expect(html).not.toContain('metric-sparkline');",
+      "32: expect(html).not.toContain('gradient-b3333333');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 37,
+     "declaration": "it('presents exact sample values under native row and column headers', () => {",
+     "assertions": [
+      "42: expect(html).toContain('<th scope=\"col\">Orders (orders)</th>');",
+      "43: expect(html).toContain('Organic search');",
+      "44: expect(html).toContain('1,820');",
+      "45: expect(html).toContain('1,530');",
+      "46: expect(html).not.toContain('1.8K');",
+      "47: expect(html).not.toContain('1.5K');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 50,
+     "declaration": "it('preserves exact counts after a channel filter', () => {",
+     "assertions": [
+      "56: expect(html).toContain('1,530');",
+      "57: expect(html).not.toContain('1.5K');",
+      "58: expect(html).not.toContain('Organic search');",
+      "59: expect(html).toContain('Show all channels instead of Direct');",
+      "60: expect(html).toContain('aria-pressed=\"true\"');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 65,
+     "declaration": "it('offers chart keyboard navigation and optional slice labels', () => {",
+     "assertions": [
+      "70: expect(html).toContain('widget-chart-keyboard');",
+      "71: expect(html).toContain('Use arrow keys to choose a category');",
+      "72: expect(html).not.toContain('Keyboard chart selection:');",
+      "73: expect(html).toContain('Show slice labels');",
+      "74: expect(html).toContain('aria-pressed=\"false\"');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 76,
+     "declaration": "it('retains the selected channel identity in its accessible name', () => {",
+     "assertions": [
+      "83: expect(html).toContain('aria-label=\"Show all channels instead of Direct\"');",
+      "84: expect(html).toContain('aria-pressed=\"true\"');",
+      "85: expect(html).not.toContain('aria-label=\"Show all channels\"');",
+      "86: expect(html).toContain('background:#087b75');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 91,
+     "declaration": "it('shows a removable period on commerce and identifies undated channels as unaffected', () => {",
+     "assertions": [
+      "98: expect(html).toContain('Remove Final 3 sample months filter from Total revenue');",
+      "99: expect(html).toContain('$128.3K');",
+      "103: expect(marketing).toContain('marketing channel records have no dates');",
+      "104: expect(marketing).toContain('1,820');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 107,
+     "declaration": "it('distinguishes no matching sample channel from a missing metric', () => {",
+     "assertions": [
+      "112: expect(noMatch).toContain('No matching sample data.');",
+      "113: expect(noMatch).not.toContain('Insight unavailable.</strong>');",
+      "118: expect(unavailable).toContain('Insight unavailable.');",
+      "119: expect(unavailable).not.toContain('No matching sample data.');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 121,
+     "declaration": "it('makes active channel filters removable within every affected widget', () => {",
+     "assertions": [
+      "126: expect(html).toContain('aria-label=\"Remove Referral filter from Traffic sources\"');",
+      "127: expect(html).toContain('Referral');",
+      "128: expect(html).not.toContain('Not affected');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 131,
+     "declaration": "it('identifies channel filtering as irrelevant to Commerce performance', () => {",
+     "assertions": [
+      "136: expect(html).toContain('Filter not applied');",
+      "137: expect(html).toContain('commerce records have no channel attribution');",
+      "138: expect(html).not.toContain('Remove Referral filter from Revenue over time');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 143,
+     "declaration": "it('shows date coverage but never a removable date filter', () => {",
+     "assertions": [
+      "148: expect(html).toContain('Oct–Dec');",
+      "149: expect(html).not.toContain('widget-filter-clear');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 152,
+     "declaration": "it('offers filter removal inside What this means', () => {",
+     "assertions": [
+      "156: expect(html).toContain('Remove Referral from What this means in Traffic sources');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 158,
+     "declaration": "it('provides optional metric definitions and static-sample provenance beside exact data', () => {",
+     "assertions": [
+      "162: expect(html).toContain('What this means');",
+      "163: expect(html).toContain('fictional');",
+      "164: expect(html).toContain('Sessions');",
+      "165: expect(html).toContain('View data table');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 168,
+     "declaration": "it('does not add conversion rates or report category ordering as time growth', () => {",
+     "assertions": [
+      "172: expect(html).toContain('Combined rate unavailable');",
+      "173: expect(html).not.toContain('21.3%');",
+      "174: expect(html).not.toContain('across selected period');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 177,
+     "declaration": "it('discloses unavailable definitions instead of fabricating a zero', () => {",
+     "assertions": [
+      "181: expect(html).toContain('Insight unavailable');",
+      "182: expect(html).not.toContain('Highest:');",
+      "183: expect(html).not.toContain('View data table');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 188,
+     "declaration": "it('renders a pie from additive source records and preserves exact values', () => {",
+     "assertions": [
+      "192: expect(html).toContain('pie chart');",
+      "193: expect(html).toContain('Organic search');",
+      "194: expect(html).toContain('1,820');",
+      "195: expect(html).toContain('615');",
+      "196: expect(html).toContain('What this means');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 199,
+     "declaration": "it('fails closed for non-additive proportions instead of drawing invented slices', () => {",
+     "assertions": [
+      "203: expect(html).toContain('Insight unavailable');",
+      "204: expect(html).toContain('cannot be summed');",
+      "205: expect(html).not.toContain('View data table');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 208,
+     "declaration": "it('counts original months for a histogram and exposes original observations', () => {",
+     "assertions": [
+      "213: expect(html).toContain('12 observed fictional months grouped into 4 value ranges');",
+      "214: expect(html).toContain('counts of source records');",
+      "215: expect(html).toContain('$18,400');",
+      "216: expect(html).toContain('$48,300');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 219,
+     "declaration": "it('pairs two exact measures from each original row in scatter', () => {",
+     "assertions": [
+      "224: expect(html).toContain('scatter chart comparing Orders with Sessions from the same original records');",
+      "225: expect(html).toContain('<th scope=\"col\">Sessions</th>');",
+      "226: expect(html).toContain('8,140');",
+      "227: expect(html).toContain('1,820');",
+      "228: expect(html).toContain('cannot establish causation');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/chartInsights.test.ts",
+   "blob": "d3edeb96e4c8418b919f08d7bfe3eecca079cc4f",
+   "capability": "Chart insight logic",
+   "cases": [
+    {
+     "line": 6,
+     "declaration": "it('describes the leading channel with an unrounded value', () => {",
+     "assertions": [
+      "7: expect(chartInsight('channel', 'orders', channels)).toBe("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 12,
+     "declaration": "it('updates when the filtered channel changes', () => {",
+     "assertions": [
+      "13: expect(chartInsight('channel', 'orders', channels.filter(row => row.channel === 'Direct'))).toBe("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 18,
+     "declaration": "it('reports first and last points and their direction without abbreviating currency', () => {",
+     "assertions": [
+      "19: expect(chartInsight('month', 'revenue', commerce)).toBe("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 24,
+     "declaration": "it('handles one point, zero values and a stable trend without invented changes', () => {",
+     "assertions": [
+      "25: expect(chartInsight('month', 'orders', [{ month: 'Jan', orders: 0 }])).toBe(",
+      "28: expect(chartInsight('month', 'orders', [{ month: 'Jan', orders: 0 }, { month: 'Feb', orders: 0 }])).toBe("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 33,
+     "declaration": "it('keeps conversion rates as single percentages rather than pretending to add percentages', () => {",
+     "assertions": [
+      "34: expect(chartInsight('channel', 'conversion', channels)).toBe("
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 39,
+     "declaration": "it('returns no insight for invalid or empty input', () => {",
+     "assertions": [
+      "40: expect(chartInsight('month', 'orders', [])).toBeNull();",
+      "41: expect(chartInsight('month', 'orders', [{ month: 'Jan', orders: Number.NaN }])).toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/chartPresentation.test.ts",
+   "blob": "e7d624275bedfca47d9eba078d957ccb69e8a5eb",
+   "capability": "Chart presentation",
+   "cases": [
+    {
+     "line": 7,
+     "declaration": "it('limits leader labels by share and value while preserving source order', () => {",
+     "assertions": [
+      "10: expect(selected.size).toBe(5);",
+      "11: expect([...selected]).toEqual(['M12', 'M11', 'M10', 'M9', 'M8']);",
+      "12: expect(months[0]?.month).toBe('M1');",
+      "13: expect(selectedPieLabels(months, 'month', 'revenue', 8).size).toBe(8);",
+      "14: expect(selectedPieLabels(months, 'month', 'revenue', 12).size).toBe(11); // Tiny slices are still omitted.",
+      "15: expect(selectedPieLabels([{ channel: 'A', sessions: 0 }], 'channel', 'sessions').size).toBe(0);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 17,
+     "declaration": "it('names both category and measure in pie/donut tooltip labels', () => {",
+     "assertions": [
+      "18: expect(categoryTooltipLabel('Referral', 'Sessions')).toBe('Referral · Sessions');",
+      "19: expect(formatChartTooltip(2820, 'sessions')).toBe('2,820');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 21,
+     "declaration": "it('preserves channel identity across filtered and full datasets', () => {",
+     "assertions": [
+      "22: expect(colorForCategory('channels', 'Referral')).toBe('#b03057');",
+      "23: expect(colorForCategory('channels', 'Organic search')).toBe('#435bc9');",
+      "24: expect(colorForCategory('channels', 'Referral')).not.toBe(colorForCategory('channels', 'Organic search'));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 27,
+     "declaration": "it('assigns stable colors to chronological months', () => {",
+     "assertions": [
+      "28: expect(colorForCategory('commerce', 'Jan')).toBe(colorForCategory('commerce', 'Jan'));",
+      "29: expect(colorForCategory('commerce', 'Jan')).not.toBe(colorForCategory('commerce', 'Feb'));"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 32,
+     "declaration": "it('formats currency, numeric counts, and percentages consistently', () => {",
+     "assertions": [
+      "33: expect(formatChartTooltip(18400, 'revenue')).toBe('$18,400');",
+      "34: expect(formatChartTooltip(2820, 'sessions')).toBe('2,820');",
+      "35: expect(formatChartTooltip(4.8, 'conversion')).toBe('4.8%');",
+      "36: expect(formatChartAxis(18400, 'revenue')).toBe('$18.4K');",
+      "37: expect(formatChartAxis(2820, 'sessions')).toBe('2.8K');",
+      "38: expect(formatChartAxis(4.8, 'conversion')).toBe('4.8%');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 41,
+     "declaration": "it('keeps histogram counts as frequencies while labeling revenue bucket ranges as USD', () => {",
+     "assertions": [
+      "43: expect(bins.map(bin => bin.count)).toEqual([4, 3, 3, 2]);",
+      "44: expect(bins[0]?.label).toBe('$18.4K–$25.88K');",
+      "45: expect(buildHistogram([{ revenue: 18400 }], 'revenue')[0]?.label).toBe('$18.4K');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 54,
+     "declaration": "it('omits outside SVG labels on phone-sized charts but retains the complete category selection', () => {",
+     "assertions": [
+      "55: expect(fitOutsidePieLabels(selected, rows, 'channel', 'sessions', 320, 220).size).toBe(0);",
+      "56: expect(fitOutsidePieLabels(selected, rows, 'channel', 'sessions', 390, 320).size).toBe(0);",
+      "57: expect(selected).toEqual(new Set(categories));",
+      "58: expect(fitOutsidePieLabels(selected, rows, 'channel', 'sessions', 780, 340).size).toBeGreaterThan(0);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 61,
+     "declaration": "it('fits to the widget instead of the viewport and does not draw long labels beyond the edge', () => {",
+     "assertions": [
+      "65: expect(fitted.has(long[5]!.channel)).toBe(false);",
+      "66: expect([...fitted].every(category => labels.has(category))).toBe(true);",
+      "67: expect(fitOutsidePieLabels(labels, long, 'channel', 'sessions', 390, 500).size).toBe(0);",
+      "68: expect(fitOutsidePieLabels(labels, long, 'channel', 'sessions', 1100, 190).size).toBe(0);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 71,
+     "declaration": "it('avoids same-side collisions without mutating the chart data or selected order', () => {",
+     "assertions": [
+      "75: expect(fitted.size).toBeLessThan(labels.size);",
+      "76: expect(crowded).toHaveLength(12);",
+      "77: expect(crowded[0]!.month).toBe('M1');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/visualizationAppearance.test.ts",
+   "blob": "f498beabb942bdabebc31ece4be26ebd9b7edeae",
+   "capability": "Saved appearance",
+   "cases": [
+    {
+     "line": 11,
+     "declaration": "it('preserves legacy presentation and only stores options when configured', () => {",
+     "assertions": [
+      "12: expect(chartAppearance(pie)).toEqual({",
+      "17: expect(pie.appearance).toBeUndefined();",
+      "18: expect(configured.appearance).toEqual({ showLegend: false, showSliceLabels: true, maxSliceLabels: 12 });"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 21,
+     "declaration": "it('retains compatible pie/donut settings on type changes while dropping unrelated options', () => {",
+     "assertions": [
+      "23: expect(compatibleAppearance(initial.appearance, 'donut', 'channels')).toEqual(initial.appearance);",
+      "24: expect(compatibleAppearance(initial.appearance, 'bar', 'channels')).toEqual({ categorySort: 'valueDesc' });",
+      "25: expect(compatibleAppearance(initial.appearance, 'line', 'commerce')).toBeUndefined();",
+      "26: expect(compatibleAppearance(initial.appearance, 'pie', 'commerce')).toEqual({"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 31,
+     "declaration": "it('sorts existing categorical rows stably, retaining original data and identity', () => {",
+     "assertions": [
+      "33: expect(chartCategoryRows(channels, ascending).map(row => row.channel)).toEqual([",
+      "36: expect(chartCategoryRows(channels, { ...pie, appearance: { categorySort: 'valueDesc' } })",
+      "38: expect(chartCategoryRows(channels, ascending)).not.toBe(channels);",
+      "39: expect(channels[0]?.channel).toBe('Organic search');",
+      "40: expect(chartCategoryRows(commerce, { ...ascending, datasetKey: 'commerce', kind: 'bar', metricKey: 'revenue' }))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 44,
+     "declaration": "it('adjusts compact saved layout on kind changes without discarding valid sizes', () => {",
+     "assertions": [
+      "46: expect(layoutForChangedKind(compact, 'donut')).toEqual({ columns: 6, height: 320 });",
+      "47: expect(layoutForChangedKind({ ...pie, columns: 9, height: 420 }, 'donut'))",
+      "49: expect(layoutForChangedKind({ ...pie, columns: null, height: null }, 'bar'))"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 53,
+     "declaration": "it('uses only original finite observations for configurable histogram bins', () => {",
+     "assertions": [
+      "55: expect(six).toHaveLength(6);",
+      "56: expect(six.reduce((sum, bin) => sum + bin.count, 0)).toBe(commerce.length);",
+      "57: expect(buildHistogram(commerce, 'revenue', 1)).toEqual([]);",
+      "58: expect(buildHistogram(commerce, 'revenue', 13)).toEqual([]);",
+      "59: expect(buildHistogram([{ orders: 6 }, { orders: 6 }], 'orders', 12)).toMatchObject([{ count: 2 }]);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/visualizationSemantics.test.ts",
+   "blob": "cdf0c929966f224f995499fcc3c143d4b8a576dc",
+   "capability": "Visualization validity",
+   "cases": [
+    {
+     "line": 12,
+     "declaration": "it('makes histogram bins deterministic and conserves every original row', () => {",
+     "assertions": [
+      "14: expect(bins).toHaveLength(4);",
+      "15: expect(bins.reduce((count, bin) => count + bin.count, 0)).toBe(12);",
+      "16: expect(bins[0]!.lower).toBe(18400);",
+      "17: expect(bins[3]!.upper).toBe(48300);",
+      "18: expect(buildHistogram(commerce, 'revenue', 4)).toEqual(bins);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 21,
+     "declaration": "it('handles constant values without invented ranges or phantom records', () => {",
+     "assertions": [
+      "22: expect(buildHistogram([{ value: 7 }, { value: 7 }], 'value')).toEqual([",
+      "25: expect(buildHistogram([{ value: 7 }, { value: Number.NaN }], 'value')).toEqual([]);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 28,
+     "declaration": "it('rejects non-additive pie and donut rates without inventing a proportion', () => {",
+     "assertions": [
+      "31: expect(visualizationProblem(invalid, channels)).toMatch(/cannot be summed/i);",
+      "32: expect(visualizationProblem({ ...invalid, kind: 'donut' }, channels)).toMatch(/cannot be summed/i);",
+      "33: expect(visualizationProblem({ ...invalid, kind: 'pie', metricKey: 'orders' }, channels)).toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 36,
+     "declaration": "it('restricts scatter axes to distinct numeric columns from the same rows', () => {",
+     "assertions": [
+      "38: expect(visualizationProblem(scatter, commerce)).toBeNull();",
+      "39: expect(visualizationProblem({ ...scatter, dimensionKey: 'month' }, commerce)).toMatch(/numeric/i);",
+      "40: expect(visualizationProblem({ ...scatter, dimensionKey: 'revenue' }, commerce)).toMatch(/different/i);",
+      "41: expect(suggestedDimension('scatter', 'commerce', 'revenue')).toBe('orders');",
+      "42: expect(suggestedDimension('scatter', 'channels', 'orders')).toBe('sessions');",
+      "43: expect(suggestedDimension('pie', 'commerce', 'revenue')).toBe('month');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 46,
+     "declaration": "it('disallows unsupported fields and unusable histogram datasets', () => {",
+     "assertions": [
+      "47: expect(visualizationProblem({ ...base, metricKey: 'missing' }, commerce)).not.toBeNull();",
+      "48: expect(visualizationProblem({ ...base, kind: 'histogram' }, [])).not.toBeNull();"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/composition.test.ts",
+   "blob": "e2f7f6c84664a9a9061d5b6da5d0f79e5fa21883",
+   "capability": "Composition geometry",
+   "cases": [
+    {
+     "line": 16,
+     "declaration": "it('duplicates with independent appearance and preserves layout/order', () => {",
+     "assertions": [
+      "21: expect(duplicated.map(item => item.id)).toEqual(['first', 'new', 'second']);",
+      "22: expect(duplicated[1]).toMatchObject({ title: 'Source (copy)', columns: 9, height: 420, appearance: { showLegend: false } });",
+      "23: expect(duplicated[1]!.appearance).not.toBe(first.appearance);",
+      "24: expect(list).toHaveLength(2);",
+      "25: expect(duplicateWidget(list, 'missing', 'fresh')).toBe(list);",
+      "26: expect(duplicateWidget(list, 'first', 'second')).toBe(list);",
+      "27: expect(duplicateWidget(Array.from({ length: 24 }, (_, index) => widget(String(index))), '0', 'new')).toHaveLength(24);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 30,
+     "declaration": "it('copies saved templates with new identities, independent appearance and no dashboard geometry', () => {",
+     "assertions": [
+      "34: expect(inserted).toMatchObject({ id: 'dashboard-new', appearance: { histogramBins: 6 } });",
+      "35: expect(inserted.columns).toBeUndefined();",
+      "36: expect(inserted.height).toBeUndefined();",
+      "37: expect(inserted.appearance).not.toBe(source.appearance);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 40,
+     "declaration": "it('gives older dashboards compact metrics, medium charts, and wide tables', () => {",
+     "assertions": [
+      "41: expect(layoutForWidget({ ...widget('metric'), kind: 'metric' })).toEqual({ columns: 3, height: 220 });",
+      "42: expect(layoutForWidget(widget('chart'))).toEqual({ columns: 6, height: 340 });",
+      "43: expect(layoutForWidget({ ...widget('table'), kind: 'table' })).toEqual({ columns: 12, height: 340 });"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 46,
+     "declaration": "it('resizes immutably, clamps dimensions and marks a saved layout as changed', () => {",
+     "assertions": [
+      "48: expect(resized[1]).toMatchObject({ columns: 9, height: 420 });",
+      "49: expect(initial.widgets[1]).not.toHaveProperty('columns');",
+      "50: expect(resizeWidget(initial.widgets, 'second', 6, 340)).toBe(initial.widgets);",
+      "51: expect(resizeWidget(initial.widgets, 'missing', 9, 420)).toBe(initial.widgets);",
+      "52: expect(layoutForWidget(resizeWidget(initial.widgets, 'second', 99, 990)[1]!))",
+      "54: expect(layoutForWidget(resizeWidget(initial.widgets, 'second', 3, 220)[1]!))",
+      "56: expect(hasDashboardChanges({ name: initial.name, description: initial.description, widgets: resized }, initial)).toBe(true);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 59,
+     "declaration": "it('moves a dragged widget to its target position without mutating the original list', () => {",
+     "assertions": [
+      "61: expect(updated.map(item => item.id)).toEqual(['second', 'third', 'first']);",
+      "62: expect(initial.widgets.map(item => item.id)).toEqual(['first', 'second', 'third']);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 65,
+     "declaration": "it('ignores invalid and same-widget drag targets', () => {",
+     "assertions": [
+      "66: expect(reorderWidgets(initial.widgets, 'missing', 'first')).toBe(initial.widgets);",
+      "67: expect(reorderWidgets(initial.widgets, 'first', 'missing')).toBe(initial.widgets);",
+      "68: expect(reorderWidgets(initial.widgets, 'first', 'first')).toBe(initial.widgets);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 71,
+     "declaration": "it('moves by one position using keyboard controls, respecting boundaries', () => {",
+     "assertions": [
+      "72: expect(moveWidget(initial.widgets, 'second', -1).map(item => item.id)).toEqual(['second', 'first', 'third']);",
+      "73: expect(moveWidget(initial.widgets, 'second', 1).map(item => item.id)).toEqual(['first', 'third', 'second']);",
+      "74: expect(moveWidget(initial.widgets, 'first', -1)).toBe(initial.widgets);",
+      "75: expect(moveWidget(initial.widgets, 'third', 1)).toBe(initial.widgets);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 78,
+     "declaration": "it('recognizes persisted appearance changes without treating absent legacy options as dirty', () => {",
+     "assertions": [
+      "81: expect(hasDashboardChanges(draft, saved)).toBe(false);",
+      "83: expect(hasDashboardChanges(draft, saved)).toBe(true);",
+      "84: expect(hasDashboardChanges({ ...draft, widgets: saved.widgets }, saved)).toBe(false);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 87,
+     "declaration": "it('compares metadata, widget fields and widget ordering, ignoring revision timestamps', () => {",
+     "assertions": [
+      "89: expect(hasDashboardChanges(same, initial)).toBe(false);",
+      "90: expect(hasDashboardChanges({ ...same, name: 'New name' }, initial)).toBe(true);",
+      "91: expect(hasDashboardChanges({ ...same, widgets: moveWidget(same.widgets, 'second', -1) }, initial)).toBe(true);",
+      "92: expect(hasDashboardChanges({ ...same, widgets: [{ ...same.widgets[0]!, title: 'Edited' }, ...same.widgets.slice(1)] }, initial)).toBe(true);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/src/ui/designTokens.test.ts",
+   "blob": "85d20c63734b2a0affbf7bdf785854b8f621be89",
+   "capability": "Design tokens",
+   "cases": [
+    {
+     "line": 34,
+     "declaration": "it('focus color remains at least 3:1 against the primary surfaces', () => {",
+     "assertions": [
+      "35: expect(contrast('focus', 'surface')).toBeGreaterThanOrEqual(3);",
+      "36: expect(contrast('focus', 'canvas')).toBeGreaterThanOrEqual(3);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 39,
+     "declaration": "it('interactive control edges remain distinguishable from light surfaces', () => {",
+     "assertions": [
+      "40: expect(contrast('control-border', 'surface')).toBeGreaterThanOrEqual(3);",
+      "41: expect(contrast('control-border', 'surface-muted')).toBeGreaterThanOrEqual(3);",
+      "42: expect(contrast('selected-border', 'surface')).toBeGreaterThanOrEqual(3);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 45,
+     "declaration": "it('dark navigation uses a contrasting focus indicator', () => {",
+     "assertions": [
+      "46: expect(contrast('focus-on-dark', 'nav')).toBeGreaterThanOrEqual(3);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "line": 51,
+     "declaration": "it.each([['body', 16], ['label', 14], ['caption', 12]])('%s is no smaller than %spx', (name, minimum) => {",
+     "assertions": [
+      "53: expect(rem).toBeDefined();",
+      "54: expect(Number(rem) * 16).toBeGreaterThanOrEqual(minimum);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ]
+}

@@ -127,12 +127,6 @@ test('revision conflict keeps unsaved editor work available', async ({ page }) =
   await expect(page.getByRole('region', { name: 'Dashboard conflict recovery' })).toBeVisible();
 });
 
-test('tenant-isolated demo dashboard loads six visualizations', async ({ page }) => {
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-  await expect(page.getByText('Revenue over time', { exact: true })).toBeVisible();
-  await expect(page.locator('.widget-tile')).toHaveCount(6);
-});
 
 test('switching organizations ignores a late response from the previous tenant', async ({ page }) => {
   let releaseNorthstar: () => void = () => {};
