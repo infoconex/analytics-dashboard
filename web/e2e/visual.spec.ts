@@ -1,6 +1,10 @@
+Warning: truncated output (original token count: 15865)
+Total output lines: 1027
+
 import { chromium, expect, test, type Page, type TestInfo } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { writeFile } from 'node:fs/promises';
+import { performance } from 'node:perf_hooks';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Dashboard, DashboardDraft } from '../src/model';
@@ -34,6 +38,25 @@ const denseDashboard: Dashboard = {
   }))],
 };
 
+const evidencePhases: Array<{ phase: string; label: string; elapsedMs: number }> = [];
+
+async function measureEvidencePhase<T>(phase: string, label: string, action: () => Promise<T>): Promise<T> {
+  const start = performance.now();
+  try {
+    return await action();
+  } finally {
+    evidencePhases.push({ phase, label, elapsedMs: Math.round(performance.now() - start) });
+  }
+}
+
+test.afterEach(async ({}, testInfo) => {
+  if (evidencePhases.length === 0) return;
+  const path = testInfo.outputPath('browser-evidence-phases.json');
+  const entries = evidencePhases.splice(0);
+  await writeFile(path, JSON.stringify({ schemaVersion: 1, test: testInfo.title, phases: entries }, null, 2));
+  await testInfo.attach('browser-evidence-phases.json', { path, contentType: 'application/json' });
+});
+
 async function fixedDemoApi(page: Page, dashboard = sampleDashboard) {
   const dashboards = [structuredClone(dashboard)];
   await page.route('**/api/identity', route => route.fulfill({ json: { userId: 'demo-owner', displayName: 'Demo Analyst' } }));
@@ -64,8 +87,8 @@ async function capture(page: Page, testInfo: TestInfo, label: string) {
   // scroll offset after the preceding interaction instead of their natural top.
   if (!label.includes('dialog') && !label.includes('keyboard-focus') && !label.includes('tooltip')) await page.evaluate(() => window.scrollTo(0, 0));
   const path = testInfo.outputPath(`${label}.png`);
-  await page.screenshot({ path, fullPage: !label.includes('dialog') && !label.includes('keyboard-focus') && !label.includes('tooltip'), animations: 'disabled' });
-  await testInfo.attach(label, { path, contentType: 'image/png' });
+  await measureEvidencePhase('screenshot-capture', label, () => page.screenshot({ path, fullPage: !label.includes('dialog') && !label.includes('keyboard-focus') && !label.includes('tooltip'), animations: 'disabled' }));
+  await measureEvidencePhase('attachment-copy', label, () => testInfo.attach(label, { path, contentType: 'image/png' }));
 }
 
 async function assertNoDocumentOverflow(page: Page, width: number) {
@@ -282,444 +305,7 @@ test('UX-16 filter cards disclose scope and permit in-place keyboard clearing', 
   const revenue = page.getByRole('article', { name: 'Revenue over time', exact: true });
   const traffic = page.getByRole('article', { name: 'Traffic sources', exact: true });
   await expect(revenue.getByLabel('Filter scope for Revenue over time')).toHaveCount(0);
-  await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('3m');
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
-  await expect(traffic.getByRole('button', { name: 'Remove Referral filter from Traffic sources' })).toBeVisible();
-  await expect(traffic.getByText(/Reporting period does not apply/)).toBeVisible();
-  await expect(revenue.getByRole('button', { name: 'Remove Final 3 sample months filter from Revenue over time' })).toBeVisible();
-  await expect(revenue.getByText('Oct–Dec', { exact: false }).first()).toBeVisible();
-  await expect(revenue.getByText(/commerce records have no channel attribution/)).toBeVisible();
-  await capture(page, testInfo, 'ux16-scoped-filter-cards');
-
-  const clearChannel = traffic.getByRole('button', { name: 'Remove Referral filter from Traffic sources' });
-  await clearChannel.focus();
-  await page.keyboard.press('Enter');
-  await expect(traffic.getByRole('heading', { name: 'Traffic sources' })).toBeFocused();
-  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
-  await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('3m');
-  await expect(revenue.getByText(/commerce records have no channel attribution/)).toHaveCount(0);
-
-  await page.getByRole('combobox', { name: 'Date range (commerce only)' }).selectOption('12m');
-  await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');
-  await expect(revenue.getByLabel('Filter scope for Revenue over time')).toHaveCount(0);
-});
-
-test('UX-16 filtered channel keeps its color and revenue hover keeps units', async ({ page }, testInfo) => {
-  await fixedDemoApi(page);
-  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
-  const donut = page.getByRole('article', { name: 'Traffic sources', exact: true });
-  await expect(donut.locator('.recharts-pie-sector')).toHaveCount(5);
-  await expect(donut.locator('.recharts-pie-sector').nth(4).locator('path')).toHaveAttribute('fill', '#b03057');
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
-  await expect(donut.locator('.recharts-pie-sector')).toHaveCount(1);
-  await expect(donut.locator('.recharts-pie-sector').first().locator('path')).toHaveAttribute('fill', '#b03057');
-  await expect(donut.getByRole('button', { name: 'Show all channels instead of Referral' }).locator('i'))
-    .toHaveCSS('background-color', 'rgb(176, 48, 87)');
-  await capture(page, testInfo, 'ux16-referral-stable-color');
-
-  const revenue = page.getByRole('article', { name: 'Revenue over time', exact: true });
-  await revenue.locator('.recharts-area').hover({ force: true });
-  await expect(revenue.locator('.recharts-tooltip-wrapper')).toContainText('$');
-  await capture(page, testInfo, 'ux16-revenue-tooltip-currency');
-});
-
-test('desktop UX journey captures all primary states using fixed sample data', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await fixedDemoApi(page);
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
-  await capture(page, testInfo, '01-workspace-desktop');
-
-  await page.goto('/#/dashboards');
-  await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeVisible();
-  await capture(page, testInfo, '02-library-desktop');
-
-  await page.goto('/#/explore');
-  await expect(page.getByRole('heading', { name: 'Turn data into a story.' })).toBeVisible();
-  await capture(page, testInfo, '03-explore-desktop');
-
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-  await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();
-  await capture(page, testInfo, '04-consumption-desktop');
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
-  await capture(page, testInfo, '05-active-filters-desktop');
-  await page.getByRole('button', { name: 'Clear channel filter' }).click();
-
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await capture(page, testInfo, '06-composition-desktop');
-  await page.getByRole('button', { name: /Add visualization/ }).click();
-  await expect(page.getByRole('dialog', { name: 'Configure visualization' })).toBeVisible();
-  await capture(page, testInfo, '07-visualization-dialog-desktop');
-  await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-
-  await page.getByRole('button', { name: 'Back to dashboards' }).click();
-  await page.getByRole('button', { name: 'New dashboard', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Dashboard name' }).fill('New sample workspace');
-  await page.getByRole('button', { name: 'Create dashboard' }).click();
-  await expect(page.getByRole('heading', { name: 'Start with your first visualization' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-  await capture(page, testInfo, '08-empty-dashboard-desktop');
-
-  await page.route('**/api/organizations', route => route.fulfill({ status: 503, body: '' }));
-  await page.reload();
-  await expect(page.getByRole('alert')).toContainText('Request failed (503)');
-  await expect(page.getByRole('heading', { name: 'Workspace unavailable' })).toBeVisible();
-  await capture(page, testInfo, '09-error-desktop');
-});
-
-test('mobile journey captures responsive navigation, filters and creator modal', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await fixedDemoApi(page);
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
-  await capture(page, testInfo, '10-workspace-mobile');
-
-  await page.getByRole('button', { name: 'Open navigation' }).click();
-  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Explore' }).click();
-  await capture(page, testInfo, '11-explore-mobile');
-
-  await page.getByRole('button', { name: 'Open navigation' }).click();
-  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Dashboards' }).click();
-  await capture(page, testInfo, '12-library-mobile');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-  await capture(page, testInfo, '13-consumption-mobile');
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Social');
-  await capture(page, testInfo, '14-active-filters-mobile');
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await capture(page, testInfo, '15-composition-mobile');
-  await page.getByRole('button', { name: /Add visualization/ }).click();
-  await capture(page, testInfo, '16-visualization-dialog-mobile');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-});
-
-test('tablet, narrow reflow and forced-colors views preserve readable sample data', async ({ page }, testInfo) => {
-  await fixedDemoApi(page);
-  await page.setViewportSize({ width: 768, height: 1024 });
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-  await capture(page, testInfo, '17-consumption-tablet');
-
-  await page.setViewportSize({ width: 320, height: 900 });
-  await assertNoDocumentOverflow(page, 320);
-  await capture(page, testInfo, '18-consumption-reflow-320');
-
-  await page.locator('details.chart-data > summary').first().click();
-  await capture(page, testInfo, '19-chart-data-reflow-320');
-
-  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
-  await capture(page, testInfo, '20-forced-colors-320');
-});
-
-test('dense dashboard preserves reading order and supports keyboard jump navigation', async ({ page }, testInfo) => {
-  await fixedDemoApi(page, denseDashboard);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-
-  const cards = page.locator('.canvas-item');
-  await expect(cards).toHaveCount(12);
-  await expect(page.getByRole('navigation', { name: 'Jump to visualization' })).toHaveCount(0);
-  const index = page.locator('details.dashboard-index');
-  await index.locator('summary').focus();
-  await page.keyboard.press('Enter');
-  await expect(index).toHaveAttribute('open', '');
-  await expect(page.getByRole('navigation', { name: 'Jump to visualization' })).toBeVisible();
-  await capture(page, testInfo, '21-dense-dashboard-desktop');
-
-  const jump = page.getByRole('button', { name: /12\. Channel details — regional/ });
-  await jump.focus();
-  await page.keyboard.press('Enter');
-  const lastHeading = cards.last().getByRole('heading', { name: 'Channel details — regional' });
-  await expect(lastHeading).toBeFocused();
-  await capture(page, testInfo, '22-dense-keyboard-focus');
-
-  const headings = await cards.locator('h2.widget-title').allTextContents();
-  expect(headings).toEqual(denseDashboard.widgets.map(widget => widget.title));
-  const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
-  expect(scan.violations).toEqual([]);
-
-  await page.setViewportSize({ width: 768, height: 1024 });
-  await capture(page, testInfo, '23-dense-dashboard-tablet');
-  await page.setViewportSize({ width: 390, height: 844 });
-  await assertNoDocumentOverflow(page, 390);
-  await capture(page, testInfo, '24-dense-dashboard-mobile');
-  await page.setViewportSize({ width: 320, height: 900 });
-  await assertNoDocumentOverflow(page, 320);
-  await capture(page, testInfo, '25-dense-reflow-320');
-  await cards.first().getByText('View data table').press('Enter');
-  await expect(cards.first().getByRole('table', { name: /Total revenue/ })).toBeVisible();
-  await capture(page, testInfo, '26-dense-data-table-320');
-  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
-  await capture(page, testInfo, '27-dense-forced-colors-320');
-});
-
-test('compact metrics do not stretch to match chart cards and short dashboards avoid an index', async ({ page }) => {
-  await fixedDemoApi(page);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-  await expect(page.locator('.dashboard-index')).toHaveCount(0);
-  const sizes = await page.locator('.canvas-item').evaluateAll(items => items.slice(0, 2).map(item => item.getBoundingClientRect().height));
-  expect(sizes[0]).toBeLessThan(sizes[1] - 45);
-  const widths = await page.locator('.canvas-item').evaluateAll(items => items.slice(0, 2).map(item => item.getBoundingClientRect().width));
-  expect(widths[0]).toBeLessThan(widths[1] * 0.75);
-});
-
-test('UX-21 editor resizes and reorders widgets, persists saved layout, and discards cancelled sizing', async ({ page }, info) => {
-  await fixedDemoApi(page);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(`/#/organization/northstar/dashboard/${sampleDashboard.id}`);
-  const metricId = sampleDashboard.widgets[0]!.id;
-  const barId = sampleDashboard.widgets[2]!.id;
-  const metric = page.locator(`[data-widget-id="${metricId}"]`);
-  await expect(metric).toHaveAttribute('style', /--widget-columns: 3/);
-  const chart = page.getByRole('article', { name: 'Revenue over time', exact: true });
-  expect((await metric.boundingBox())!.width).toBeLessThan((await chart.boundingBox())!.width);
-
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  const addWidget = page.getByRole('button', { name: /Add visualization/ });
-  expect((await addWidget.boundingBox())!.width).toBeGreaterThanOrEqual(160);
-  const resize = metric.getByRole('button', { name: /Resize Total revenue/ });
-  await resize.focus();
-  await page.keyboard.press('ArrowRight');
-  await page.keyboard.press('ArrowDown');
-  await expect(metric).toHaveAttribute('style', /--widget-columns: 6/);
-  await expect(metric).toHaveAttribute('style', /--widget-height: 260px/);
-  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
-  await capture(page, info, 'ux21-unsaved-keyboard-resize');
-  // An unsaved resize must prompt. Accepting the discard confirmation is part of the scenario;
-  // Playwright would otherwise dismiss it automatically and correctly leave Edit mode open.
-  page.once('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
-  await expect(metric).toHaveAttribute('style', /--widget-columns: 3/);
-  await expect(metric).toHaveAttribute('style', /--widget-height: 220px/);
-
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  const grip = metric.getByRole('button', { name: /Resize Total revenue/ });
-  // capture() previously scrolled the page to its top. Pointer coordinates must
-  // refer to an on-screen handle, not a bounding box below the browser viewport.
-  await grip.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
-  await expect(grip).toBeInViewport();
-  const box = await grip.boundingBox();
-  expect(box).not.toBeNull();
-  const startX = box!.x + box!.width / 2;
-  const startY = box!.y + box!.height / 2;
-  await page.mouse.move(startX, startY);
-  await page.mouse.down();
-  await page.mouse.move(startX + 260, startY + 40, { steps: 6 });
-  await page.mouse.up();
-  await expect(metric).toHaveAttribute('style', /--widget-columns: 6/);
-  await expect(metric).toHaveAttribute('style', /--widget-height: 260px/);
-
-  const source = page.locator(`[data-widget-id="${barId}"]`).getByRole('button', { name: 'Drag to move Orders by channel' });
-  await source.dragTo(metric, { targetPosition: { x: 35, y: 35 } });
-  await expect(page.locator('.canvas-item').first()).toHaveAttribute('data-widget-id', barId);
-  await capture(page, info, 'ux21-drag-reorder-resize-desktop');
-  await page.getByRole('button', { name: 'Save changes' }).click();
-  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
-  await page.reload();
-  await expect(page.locator('.canvas-item').first()).toHaveAttribute('data-widget-id', barId);
-  await expect(metric).toHaveAttribute('style', /--widget-columns: 6/);
-  await expect(metric).toHaveAttribute('style', /--widget-height: 260px/);
-  await page.setViewportSize({ width: 390, height: 844 });
-  await assertNoDocumentOverflow(page, 390);
-  await capture(page, info, 'ux21-saved-layout-mobile');
-});
-
-test('chart data alternative exposes an announced keyboard channel selection', async ({ page }) => {
-  await fixedDemoApi(page);
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-  const bar = page.getByRole('article', { name: 'Orders by channel' });
-  await expect(bar.getByRole('group', { name: /Channel selection is also available from the data table/ })).toBeVisible();
-  await bar.getByText('View data table').focus();
-  await page.keyboard.press('Enter');
-  const category = bar.getByRole('button', { name: 'Show only Direct' });
-  await category.focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Direct');
-  await expect(bar.getByRole('button', { name: 'Show all channels instead of Direct' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(bar.getByRole('heading', { name: 'Orders by channel' })).toBeVisible();
-});
-
-test('dense keyboard journey returns to the index and compares filtered chart facts with exact table values', async ({ page }, testInfo) => {
-  await fixedDemoApi(page, denseDashboard);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-
-  const index = page.locator('details.dashboard-index');
-  await index.locator('summary').focus();
-  await page.keyboard.press('Enter');
-  const lastEntry = index.getByRole('button', { name: '12. Channel details — regional' });
-  for (let step = 0; step < 12; step++) await page.keyboard.press('Tab');
-  await expect(lastEntry).toBeFocused();
-  await page.keyboard.press('Enter');
-  const lastCard = page.getByRole('article', { name: 'Channel details — regional' });
-  await expect(lastCard.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
-
-  const returnAction = lastCard.getByRole('button', { name: 'Back to visualization list from Channel details — regional' });
-  // The heading-level Index shortcut is intentionally the first Tab stop.
-  // Traverse it, the scrollable table, five row selectors and the disclosure.
-  await page.keyboard.press('Tab');
-  await expect(lastCard.getByRole('button', { name: 'Jump to visualization index from Channel details — regional' })).toBeFocused();
-  for (let step = 0; step < 7; step++) await page.keyboard.press('Tab');
-  await expect(lastCard.locator('.insight-context > summary')).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(returnAction).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(lastEntry).toBeFocused();
-  await page.keyboard.press('Shift+Tab');
-  await expect(index.getByRole('button', { name: '11. Monthly orders — regional' })).toBeFocused();
-  await capture(page, testInfo, '28-return-to-index-desktop');
-
-  const lastTable = lastCard.getByRole('table', { name: /Channel details — regional/ });
-  await expect(lastTable.getByRole('columnheader', { name: 'orders' })).toBeVisible();
-  await expect(lastTable.getByRole('row', { name: /Organic search.*1,820/ })).toBeVisible();
-  await expect(lastTable.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await capture(page, testInfo, '35-exact-native-table-desktop');
-
-  const bar = page.getByRole('article', { name: 'Orders by channel', exact: true });
-  const metricWidth = await page.locator('.canvas-item-metric .widget-tile').first().evaluate(element => element.getBoundingClientRect().width);
-  const metricReturnWidth = await page.locator('.canvas-item-metric .widget-return').first().evaluate(element => element.getBoundingClientRect().width);
-  expect(metricReturnWidth).toBeGreaterThan(metricWidth * 0.8);
-  await expect(bar.getByText('At a glance:')).toBeVisible();
-  await expect(bar.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders across 5 channels.');
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
-  await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Direct');
-  await expect(bar.locator('.chart-insight')).toContainText('Showing Direct: 1,530 orders (1 channel).');
-  await expect(bar.locator('details.chart-data summary')).toContainText('(1 record)');
-  await bar.getByText('View data table').focus();
-  await page.keyboard.press('Enter');
-  await expect(bar.getByRole('table', { name: /Orders by channel/ }).getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await capture(page, testInfo, '29-filtered-chart-insight-and-table');
-  await expect(lastTable.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
-  await expect(page.getByRole('status', { name: 'Dashboard filter changes' })).toContainText('Channel: all channels');
-  await capture(page, testInfo, '36-filter-removal-focus-desktop');
-  await expect(bar.locator('.chart-insight')).toContainText('Highest: Organic search');
-  await expect(bar.getByRole('rowheader', { name: 'Organic search' })).toBeVisible();
-
-  const timeSeries = page.getByRole('article', { name: 'Revenue over time', exact: true });
-  await expect(timeSeries.locator('.chart-insight')).toContainText('First month: Jan ($18,400); last month: Dec ($48,300). Last is higher than first; intermediate values may vary.');
-  const tree = await index.ariaSnapshot();
-  expect(tree).toContain('navigation "Jump to visualization"');
-  expect(tree).toContain('12. Channel details — regional');
-  const cardTree = await bar.ariaSnapshot();
-  expect(cardTree).toContain('At a glance:');
-  expect(cardTree).toContain('table');
-
-  await page.setViewportSize({ width: 768, height: 1024 });
-  await assertNoDocumentOverflow(page, 768);
-  await capture(page, testInfo, '30-chart-insights-tablet');
-  await page.setViewportSize({ width: 390, height: 844 });
-  await assertNoDocumentOverflow(page, 390);
-  await capture(page, testInfo, '31-chart-insights-mobile');
-  await page.setViewportSize({ width: 320, height: 900 });
-  await assertNoDocumentOverflow(page, 320);
-  // Scope the WCAG 2.2 AA target inspection to the dense consumer workflow.
-  // A full site-wide target inventory (including spacing exceptions) remains open.
-  for (const locator of [
-    index.getByRole('button').first(),
-    lastCard.getByRole('button', { name: /Back to visualization list/ }),
-    lastCard.getByRole('button', { name: 'Show only Direct' }),
-    page.getByRole('combobox', { name: 'Marketing channel' }),
-  ]) {
-    const bounds = await locator.boundingBox();
-    expect(bounds, 'Dense consumer target must have a measurable box').not.toBeNull();
-    expect(bounds!.width).toBeGreaterThanOrEqual(24);
-    expect(bounds!.height).toBeGreaterThanOrEqual(24);
-  }
-  await capture(page, testInfo, '32-chart-insights-reflow-320');
-  await lastCard.getByRole('button', { name: /Back to visualization list/ }).focus();
-  await expect(lastCard.getByRole('button', { name: /Back to visualization list/ })).toBeFocused();
-  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
-  await capture(page, testInfo, '33-chart-insights-forced-colors');
-});
-
-test('UX-5 deterministic task journey measures direct navigation and safe recovery without people', async ({ page }, testInfo) => {
-  await fixedDemoApi(page, denseDashboard);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-  await expect(page.locator('.canvas-item')).toHaveCount(12);
-  const finder = page.getByRole('combobox', { name: 'Find a visualization' });
-  const go = page.getByRole('button', { name: 'Go to visualization' });
-  await expect(page.getByRole('heading', { name: 'Find a visualization' })).toBeVisible();
-  await expect(finder.locator('option')).toHaveCount(13); // One prompt plus twelve named choices.
-  await expect(go).toBeDisabled();
-  await expect(page.locator('details.dashboard-index')).not.toHaveAttribute('open', '');
-  await capture(page, testInfo, '46-ux5-finder-first-arrival-desktop');
-
-  // Count real key presses starting with focus on the relevant navigation control.
-  // UX-4g's equivalent path from focused index summary needed Enter + 12 Tabs + Enter.
-  const actions: string[] = [];
-  const press = async (key: string) => { await page.keyboard.press(key); actions.push(key); };
-  await finder.focus();
-  await press('End');
-  await expect(finder).toHaveValue(denseDashboard.widgets[11]!.id);
-  await press('Tab');
-  await expect(go).toBeFocused();
-  await press('Enter');
-  const last = page.getByRole('article', { name: 'Channel details — regional' });
-  await expect(last.getByRole('heading', { name: 'Channel details — regional' })).toBeFocused();
-  const index = page.locator('details.dashboard-index');
-  await last.getByRole('button', { name: /Back to visualization list/ }).click();
-  await expect(index).toHaveAttribute('open', '');
-  await expect(index.getByRole('button', { name: '12. Channel details — regional' })).toBeFocused();
-  await expect(last.getByRole('row', { name: /Organic search.*1,820/ })).toBeVisible();
-
-  const orders = page.getByRole('article', { name: 'Orders by channel', exact: true });
-  await expect(orders.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders');
-  await orders.getByText('View data table').click();
-  await expect(orders.getByRole('row', { name: /Organic search.*1,820/ })).toBeVisible();
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Direct');
-  await expect(orders.locator('.chart-insight')).toContainText('Showing Direct: 1,530 orders');
-  await expect(orders.getByRole('row', { name: /Direct.*1,530/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Remove Direct filter', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove Direct filter', exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toBeFocused();
-  await expect(orders.locator('.chart-insight')).toContainText('Highest: Organic search, 1,820 orders');
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-  const add = page.getByRole('button', { name: /Add visualization/ });
-  await add.click();
-  const dialog = page.getByRole('dialog', { name: 'Configure visualization' });
-  await expect(dialog.locator('.gallery-card')).toHaveCount(9);
-  await dialog.getByRole('button', { name: 'Cancel' }).click();
-  await expect(dialog).toHaveCount(0);
-  await expect(add).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
-  await expect(page.locator('.canvas-item')).toHaveCount(12);
-
-  const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
-  expect(scan.violations).toEqual([]);
-  for (const [width, height, name] of [[390, 844, 'mobile'], [320, 900, 'reflow']] as const) {
-    await page.setViewportSize({ width, height });
-    await assertNoDocumentOverflow(page, width);
-    await expect(finder).toBeVisible();
-    await expect(go).toBeVisible();
-    const selectBounds = await finder.boundingBox();
-    expect(selectBounds?.height).toBeGreaterThanOrEqual(24);
-    await capture(page, testInfo, `47-ux5-finder-${name}-${width}`);
-  }
-  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
-  await capture(page, testInfo, '48-ux5-finder-forced-colors-320');
-  const metrics = {
-    subject: 'Scripted Chromium actions on fictional sample data; no participants or screen-reader speech',
-    task: 'From a focused navigation control, reach visualization 12 heading',
-    baseline: { path: 'Focused expanded-index summary, Enter, 12 Tabs, Enter', keyPresses: 14 },
-    ux5: { path: 'Focused native visualization selection, End, Tab, Enter', actions, keyPresses: actions.length },
-    result: { selectedWidget: denseDashboard.widgets[11]!.title, returnedToExactIndexEntry: true,
-      highestOrders: { channel: 'Organic search', value: 1820 }, directOrders: 1530,
-      filterResetRecovered: true, cancelledEditWithoutChanges: true },
+  await page.getByRole('c…6865 tokens truncated…EditWithoutChanges: true },
     responsiveViewportWidths: [1440, 390, 320],
   };
   // Write the evidence into the test output directory. Body-only attachments
