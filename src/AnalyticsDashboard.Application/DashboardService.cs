@@ -155,6 +155,8 @@ public sealed class DashboardService(
                 throw new InvalidDashboardException("Widget layout size is invalid.");
             }
 
+            if (widget.QueryDefinition is not null || widget.DatasetKey == FictionalQueryValidator.SourceKey)
+                FictionalQueryValidator.Validate(widget);
             ValidateAppearance(widget);
     }
 

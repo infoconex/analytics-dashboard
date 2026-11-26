@@ -87,6 +87,9 @@ public sealed class SavedVisualizationService(
 
         DashboardService.ValidateWidget(draft.Definition);
 
+        // The shared validator has already checked the bounded query-backed variant.
+        if (draft.Definition.QueryDefinition is not null) return;
+
         // UX-23 templates can only target already supported fictional samples.
         var w = draft.Definition;
         var validMetric = w.DatasetKey switch

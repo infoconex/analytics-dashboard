@@ -1,3 +1,4 @@
+import { evaluateQueryWidget, isQueryWidget, queryWidgetProblem, type QueryContext } from './queryVisualization';
 import { datasets, dimensions, metrics, visualizations } from './demoData';
 import { selectConsumerRows, type ConsumerFilters } from './consumerFilters';
 import type { DashboardWidget } from './model';
@@ -20,6 +21,10 @@ export interface SampleConfigurationIssue {
  * or manufacturing a replacement field/dataset.
  */
 export function sampleConfigurationIssue(widget: DashboardWidget): SampleConfigurationIssue | null {
+  if (isQueryWidget(widget)) {
+    const problem = queryWidgetProblem(widget);
+    return problem ? { field: 'dataset', explanation: problem } : null;
+  }
   const source = Object.hasOwn(datasets, widget.datasetKey) ? datasets[widget.datasetKey] : undefined;
   if (!Array.isArray(source)) return { field: 'dataset', explanation: 'This saved visualization uses a source unavailable in this sample viewer. Choose a supported fictional dataset to repair it.' };
   if (source.length === 0) return { field: 'dataset', explanation: 'This sample source has no available records. Its values cannot be calculated.' };
@@ -44,12 +49,17 @@ export function sampleConfigurationIssue(widget: DashboardWidget): SampleConfigu
  * invent network loading, request failure, refresh times or per-card retries.
  * It must not mistake absent source rows for a measured zero.
  */
-export function sampleAvailability(widget: DashboardWidget, filters: ConsumerFilters): SampleAvailability {
+export function sampleAvailability(widget: DashboardWidget, filters: ConsumerFilters, queryContext?: QueryContext): SampleAvailability {
   const definitionProblem = sampleConfigurationIssue(widget);
   if (definitionProblem) return {
     state: 'unavailable',
     explanation: `${definitionProblem.explanation} An editor can review this visualization's saved configuration.`,
   };
+  if (isQueryWidget(widget)) {
+    const result = evaluateQueryWidget(widget, queryContext);
+    if (!result) return { state: 'unavailable', explanation: 'Unsupported saved fictional query definition.' };
+    return result.count ? { state: 'available' } : { state: 'no-match', explanation: 'No fictional records match the typed filters and reporting period.' };
+  }
   const rows = selectConsumerRows(widget.datasetKey, filters);
   if (rows.length === 0) return {
     state: 'no-match',
@@ -65,10 +75,10 @@ export function sampleAvailability(widget: DashboardWidget, filters: ConsumerFil
   return { state: 'available' };
 }
 
-export function summarizeSampleAvailability(widgets: readonly DashboardWidget[], filters: ConsumerFilters) {
+export function summarizeSampleAvailability(widgets: readonly DashboardWidget[], filters: ConsumerFilters, queryContext?: QueryContext) {
   const counts = { available: 0, noMatch: 0, unavailable: 0 };
   for (const widget of widgets) {
-    const result = sampleAvailability(widget, filters);
+    const result = sampleAvailability(widget, filters, queryContext);
     if (result.state === 'available') counts.available++;
     else if (result.state === 'no-match') counts.noMatch++;
     else counts.unavailable++;

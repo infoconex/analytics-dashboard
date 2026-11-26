@@ -137,6 +137,69 @@ public sealed class SavedVisualizationTests
                 await service.CreateAsync("northstar", "demo-owner", item, Token));
     }
 
+    private static SavedVisualizationDraft QueryDraft() => new("Fictional raw records",
+        new DashboardWidget(Guid.NewGuid(), "Sales by status", VisualizationKind.Bar,
+            "fictionalQuery", "query", "query", QueryDefinition:
+            new FictionalQueryDefinition("sales", "bar", "order_status", "sum", "amount")));
+
+    [Test]
+    public async Task QueryDefinitionPersistsInBothSnapshotsAndHonorsRevisions()
+    {
+        var draft = QueryDraft();
+        var saved = await service.CreateAsync("northstar", "demo-owner", draft, Token);
+        var dashboards = new DashboardService(catalog, catalog, TimeProvider.System);
+        var copy = saved.Definition with { Id = Guid.NewGuid() };
+        var dashboard = await dashboards.CreateAsync("northstar", "demo-owner",
+            new DashboardDraft("Fictional query dashboard", "", [copy]), Token);
+        var changed = saved.Definition with { QueryDefinition = saved.Definition.QueryDefinition! with
+            { Aggregate = "count", MeasureDimension = null } };
+        await service.UpdateAsync("northstar", saved.Id, "demo-owner", new("", changed), 1, Token);
+        await Assert.ThrowsAsync<ConflictException>(async () =>
+            await service.UpdateAsync("northstar", saved.Id, "demo-owner", draft, 1, Token));
+        await Assert.ThrowsAsync<ForbiddenException>(async () =>
+            await service.CreateAsync("northstar", "demo-viewer", draft, Token));
+        var reopened = new SqliteCatalog(databasePath);
+        await reopened.InitializeAsync();
+        var found = await reopened.FindVisualizationAsync("northstar", saved.Id, Token);
+        var persisted = await reopened.FindAsync("northstar", dashboard.Id, Token);
+        Assert.Multiple(() =>
+        {
+            Assert.That(found?.Definition.QueryDefinition, Is.EqualTo(changed.QueryDefinition));
+            Assert.That(persisted?.Widgets.Single().QueryDefinition, Is.EqualTo(copy.QueryDefinition));
+            Assert.That(found?.Revision, Is.EqualTo(2));
+        });
+        Assert.That(await reopened.FindVisualizationAsync("isolated", saved.Id, Token), Is.Null);
+    }
+
+    [Test]
+    public void BothWritePathsRejectUnsupportedOrMixedQueryDefinitions()
+    {
+        var valid = QueryDraft().Definition;
+        var query = valid.QueryDefinition!;
+        var invalid = new[]
+        {
+            valid with { QueryDefinition = null },
+            valid with { DatasetKey = "commerce" },
+            valid with { Kind = VisualizationKind.Pie },
+            valid with { QueryDefinition = query with { Dataset = "unknown" } },
+            valid with { QueryDefinition = query with { GroupByDimension = "CustomerId" } },
+            valid with { QueryDefinition = query with { Aggregate = "average" } },
+            valid with { QueryDefinition = query with { Aggregate = "count" } },
+            valid with { QueryDefinition = query with { Dataset = "support" } },
+            valid with { QueryDefinition = query with { MeasureDimension = "TotalAmount" } },
+            valid with { Appearance = new VisualizationAppearance(ShowLegend: true) }
+        };
+        var dashboards = new DashboardService(catalog, catalog, TimeProvider.System);
+        foreach (var item in invalid)
+        {
+            Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+                await service.CreateAsync("northstar", "demo-owner", new("", item), Token));
+            Assert.ThrowsAsync<InvalidDashboardException>(async () =>
+                await dashboards.CreateAsync("northstar", "demo-owner",
+                    new DashboardDraft("Invalid", "", [item]), Token));
+        }
+    }
+
     [Test]
     public async Task ApiEnforcesTenantIsolationAndPersistsTemplates()
     {

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace AnalyticsDashboard.Domain;
 
 public sealed record DashboardWidget(
@@ -9,4 +11,5 @@ public sealed record DashboardWidget(
     string DimensionKey,
     int? Columns = null,
     int? Height = null,
-    VisualizationAppearance? Appearance = null);
+    VisualizationAppearance? Appearance = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] FictionalQueryDefinition? QueryDefinition = null);

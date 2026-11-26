@@ -1,3 +1,4 @@
+import { sameQueryDefinition } from './queryVisualization';
 import type { Dashboard, DashboardDraft, DashboardWidget } from './model';
 
 export interface WidgetLayout { columns: 3 | 6 | 9 | 12; height: number }
@@ -30,7 +31,8 @@ export function resizeWidget(widgets: DashboardWidget[], id: string, columns: nu
 /** Every dashboard widget remains an independent snapshot of any saved template. */
 export function copySavedVisualization(definition: DashboardWidget, id: string): DashboardWidget {
   return { ...definition, id, columns: undefined, height: undefined,
-    appearance: definition.appearance ? { ...definition.appearance } : undefined };
+    appearance: definition.appearance ? { ...definition.appearance } : undefined,
+    ...(definition.queryDefinition ? { queryDefinition: { ...definition.queryDefinition } } : {}) };
 }
 
 /** Duplicate directly after its source, preserving configuration, layout and order. */
@@ -40,7 +42,8 @@ export function duplicateWidget(widgets: DashboardWidget[], sourceId: string, id
   if (index < 0) return widgets;
   const source = widgets[index]!;
   const copy = { ...source, id, title: `${source.title} (copy)`.slice(0, 100),
-    appearance: source.appearance ? { ...source.appearance } : undefined };
+    appearance: source.appearance ? { ...source.appearance } : undefined,
+    ...(source.queryDefinition ? { queryDefinition: { ...source.queryDefinition } } : {}) };
   return [...widgets.slice(0, index + 1), copy, ...widgets.slice(index + 1)];
 }
 
@@ -73,6 +76,7 @@ export function hasDashboardChanges(draft: DashboardDraft, saved: Dashboard): bo
     return item.id !== original.id || item.title !== original.title || item.kind !== original.kind ||
       item.datasetKey !== original.datasetKey || item.metricKey !== original.metricKey || item.dimensionKey !== original.dimensionKey ||
       (item.columns ?? null) !== (original.columns ?? null) || (item.height ?? null) !== (original.height ?? null) ||
+      !sameQueryDefinition(item, original) ||
       JSON.stringify(item.appearance ?? {}) !== JSON.stringify(original.appearance ?? {});
   });
 }

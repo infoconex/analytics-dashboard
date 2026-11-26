@@ -1,0 +1,16 @@
+.query-widget { font-size: var(--type-label); color: var(--color-text); overflow-wrap: anywhere; }
+.query-widget-shape { font-weight: 700; margin: 0 0 8px; }
+.query-widget-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0; }
+.query-widget-table th, .query-widget-table td { padding: 5px 4px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--color-border); }
+.query-widget-table th { font-weight: 600; }
+.query-widget-table th:first-child { width: 42%; }
+.query-widget-table td { font-variant-numeric: tabular-nums; }
+.query-widget-bar-track { display: block; margin-top: 3px; height: 7px; background: var(--color-surface-muted); }
+.query-widget-bar-track > span { display: block; height: 100%; background: var(--color-primary); }
+.query-widget-scope { border-top: 1px solid var(--color-border); padding-top: 8px; }
+.query-widget-scope p { margin: 0 0 4px; }
+.query-widget .widget-actions { flex-wrap: wrap; justify-content: flex-end; }
+@media (forced-colors: active) {
+  .query-widget-bar-track { border: 1px solid CanvasText; }
+  .query-widget-bar-track > span { background: Highlight; forced-color-adjust: none; }
+}

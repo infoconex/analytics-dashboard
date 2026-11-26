@@ -4,6 +4,7 @@ import { visualizations } from './demoData';
 import { discoverVisualizations, savedDateLabel, type DiscoveryOrder } from './contentDiscovery';
 import { ModalDialog } from './ui/ModalDialog';
 import { WidgetTile } from './WidgetTile';
+import { isQueryWidget } from './queryVisualization';
 import { Button } from './ui/Button';
 
 export interface LibraryDiscoveryContext {
@@ -98,7 +99,7 @@ export function VisualizationLibraryPicker({ context, onContextChange, organizat
           <article className="library-item">
             <div className="library-item-details">
               <h3 title={item.definition.title}>{item.definition.title}</h3>
-              <p className="library-item-kind">{visualizations.find(v => v.key === item.definition.kind)?.label ?? item.definition.kind} · {item.definition.datasetKey === 'commerce' ? 'Commerce performance' : 'Marketing channels'}</p>
+              <p className="library-item-kind">{visualizations.find(v => v.key === item.definition.kind)?.label ?? item.definition.kind} · {isQueryWidget(item.definition) ? 'Fictional raw records' : item.definition.datasetKey === 'commerce' ? 'Commerce performance' : 'Marketing channels'}</p>
               {item.description && <p>{item.description}</p>}
               <p className="library-item-meta">Updated {savedDateLabel(item.updatedAt)} · Created by {item.createdBy || 'Unknown'}</p>
             </div>

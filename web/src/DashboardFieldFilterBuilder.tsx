@@ -9,6 +9,8 @@ import './fieldFilterBuilder.css';
 
 interface Props {
   range?: UtcRange | null;
+  filters: FieldFilter[];
+  onFiltersChange: (filters: FieldFilter[]) => void;
 }
 
 const noValueOperators = new Set<FieldFilterOperator>(['IsNull', 'IsNotNull']);
@@ -26,8 +28,7 @@ function formatFilter(filter: FieldFilter) {
   return `${dimension} ${fieldFilterOperatorLabels[filter.operator]}${value}`;
 }
 
-export function DashboardFieldFilterBuilder({ range = null }: Props) {
-  const [filters, setFilters] = useState<FieldFilter[]>([]);
+export function DashboardFieldFilterBuilder({ range = null, filters, onFiltersChange: setFilters }: Props) {
   const [definitions, setDefinitions] = useState<QueryPreviewDefinition[]>([]);
   const [editingPreview, setEditingPreview] = useState<string | null>(null);
   const [dimension, setDimension] = useState(fieldFilterDimensions[0]?.id ?? '');
@@ -103,7 +104,7 @@ export function DashboardFieldFilterBuilder({ range = null }: Props) {
 
   return <details className="field-filter-builder">
     <summary>Experimental business filters</summary>
-    <p className="field-filter-intro">Build typed filters on fictional records to explore cross-dataset scope. Compatible filters are evaluated before each sample visualization is summarized. This experiment does not query connected customer data or change saved dashboards.</p>
+    <p className="field-filter-intro">Build typed filters on fictional records to explore cross-dataset scope. Compatible filters are evaluated before each sample visualization is summarized. Compatible saved query-backed cards use the same selections. Selections never change saved definitions or query connected customer data.</p>
     <form className="field-filter-form" onSubmit={submit}>
       <label>Business dimension
         <select ref={dimensionRef} value={dimension} onChange={event => changeDimension(event.target.value)}>

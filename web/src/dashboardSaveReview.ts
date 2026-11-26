@@ -1,3 +1,4 @@
+import { sameQueryDefinition } from './queryVisualization';
 import type { Dashboard, DashboardDraft, DashboardWidget } from './model';
 import { reviewDashboardConflict, type ConflictChangeKind } from './dashboardConflictReview';
 import { sampleConfigurationIssue } from './sampleAvailability';
@@ -30,7 +31,7 @@ function describeWidgetEdit(before: DashboardWidget, current: DashboardWidget): 
   const parts: string[] = [];
   if (before.title !== current.title) parts.push(`Title: “${before.title}” → “${current.title}”`);
   if (before.kind !== current.kind || before.datasetKey !== current.datasetKey
-    || before.metricKey !== current.metricKey || before.dimensionKey !== current.dimensionKey) {
+    || before.metricKey !== current.metricKey || before.dimensionKey !== current.dimensionKey || !sameQueryDefinition(before, current)) {
     parts.push(sampleConfigurationIssue(before) && !sampleConfigurationIssue(current)
       ? 'Repaired unavailable configuration' : 'Configuration changed');
   }
