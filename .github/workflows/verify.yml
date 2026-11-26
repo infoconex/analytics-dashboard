@@ -183,6 +183,9 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ steps.chromium.outputs.cache-primary-key }}
+      - name: Evidence | Remove verified duplicate PNG source copies
+        if: always()
+        run: node scripts/ci/dedupe-browser-evidence.mjs web/test-results --apply
       - name: Evidence | Upload screenshots and failure diagnostics
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
