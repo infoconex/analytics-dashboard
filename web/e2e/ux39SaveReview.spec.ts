@@ -206,12 +206,22 @@ test('failed save and a second revision conflict never claim a draft was saved',
   await conflict.getByRole('checkbox', { name: /Dashboard name/ }).check();
   page.once('dialog', dialog => void dialog.accept());
   await conflict.getByRole('button', { name: 'Recover selected edits (1)' }).click();
+  // Recovery rechecks the server asynchronously before adopting the newer baseline.
+  // Advance the mock only after recovery has completed; otherwise this exercises
+  // a different scenario (revision change during recovery, covered in UX-38).
+  await expect(conflict).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Local name');
+  expect(api.writes.map(item => item.status)).toEqual([503, 409]);
   api.otherEditor(current => ({ ...current, description: 'Remote revision 3' }));
   await page.getByRole('button', { name: 'Save changes' }).click();
-  await expect(conflict).toBeVisible();
+  await expect(conflict).toContainText('latest saved revision 3');
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   await expect(pending(page)).toContainText('Pending: name');
   expect(api.writes.map(item => item.status)).toEqual([503, 409, 409]);
+  expect(api.writes.map(item => item.expectedRevision)).toEqual([1, 1, 2]);
   expect(api.saved().name).toBe('Shared dashboard');
+  expect(api.saved().description).toBe('Remote revision 3');
 });
 
 test('Save template while dashboard has unsaved edits does not commit or alter dashboard review', async ({ page }) => {
