@@ -1,0 +1,1140 @@
+{
+ "baseline": "09a623eed301c12c112b1a5be056143de7a18781",
+ "note": "Machine-assisted source declaration, assertion and boundary index, not completed semantic audit. Read multiline assertions and helper definitions at baseline. Counts refer to declarations.",
+ "files": [
+  {
+   "path": "web/e2e/ux39SaveReview.spec.ts",
+   "blob": "e082e7929bfb9a7480664a21186154a754211dbe",
+   "capability": "Save review",
+   "cases": [
+    {
+     "declaration": "test('single metadata change: optional review, normal Save and accurate post-save state', async ({ page }) => {",
+     "line": 81,
+     "assertions": [
+      "84: await expect(pending(page)).toHaveCount(0);",
+      "87: await expect(pending(page)).toContainText('Pending: name');",
+      "89: await expect(pending(page)).toContainText('“Shared dashboard” → “Revised dashboard”');",
+      "90: await expect(pending(page)).toContainText('Only Save changes commits them');",
+      "92: await expect(pending(page)).toHaveCount(0);",
+      "93: await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();",
+      "96: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "97: await expect(page.getByText('All changes saved', { exact: true })).toBeVisible();",
+      "98: expect(api.writes.map(item => item.expectedRevision)).toEqual([1]);",
+      "99: expect(api.saved().name).toBe('Revised dashboard');",
+      "100: expect(await pending(page).count()).toBe(0);"
+     ],
+     "boundaries": [
+      "82: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('duplicate, edit, resize, reorder and remove: each local widget counted once', async ({ page }) => {",
+     "line": 103,
+     "assertions": [
+      "120: await expect(section).toContainText('1 visualization added');",
+      "121: await expect(section).toContainText('2 visualizations updated');",
+      "122: await expect(section).toContainText('1 visualization removed');",
+      "123: await expect(section).toContainText('order');",
+      "125: await expect(section.getByText('Added: Revenue (copy)')).toBeVisible();",
+      "126: await expect(section.getByText('Updated: Revenue')).toBeVisible();",
+      "127: await expect(section.getByText('Updated: Orders updated')).toBeVisible();",
+      "128: await expect(section.getByText('Removed: Sessions')).toBeVisible();",
+      "129: await expect(section).toContainText('Reusable library templates and other dashboards are unaffected');",
+      "130: expect(api.writes).toHaveLength(0);"
+     ],
+     "boundaries": [
+      "104: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('temporary duplicate and widget undo produce no pending change', async ({ page }) => {",
+     "line": 133,
+     "assertions": [
+      "137: await expect(pending(page)).toContainText('1 visualization added');",
+      "139: await expect(pending(page)).toHaveCount(0);",
+      "141: await expect(pending(page)).toContainText('1 visualization removed');",
+      "143: await expect(pending(page)).toHaveCount(0);",
+      "145: await expect(pending(page)).toContainText('Removed: Sessions');"
+     ],
+     "boundaries": [
+      "134: await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('unsupported visualization repair appears once in the pending review', async ({ page }) => {",
+     "line": 148,
+     "assertions": [
+      "156: await expect(pending(page)).toContainText('1 visualization updated');",
+      "158: await expect(pending(page)).toContainText('Repaired unavailable configuration');",
+      "159: await expect(pending(page).locator('li')).toHaveCount(1);"
+     ],
+     "boundaries": [
+      "150: await mockApi(page, broken);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('selected conflict recovery reviews only local changes relative to the new authorized baseline', async ({ page }) => {",
+     "line": 162,
+     "assertions": [
+      "174: await expect(conflict).toBeVisible();",
+      "180: await expect(conflict).toHaveCount(0);",
+      "181: await expect(pending(page)).toContainText('Pending: name · 1 visualization updated');",
+      "183: await expect(pending(page)).not.toContainText('Remote orders');",
+      "184: await expect(pending(page)).not.toContainText('Saved remotely');",
+      "186: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "187: expect(api.writes.map(item => item.expectedRevision)).toEqual([1, 2]);",
+      "188: expect(api.saved().widgets.map(item => item.title)).toEqual(['Local revenue', 'Remote orders', 'Sessions']);"
+     ],
+     "boundaries": [
+      "163: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('failed save and a second revision conflict never claim a draft was saved', async ({ page }) => {",
+     "line": 191,
+     "assertions": [
+      "197: await expect(page.getByRole('alert')).toContainText('Your unsaved work is still available');",
+      "198: await expect(pending(page)).toContainText('Pending: name');",
+      "199: expect(api.writes[0]?.status).toBe(503);",
+      "203: await expect(page.getByRole('region', { name: 'Dashboard conflict recovery' })).toBeVisible();",
+      "211: await expect(conflict).toBeVisible();",
+      "212: await expect(pending(page)).toContainText('Pending: name');",
+      "213: expect(api.writes.map(item => item.status)).toEqual([503, 409, 409]);",
+      "214: expect(api.saved().name).toBe('Shared dashboard');"
+     ],
+     "boundaries": [
+      "192: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('Save template while dashboard has unsaved edits does not commit or alter dashboard review', async ({ page }) => {",
+     "line": 217,
+     "assertions": [
+      "221: await expect(pending(page)).toContainText('Pending: description');",
+      "226: await expect(dialog).toHaveCount(0);",
+      "227: expect(api.templates()).toBe(1);",
+      "228: expect(api.writes).toHaveLength(0);",
+      "229: await expect(pending(page)).toContainText('Pending: description');"
+     ],
+     "boundaries": [
+      "218: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('viewer is read-only; revocation during authoring fails server-side and keeps pending work', async ({ page }) => {",
+     "line": 232,
+     "assertions": [
+      "235: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "236: await expect(pending(page)).toHaveCount(0);",
+      "243: await expect(pending(page)).toContainText('Pending: name');",
+      "244: expect(api.writes.at(-1)?.status).toBe(403);"
+     ],
+     "boundaries": [
+      "233: const api = await mockApi(page, initial, 'viewer');",
+      "234: await page.goto(`/#/organization/northstar/dashboard/${id}`);",
+      "238: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('transient failed Save keeps review intact until a successful explicit retry', async ({ page }) => {",
+     "line": 247,
+     "assertions": [
+      "253: await expect(page.getByRole('alert')).toContainText('Your unsaved work is still available');",
+      "254: await expect(pending(page)).toContainText('Pending: description');",
+      "255: expect(api.saved().description).toBe('Original description');",
+      "258: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "259: await expect(pending(page)).toHaveCount(0);",
+      "260: expect(api.writes.map(write => write.status)).toEqual([503, 200]);",
+      "261: expect(api.saved().description).toBe('Recoverable draft');"
+     ],
+     "boundaries": [
+      "248: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('Cancel and navigation preserve or discard pending edits only after explicit choice', async ({ page }) => {",
+     "line": 264,
+     "assertions": [
+      "268: await expect(pending(page)).toContainText('Pending: name');",
+      "271: await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Uncommitted name');",
+      "272: await expect(pending(page)).toBeVisible();",
+      "275: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "276: await expect(pending(page)).toHaveCount(0);",
+      "278: await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Shared dashboard');",
+      "279: expect(api.writes).toHaveLength(0);"
+     ],
+     "boundaries": [
+      "265: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('responsive and forced-colors review remain navigable with no horizontal overflow', async ({ page }, info) => {",
+     "line": 282,
+     "assertions": [
+      "293: await expect(section.getByText('Removed: Orders')).toBeVisible();",
+      "296: await expect(section.locator('summary')).toBeFocused();",
+      "299: const findings = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "300: expect(findings.violations.map(item => item.id)).toEqual([]);"
+     ],
+     "boundaries": [
+      "284: await mockApi(page);",
+      "286: await page.setViewportSize({ width, height: 900 });",
+      "287: await page.reload();",
+      "298: await page.emulateMedia({ forcedColors: 'active' });",
+      "302: await page.emulateMedia({ forcedColors: 'none' });"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('genuine native Chromium 200% and 400% zoom reflows pending-save disclosure and keeps actions accessible', async ({}, info) => {",
+     "line": 308,
+     "assertions": [
+      "321: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "346: await expect.poll(async () => (await metrics()).cssWidth).toBeLessThanOrEqual(baseline.cssWidth / factor + 2);",
+      "348: expect(actual).toBeCloseTo(factor, 1);",
+      "349: expect(current.dpr / baseline.dpr).toBeCloseTo(factor, 1);",
+      "350: expect(current.overflow).toBeLessThanOrEqual(1);",
+      "351: await expect(section.getByText('Removed: Orders')).toBeVisible();",
+      "354: await expect(summary).toBeFocused();",
+      "355: await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();"
+     ],
+     "boundaries": [
+      "311: const context = await chromium.launchPersistentContext('', {",
+      "319: await mockApi(page);",
+      "320: await page.goto(`http://127.0.0.1:5173/#/organization/northstar/dashboard/${id}`);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux40DraftPreview.spec.ts",
+   "blob": "b9ed93e0db6e2bea41c8012c0de8d249ad921f11",
+   "capability": "Draft preview",
+   "cases": [
+    {
+     "declaration": "test('no-change preview is explicitly not published and leaves all saved data unchanged', async ({ page }) => {",
+     "line": 88,
+     "assertions": [
+      "92: await expect(page.getByRole('heading', { name: 'Shared dashboard' })).toBeVisible();",
+      "93: await expect(page.getByRole('region', { name: 'Unsaved dashboard preview' })).toContainText('No dashboard changes pending');",
+      "94: await expect(page.getByText(/Last saved revision/)).toContainText('Draft not saved');",
+      "95: await expect(page.getByRole('button', { name: 'Save changes' })).toHaveCount(0);",
+      "96: await expect(page.getByRole('button', { name: 'Share', exact: true })).toHaveCount(0);",
+      "97: await expect(page.getByRole('button', { name: 'Edit Revenue' })).toHaveCount(0);",
+      "99: await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();",
+      "100: expect(api.writes).toHaveLength(0);"
+     ],
+     "boundaries": [
+      "89: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('metadata and multiple edits retain UX-39 disclosure, undo and explicit Save', async ({ page }) => {",
+     "line": 103,
+     "assertions": [
+      "111: await expect(pending(page).locator('details')).toHaveJSProperty('open', true);",
+      "113: await expect(page.getByRole('heading', { name: 'New customer summary' })).toBeVisible();",
+      "114: await expect(page.getByRole('region', { name: 'Unsaved dashboard preview' })).toContainText('visualization');",
+      "115: await expect(page.getByRole('button', { name: 'Duplicate Revenue' })).toHaveCount(0);",
+      "116: await expect(page.getByRole('button', { name: 'Remove Revenue (copy)' })).toHaveCount(0);",
+      "117: await expect(page.getByRole('heading', { name: 'Revenue (copy)' })).toBeVisible();",
+      "118: await expect(page.getByRole('heading', { name: 'Sessions' })).toHaveCount(0);",
+      "119: expect(api.writes).toHaveLength(0);",
+      "121: await expect(pending(page).locator('details')).toHaveJSProperty('open', true);",
+      "122: await expect(page.getByRole('button', { name: 'Undo widget change' })).toBeEnabled();",
+      "124: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "125: expect(api.writes.map(item => item.expectedRevision)).toEqual([1]);",
+      "127: await expect(page.getByRole('heading', { name: 'New customer summary' })).toBeVisible();",
+      "128: await expect(page.getByRole('heading', { name: 'Revenue (copy)' })).toBeVisible();",
+      "129: await expect(page.getByText('Draft not saved')).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "104: const api = await mockApi(page);",
+      "126: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('widget editing, reorder, resize and undo remain draft-only around preview', async ({ page }) => {",
+     "line": 132,
+     "assertions": [
+      "145: expect(during).toEqual(before);",
+      "146: await expect(page.getByRole('heading', { name: 'Orders overview' })).toBeVisible();",
+      "147: await expect(page.getByRole('button', { name: /^Resize Orders overview:/ })).toHaveCount(0);",
+      "151: await expect(pending(page)).toContainText('visualization');",
+      "152: expect(api.writes).toHaveLength(0);"
+     ],
+     "boundaries": [
+      "133: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('preview filters affect fictional sample presentation but never save or share the draft', async ({ page }) => {",
+     "line": 155,
+     "assertions": [
+      "161: await expect(page.getByRole('region', { name: 'Unsaved dashboard preview' })).toContainText('Pending: description');",
+      "162: expect(api.writes).toHaveLength(0);",
+      "164: await expect(page.getByRole('textbox', { name: 'Dashboard description' })).toHaveValue('Preview only');",
+      "165: await expect(pending(page)).toContainText('Pending: description');"
+     ],
+     "boundaries": [
+      "156: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('unsupported and repaired visualizations render through the same consumer path', async ({ page }) => {",
+     "line": 168,
+     "assertions": [
+      "173: await expect(page.getByText(/unavailable|unsupported/i).first()).toBeVisible();",
+      "180: await expect(page.getByRole('region', { name: 'Unsaved dashboard preview' })).toContainText('visualization updated');",
+      "181: await expect(page.getByRole('heading', { name: 'Revenue' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "170: await mockApi(page, broken);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('empty in-memory dashboard is not mislabeled as a saved empty dashboard', async ({ page }) => {",
+     "line": 184,
+     "assertions": [
+      "189: await expect(page.getByText('The current dashboard draft has no visualizations.')).toBeVisible();",
+      "190: await expect(page.getByRole('button', { name: 'Add first visualization' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "185: await mockApi(page, { ...initial, widgets: [widget(1, 'Revenue')] });"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('recovered independent edits preview against remote saved baseline; second conflict blocks retry', async ({ page }) => {",
+     "line": 193,
+     "assertions": [
+      "205: await expect(conflict).toBeVisible();",
+      "212: await expect(page.getByRole('heading', { name: 'Local name' })).toBeVisible();",
+      "213: await expect(page.getByRole('heading', { name: 'Remote orders' })).toBeVisible();",
+      "214: await expect(page.getByRole('heading', { name: 'Local revenue' })).toBeVisible();",
+      "216: await expect(pending(page)).toContainText('Pending: name');",
+      "219: await expect(conflict).toBeVisible();",
+      "220: expect(api.writes.map(write => write.status)).toEqual([409, 409]);",
+      "221: expect(api.saved().name).toBe('Shared dashboard');"
+     ],
+     "boundaries": [
+      "194: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('template Save is independent from preview and transient Save error preserves the draft', async ({ page }) => {",
+     "line": 224,
+     "assertions": [
+      "232: expect(api.templates()).toBe(1);",
+      "234: expect(api.writes).toHaveLength(0);",
+      "238: await expect(page.getByRole('alert')).toContainText('Your unsaved work is still available');",
+      "240: await expect(page.getByRole('region', { name: 'Unsaved dashboard preview' })).toContainText('Pending: description');",
+      "244: expect(api.writes.map(item => item.status)).toEqual([503, 200]);"
+     ],
+     "boundaries": [
+      "225: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('declined navigation preserves preview; accepted navigation discards only after confirmation', async ({ page }) => {",
+     "line": 247,
+     "assertions": [
+      "254: await expect(page.getByRole('region', { name: 'Unsaved dashboard preview' })).toBeVisible();",
+      "257: await expect(page.getByRole('heading', { name: 'Dashboards' })).toBeVisible();",
+      "258: expect(api.saved().name).toBe('Shared dashboard');",
+      "259: expect(api.writes).toHaveLength(0);"
+     ],
+     "boundaries": [
+      "248: const api = await mockApi(page);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('ordinary viewer and embedded dashboard never expose the in-memory preview', async ({ page }) => {",
+     "line": 262,
+     "assertions": [
+      "265: await expect(page.getByRole('button', { name: 'Preview as viewer' })).toHaveCount(0);",
+      "266: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "268: await expect(page.getByRole('heading', { name: 'Shared dashboard' })).toBeVisible();",
+      "269: await expect(page.getByRole('button', { name: 'Preview as viewer' })).toHaveCount(0);",
+      "270: await expect(page.getByText('Unsaved viewer preview')).toHaveCount(0);",
+      "271: expect(api.writes).toHaveLength(0);"
+     ],
+     "boundaries": [
+      "263: const api = await mockApi(page, initial, 'viewer');",
+      "264: await page.goto('/#/organization/northstar/dashboard/' + id);",
+      "267: await page.goto('/embed.html#/organization/northstar/dashboard/' + id);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('responsive consumer preview, keyboard focus and forced-colors accessibility', async ({ page }, info) => {",
+     "line": 274,
+     "assertions": [
+      "280: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "286: await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Unsaved preview');",
+      "291: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "297: const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "298: expect(accessibility.violations.map(item => item.id)).toEqual([]);"
+     ],
+     "boundaries": [
+      "276: await mockApi(page);",
+      "278: await page.setViewportSize({ width, height: 900 });",
+      "279: await page.goto('/#/organization/northstar/dashboard/' + id);",
+      "296: await page.emulateMedia({ forcedColors: 'active' });",
+      "300: await page.emulateMedia({ forcedColors: 'none' });"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('native Chromium 200% and 400% zoom reflows preview without clipped actions', async ({}, info) => {",
+     "line": 303,
+     "assertions": [
+      "315: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "337: expect(await setZoom(factor)).toBeCloseTo(factor, 1);",
+      "338: await expect.poll(async () => (await metrics()).cssWidth).toBeLessThanOrEqual(before.cssWidth / factor + 2);",
+      "340: expect(actual.dpr / before.dpr).toBeCloseTo(factor, 1);",
+      "341: expect(actual.overflow).toBeLessThanOrEqual(1);",
+      "342: await expect(page.getByRole('button', { name: 'Return to editing' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "306: const context = await chromium.launchPersistentContext('', {",
+      "313: await mockApi(page);",
+      "314: await page.goto('http://127.0.0.1:5173/#/organization/northstar/dashboard/' + id);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux41SavedHandoff.spec.ts",
+   "blob": "95edbb12be5e4a6adf2e6fef49de47a4c93193e1",
+   "capability": "Saved handoff",
+   "cases": [
+    {
+     "declaration": "test('unchanged share identifies saved revision; previously copied link opens later committed revisions for a separate viewer', async ({ page, browser }, info) => {",
+     "line": 78,
+     "assertions": [
+      "83: await expect(dialog).toContainText('Saved revision 1');",
+      "84: await expect(dialog).toContainText('latest saved revision');",
+      "86: expect(link).toBe('http://127.0.0.1:5173' + route);",
+      "87: expect(link).not.toMatch(/revision|period=|channel=|token=/);",
+      "90: expect(originalNote).toContain('Saved revision shown to sender: 1');",
+      "91: expect(originalNote).toContain('not a live or automatically updated report');",
+      "100: await expect(recipient.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();",
+      "101: await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 1');",
+      "102: await expect(recipient.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "107: await expect(page.getByRole('region', { name: 'Unsaved dashboard preview' })).toContainText('not published');",
+      "108: await expect(page.getByRole('button', { name: 'Share', exact: true })).toHaveCount(0);",
+      "111: await expect(page.getByRole('heading', { name: 'Committed handoff' })).toBeVisible();",
+      "112: expect(server.saved.revision).toBe(2);",
+      "114: await expect(afterSave).toContainText('Saved revision 2');",
+      "115: expect(await afterSave.locator('.share-link-field').inputValue()).toBe(link);",
+      "120: await expect(recipient.getByRole('heading', { name: 'Committed handoff' })).toBeVisible();",
+      "121: await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 2');",
+      "122: expect(originalNote).toContain('Saved revision shown to sender: 1');",
+      "123: expect(originalNote).not.toContain('Committed handoff');",
+      "129: await expect(recipient.getByRole('heading', { name: 'Newer saved handoff' })).toBeVisible();",
+      "130: await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 3');"
+     ],
+     "boundaries": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('failed Save, cancelled edits and revision conflict do not publish draft content through copied link', async ({ page, browser }) => {",
+     "line": 135,
+     "assertions": [
+      "143: await expect(page.getByRole('alert')).toContainText('Your unsaved work is still available');",
+      "149: await expect(recipient.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();",
+      "150: await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 1');",
+      "153: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "160: await expect(page.getByRole('region', { name: 'Dashboard conflict recovery' })).toBeVisible();",
+      "161: await expect(page.getByRole('button', { name: 'Share', exact: true })).toHaveCount(0);",
+      "163: await expect(recipient.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();",
+      "164: await expect(recipient.locator('.dashboard-toolbar')).toContainText('Saved revision 2');",
+      "165: expect(server.writes).toEqual([503, 409]);"
+     ],
+     "boundaries": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('temporary independent filters and exact insight notes stay separate from latest saved recipient defaults', async ({ page, browser }) => {",
+     "line": 169,
+     "assertions": [
+      "178: expect(note).toContain('Saved revision shown to sender: 1');",
+      "179: expect(note).toContain('Commerce: Final 3 sample months');",
+      "180: expect(note).toContain('Marketing channels: Direct (no dates)');",
+      "181: expect(note).toContain('filters apply independently');",
+      "183: expect(link).not.toMatch(/period=|channel=/);",
+      "191: await expect(recipient.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');",
+      "192: await expect(recipient.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');",
+      "193: await expect(recipient.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "202: expect(values).toContain('Saved revision shown to sender: 1');",
+      "203: expect(values).toContain('Oct: $41,400');",
+      "204: expect(values).not.toContain('Jan: $18,400');"
+     ],
+     "boundaries": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('shared destination remains authorization scoped and deleted or malformed links do not reveal content', async ({ page }) => {",
+     "line": 208,
+     "assertions": [
+      "213: await expect(page.getByText('No organizations available')).toBeVisible();",
+      "217: await expect(page.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();",
+      "219: await expect(page.getByText(/requested organization is unavailable/)).toBeVisible();",
+      "221: await expect(page.getByRole('heading', { name: 'Dashboard not found' })).toBeVisible();",
+      "223: await expect(page.getByText(/requested destination is invalid/)).toBeVisible();"
+     ],
+     "boundaries": [
+      "212: await page.goto(route);",
+      "216: await page.reload();",
+      "218: await page.goto('/#/organization/unknown/dashboard/' + id);",
+      "220: await page.goto('/#/organization/northstar/dashboard/11111111-1111-4111-8111-111111111111');",
+      "222: await page.goto('/#/organization/northstar/dashboard/' + id + '/invalid');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('sharing remains keyboard accessible at desktop, tablet, mobile, narrow mobile and forced colors', async ({ page }, info) => {",
+     "line": 226,
+     "assertions": [
+      "237: await expect(dialog).toContainText('Saved revision 1');",
+      "241: .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();",
+      "242: expect(axe.violations.map(v => v.id)).toEqual([]);",
+      "244: await expect(shareButton).toBeFocused();",
+      "249: await expect(page.getByRole('dialog')).toContainText('Saved revision 1');"
+     ],
+     "boundaries": [
+      "231: await page.setViewportSize({ width, height: 900 });",
+      "232: await page.goto(route);",
+      "235: await page.keyboard.press('Enter');",
+      "246: await page.emulateMedia({ forcedColors: 'active' });"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('copy success and clipboard failure keep distinct feedback and a selectable fallback', async ({ page }) => {",
+     "line": 252,
+     "assertions": [
+      "260: await expect(dialog.getByRole('status')).toContainText('Dashboard link copied');",
+      "266: await expect(dialog.getByRole('status')).toContainText('copy it manually');",
+      "267: await expect(dialog.getByRole('textbox', { name: /Context note/ })).toBeFocused();"
+     ],
+     "boundaries": [],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('embedded consumer displays the saved revision without editing or granting access through insight handoff', async ({ page }, info) => {",
+     "line": 270,
+     "assertions": [
+      "274: await expect(page.getByRole('heading', { name: 'Saved for recipients' })).toBeVisible();",
+      "275: await expect(page.locator('.dashboard-toolbar')).toContainText('Saved revision 1');",
+      "276: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "281: await expect(dialog).toContainText('Saved revision 1');",
+      "286: await expect(page.getByRole('heading', { name: 'Updated embedded view' })).toBeVisible();",
+      "287: await expect(page.locator('.dashboard-toolbar')).toContainText('Saved revision 2');"
+     ],
+     "boundaries": [
+      "273: await page.goto('/embed.html#/organization/northstar/dashboard/' + id);"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('native Chromium 200% and 400% zoom keeps saved revision and copy controls available', async ({}, info) => {",
+     "line": 290,
+     "assertions": [
+      "316: expect(await setZoom(factor)).toBeCloseTo(factor, 1);",
+      "317: await expect.poll(() => page.evaluate(() => innerWidth)).toBeLessThanOrEqual(baseline.width / factor + 2);",
+      "319: await expect(page.getByRole('dialog')).toContainText('Saved revision 1');",
+      "320: const axe = await new AxeBuilder({ page }).include('.share-context-modal').analyze();",
+      "321: expect(axe.violations.map(v => v.id)).toEqual([]);"
+     ],
+     "boundaries": [
+      "293: const context = await chromium.launchPersistentContext('', {",
+      "301: await page.goto('http://127.0.0.1:5173' + route);"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux29Discovery.spec.ts",
+   "blob": "c85c8b97537d4b0c063b9a37dcfd0152b237cc4a",
+   "capability": "Library discovery",
+   "cases": [
+    {
+     "declaration": "test('UX-29 dense dashboard catalog supports recognizable search, sorting, return, and viewer boundaries', async ({ page }) => {",
+     "line": 53,
+     "assertions": [
+      "56: await expect(page.locator('.dashboard-card')).toHaveCount(36);",
+      "57: await expect(page.getByText('Secret isolated report')).toHaveCount(0);",
+      "58: await expect(page.getByRole('button', { name: 'New dashboard' })).toHaveCount(0);",
+      "59: await expect(page.locator('.catalog-delete')).toHaveCount(0);",
+      "60: await expect(page.locator('.dashboard-card').first()).toContainText('Created by fictional-');",
+      "61: await expect(page.getByText('36 of 36 dashboards')).toBeVisible();",
+      "65: await expect(page.locator('.dashboard-card')).toHaveCount(1);",
+      "66: await expect(page.getByText('1 of 36 dashboards')).toBeVisible();",
+      "68: await expect(page.getByRole('heading', { name: 'Sales briefing — Western territory' })).toBeVisible();",
+      "70: await expect(query).toHaveValue('  WESTERN   performance  ');",
+      "71: await expect(page.locator('.dashboard-card')).toHaveCount(1);",
+      "74: await expect(page.getByRole('heading', { name: 'No matching dashboards' })).toBeVisible();",
+      "76: await expect(page.locator('.dashboard-card')).toHaveCount(36);",
+      "78: await expect(page.locator('.dashboard-card').first()).toContainText('Sales briefing 36');"
+     ],
+     "boundaries": [
+      "55: await page.goto('/#/organization/northstar/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('UX-29 five-width dashboard and library evidence, filtering, preview, permissions and independent copy', async ({ page }, info) => {",
+     "line": 81,
+     "assertions": [
+      "92: await expect(page.locator('.dashboard-card')).toHaveCount(36);",
+      "94: await expect(page.getByRole('combobox', { name: 'Sort dashboards' })).toBeVisible();",
+      "103: await expect(dialog.getByText('18 of 18 saved visualizations')).toBeVisible();",
+      "104: await expect(dialog.getByText('Secret isolated chart')).toHaveCount(0);",
+      "105: await expect(dialog.getByRole('combobox', { name: 'Sort saved visualizations' })).toBeVisible();",
+      "107: await expect(dialog.getByRole('status')).toContainText('1 of 18');",
+      "109: await expect(dialog.getByRole('region', { name: 'Saved visualization preview' })).toBeVisible();",
+      "111: expect(bounds).not.toBeNull();",
+      "112: expect(bounds!.x).toBeGreaterThanOrEqual(-1);",
+      "113: expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);",
+      "117: .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();",
+      "118: expect(accessibility.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => ({ html: node.html, summary: node.failureSummary })) }))).toEqual([]);",
+      "121: await expect(dialog.getByRole('textbox', { name: 'Search saved visualizations' })).toBeFocused();",
+      "123: await expect(dialog.getByRole('status')).toContainText('9 of 18');",
+      "125: await expect(dialog.getByText('No matching saved visualizations')).toBeVisible();",
+      "127: await expect(dialog.getByRole('status')).toContainText('18 of 18');",
+      "132: await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();",
+      "133: await expect(page.getByRole('status').filter({ hasText: 'Added an independent copy' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "84: await page.goto('/#/organization/northstar/dashboards');",
+      "91: await page.setViewportSize({ width, height });",
+      "100: await page.setViewportSize({ width, height });"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux30Navigation.spec.ts",
+   "blob": "3ee9a2d9ce505073b4c039e21ca3e00a28371da8",
+   "capability": "Navigation continuity",
+   "cases": [
+    {
+     "declaration": "test('UX-30 keeps catalog context, focus and scroll on explicit return at five widths', async ({ page }, info) => {",
+     "line": 69,
+     "assertions": [
+      "87: expect(scrollBefore).toBeGreaterThan(0);",
+      "89: await expect(page.locator('.dashboard-heading .eyebrow')).toContainText('VIEWING SAVED');",
+      "90: await expect(page.getByRole('button', { name: 'Back to dashboards' })).toBeVisible();",
+      "93: await expect(page.locator('.dashboard-heading .eyebrow')).toContainText('EDITING DRAFT');",
+      "94: await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toBeFocused();",
+      "97: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeFocused();",
+      "99: await expect(query).toHaveValue('quarterly business');",
+      "100: await expect(page.getByRole('combobox', { name: 'Sort dashboards' })).toHaveValue('name-desc');",
+      "101: await expect(open).toBeFocused();",
+      "103: expect(Math.abs(scrollAfter - scrollBefore)).toBeLessThanOrEqual(120);"
+     ],
+     "boundaries": [
+      "78: await page.setViewportSize({ width, height });",
+      "79: await page.goto('/#/organization/northstar/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('UX-30 browser Back and Forward preserve return context and a declined dirty draft', async ({ page }) => {",
+     "line": 108,
+     "assertions": [
+      "115: await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();",
+      "120: await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toBeFocused();",
+      "121: await expect(page.locator('.dashboard-heading .eyebrow')).toContainText('EDITING DRAFT');",
+      "125: await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Unsaved quarterly draft');",
+      "126: await expect(page).toHaveURL(/\\/dashboard\\/quarterly-business-23$/);",
+      "130: await expect(query).toHaveValue('quarterly business 23');",
+      "131: await expect(open).toBeFocused();",
+      "133: await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();",
+      "134: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "135: await expect(page.getByText('Unsaved quarterly draft')).toHaveCount(0);",
+      "137: await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();",
+      "139: await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toBeFocused();",
+      "141: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeFocused();"
+     ],
+     "boundaries": [
+      "110: await page.goto('/#/organization/northstar/dashboards');",
+      "136: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('UX-30 question context survives return; viewer and organization boundaries remain intact', async ({ page }) => {",
+     "line": 144,
+     "assertions": [
+      "147: await expect(page.getByText('Isolated quarterly business')).toHaveCount(0);",
+      "148: await expect(page.getByRole('button', { name: 'New dashboard' })).toHaveCount(0);",
+      "152: await expect(page.locator('.dashboard-card')).toHaveCount(1);",
+      "154: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "156: await expect(query).toHaveValue('western');",
+      "157: await expect(page.getByRole('button', { name: 'How is revenue changing?' })).toHaveAttribute('aria-pressed', 'true');",
+      "161: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "163: await expect(query).toHaveValue('');",
+      "164: await expect(page.getByRole('button', { name: 'All dashboards' })).toHaveAttribute('aria-pressed', 'true');",
+      "165: await expect(page.locator('.dashboard-card')).toHaveCount(1);",
+      "166: await expect(page.getByText('Western quarterly business')).toHaveCount(0);",
+      "168: await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();",
+      "169: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "171: await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();",
+      "172: const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();",
+      "173: expect(audit.violations.map(item => item.id)).toEqual([]);"
+     ],
+     "boundaries": [
+      "146: await page.goto('/#/organization/northstar/dashboards');",
+      "167: await page.goto('/#/organization/northstar/dashboard/quarterly-business-23');",
+      "170: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('UX-30 reusable library search and sorting survive an edit-and-return transition', async ({ page }) => {",
+     "line": 176,
+     "assertions": [
+      "184: await expect(library.getByRole('status')).toContainText('1 of 2');",
+      "187: await expect(editor).toBeVisible();",
+      "190: await expect(library.getByRole('textbox', { name: 'Search saved visualizations' })).toHaveValue('western');",
+      "191: await expect(library.getByRole('combobox', { name: 'Sort saved visualizations' })).toHaveValue('name-desc');",
+      "192: await expect(library.getByRole('status')).toContainText('1 of 2');"
+     ],
+     "boundaries": [
+      "178: await page.goto('/#/organization/northstar/dashboard/quarterly-business-23');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('UX-30 browser navigation does not resurrect an abandoned visualization library dialog', async ({ page }) => {",
+     "line": 195,
+     "assertions": [
+      "201: await expect(page.getByRole('dialog', { name: 'Add saved visualization' })).toBeVisible();",
+      "203: await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeVisible();",
+      "204: await expect(page.getByRole('dialog')).toHaveCount(0);",
+      "206: await expect(page.getByRole('heading', { name: 'Quarterly business 23' })).toBeVisible();",
+      "208: await expect(page.getByRole('dialog')).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "197: await page.goto('/#/organization/northstar/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/ux31Workflows.spec.ts",
+   "blob": "e42fd9c8a70832701e9746f725c6cd14e6b6aa1c",
+   "capability": "End-to-end authoring",
+   "cases": [
+    {
+     "declaration": "test('UX-31 reuse, configure, save and return end-to-end at ' + viewport.width + 'px', async ({ page }, info) => {",
+     "line": 98,
+     "assertions": [
+      "107: await expect(page.getByRole('heading', { name: 'Customer adoption' })).toBeVisible();",
+      "113: await expect(librarySearch).toBeFocused();",
+      "115: await expect(picker.getByText('Private template')).toHaveCount(0);",
+      "118: await expect(preview).toBeFocused();",
+      "119: await expect(preview).toBeInViewport({ ratio: 0.5 });",
+      "120: await expect(picker.getByRole('region', { name: 'Saved visualization preview' })).toBeInViewport({ ratio: 0.05 });",
+      "124: await expect(added.getByRole('heading', { name: 'Channel mix' })).toBeFocused();",
+      "125: await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();",
+      "131: await expect(page.getByRole('heading', { name: 'Channel mix adjusted' })).toBeFocused();",
+      "133: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "134: expect(api.writes).toEqual(['update']);",
+      "136: await expect(search).toHaveValue('Customer');",
+      "139: await expect(page.getByRole('heading', { name: 'Customer reliability' })).toBeVisible();",
+      "142: await expect(page.getByRole('heading', { name: 'Channel mix adjusted' })).toBeVisible();",
+      "144: await expect(page.getByRole('heading', { name: 'Channel mix adjusted' })).toBeVisible();",
+      "145: expect(api.dashboards()[0]!.widgets).toHaveLength(2);",
+      "146: expect(api.dashboards()[0]!.widgets[1]!.id).not.toBe(saved.definition.id);",
+      "147: expect(saved.definition.title).toBe('Channel mix');"
+     ],
+     "boundaries": [
+      "100: await page.setViewportSize(viewport);",
+      "102: await page.goto('/#/organization/northstar/dashboards');",
+      "143: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('UX-31 empty first-dashboard activation at ' + viewport.width + 'px', async ({ page }, info) => {",
+     "line": 151,
+     "assertions": [
+      "160: await expect(page.getByRole('heading', { name: 'Start with your first visualization' })).toBeVisible();",
+      "165: await expect(page.getByRole('button', { name: 'Save changes' })).toBeFocused();",
+      "168: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();",
+      "169: expect(api.writes).toEqual(['create', 'update']);",
+      "171: await expect(page.getByRole('heading', { name: 'Initial customer metric' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "153: await page.setViewportSize(viewport);",
+      "155: await page.goto('/#/organization/northstar/dashboards');",
+      "170: await page.reload();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('UX-31 viewer, direct-link, and tenant boundaries survive navigation', async ({ page }) => {",
+     "line": 175,
+     "assertions": [
+      "178: await expect(page.getByText('Private isolated dashboard')).toHaveCount(0);",
+      "179: await expect(page.getByRole('button', { name: 'New dashboard' })).toHaveCount(0);",
+      "182: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "184: await expect(page.getByText('Dashboard not found')).toBeVisible();",
+      "186: await expect(page.getByRole('heading', { name: 'Private isolated dashboard' })).toBeVisible();",
+      "187: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "177: await page.goto('/#/organization/northstar/dashboards');",
+      "183: await page.goto('/#/organization/northstar/dashboard/foreign-dashboard');",
+      "185: await page.goto('/#/organization/isolated/dashboard/foreign-dashboard');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('UX-31 declined browser Back preserves unsaved editing draft', async ({ page }) => {",
+     "line": 190,
+     "assertions": [
+      "200: await expect(name).toHaveValue('Uncommitted customer name');",
+      "201: await expect(page).toHaveURL(/dashboard\\/customer-adoption$/);"
+     ],
+     "boundaries": [
+      "192: await page.goto('/#/organization/northstar/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/discovery.spec.ts",
+   "blob": "ddcf51eadd7619421e563f103d03bcf71a3fba53",
+   "capability": "Question-first discovery",
+   "cases": [
+    {
+     "declaration": "test('first arrival reaches and understands a sample insight, filters and recovers with keyboard focus', async ({ page }, info) => {",
+     "line": 19,
+     "assertions": [
+      "26: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "27: await expect(page.getByText('Northstar Commerce').first()).toBeVisible();",
+      "28: await expect(page.getByRole('heading', { name: 'What would you like to understand?' })).toBeVisible();",
+      "29: await expect(page.getByText('fictional sample metrics')).toBeVisible();",
+      "36: await expect(title).toBeFocused();",
+      "37: await expect(page.getByText('YOUR STARTING POINT · SAMPLE DATA')).toBeVisible();",
+      "40: await expect(chart.getByRole('heading', { name: 'Revenue over time' })).toBeFocused();",
+      "41: await expect(chart.getByText('At a glance:')).toBeVisible();",
+      "43: await expect(chart.getByRole('table')).toBeVisible();",
+      "45: await expect(page.getByRole('button', { name: 'Remove Final 3 sample months filter', exact: true })).toBeVisible();",
+      "47: await expect(page.getByRole('combobox', { name: 'Date range (commerce only)' })).toHaveValue('12m');",
+      "48: await expect(page.getByText('All sample records', { exact: true })).toBeVisible();",
+      "50: await expect(page.getByRole('heading', { name: 'Dashboards', exact: true })).toBeVisible();",
+      "51: expect(failures).toEqual([]);"
+     ],
+     "boundaries": [
+      "20: await page.setViewportSize({ width: 1440, height: 900 });",
+      "21: await page.route('**/api/organizations', route => route.fulfill({ json: [membership[0]] }));",
+      "25: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('catalog discovers dashboards by business question and search, with no-match recovery', async ({ page }) => {",
+     "line": 60,
+     "assertions": [
+      "64: await expect(page.getByRole('status').filter({ hasText: 'Showing 2 matching dashboards' })).toBeVisible();",
+      "68: await expect(businessCard).toBeVisible();",
+      "70: await expect(page.getByRole('heading', { name: 'Where are orders coming from?' })).toBeFocused();",
+      "72: await expect(page.getByRole('heading', { name: 'Orders by channel' })).toBeFocused();",
+      "76: await expect(page.getByRole('heading', { name: 'No matching dashboards' })).toBeVisible();",
+      "78: await expect(page.getByRole('textbox', { name: 'Search dashboards' })).toHaveValue('');",
+      "79: await expect(options.getByRole('button', { name: 'All dashboards' })).toHaveAttribute('aria-pressed', 'true');",
+      "80: await expect(page.getByRole('heading', { name: 'Business performance' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "61: await page.goto('/#/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('keyboard-only first-value entry preserves a meaningful focus destination and read-only role', async ({ page }) => {",
+     "line": 83,
+     "assertions": [
+      "92: expect(reached).toBe(true);",
+      "94: await expect(page.getByRole('heading', { name: 'Which channels bring visitors?' })).toBeFocused();",
+      "96: await expect(page.getByRole('button', { name: 'Go to Traffic sources' })).toBeFocused();",
+      "98: await expect(page.getByRole('heading', { name: 'Traffic sources' })).toBeFocused();",
+      "99: await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "101: await expect(page.getByText('This is a read-only view; exploring and filtering never change the saved dashboard.')).toBeVisible();"
+     ],
+     "boundaries": [
+      "84: await page.route('**/api/organizations', route => route.fulfill({ json: [membership[0]] }));",
+      "85: await page.goto('/');",
+      "89: await page.keyboard.press('Tab');",
+      "93: await page.keyboard.press('Enter');",
+      "95: await page.keyboard.press('Tab');",
+      "97: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('empty organization and missing question have no fictional recommendations or implicit authoring', async ({ page }) => {",
+     "line": 104,
+     "assertions": [
+      "108: await expect(page.getByText('No matching dashboard here yet')).toHaveCount(3);",
+      "109: await expect(page.getByRole('button', { name: /Explore answer: / })).toHaveCount(0);",
+      "111: await expect(page.getByRole('heading', { name: 'No dashboards in this organization' })).toBeVisible();",
+      "112: await expect(page.getByRole('button', { name: 'New dashboard' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "105: await page.route('**/api/organizations', route => route.fulfill({ json: [membership[1]] }));",
+      "106: await page.route('**/api/organizations/isolated/dashboards', route => route.fulfill({ json: [] }));",
+      "107: await page.goto('/#/organization/isolated/overview');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('retry after unavailable dashboard list restores actual suggestions', async ({ page }) => {",
+     "line": 115,
+     "assertions": [
+      "123: await expect(page.getByRole('alert')).toContainText('We could not check dashboards. Retry to load an authorized view.');",
+      "124: await expect(page.getByRole('button', { name: /Explore answer: / })).toHaveCount(0);",
+      "126: await expect(page.getByRole('alert')).toHaveCount(0);",
+      "127: await expect(page.getByRole('button', { name: /Explore answer: How is revenue changing\\?/ })).toBeVisible();",
+      "128: expect(attempts).toBe(2);"
+     ],
+     "boundaries": [
+      "117: await page.route('**/api/organizations/northstar/dashboards', route => {",
+      "122: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('switching organizations clears old question/search and prevents cross-tenant display', async ({ page }) => {",
+     "line": 131,
+     "assertions": [
+      "140: await expect(page.getByRole('textbox', { name: 'Search dashboards' })).toHaveCount(0);",
+      "141: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "142: await expect(page.getByText('Business performance')).toHaveCount(0);",
+      "144: await expect(page.getByRole('textbox', { name: 'Search dashboards' })).toHaveValue('');",
+      "145: await expect(page.getByRole('heading', { name: 'Sample isolated-only' })).toBeVisible();",
+      "146: await expect(page.getByRole('heading', { name: 'Business performance' })).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "133: await page.route('**/api/organizations', route => route.fulfill({ json: membership }));",
+      "134: await page.route('**/api/organizations/isolated/dashboards', route => route.fulfill({ json: [isolated] }));",
+      "135: await page.goto('/#/organization/northstar/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('dense dashboard question jump and return to index preserve focus', async ({ page }) => {",
+     "line": 149,
+     "assertions": [
+      "157: await expect(page.getByRole('heading', { name: 'Insight 1', exact: true })).toBeFocused();",
+      "159: await expect(page.getByRole('button', { name: '1. Insight 1', exact: true })).toBeFocused();"
+     ],
+     "boundaries": [
+      "151: await page.route('**/api/organizations/northstar/dashboards', route => route.fulfill({ json: [dense] }));",
+      "152: await page.goto('/#/organization/northstar/dashboards');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('same-origin customer embed keeps contextual help and cannot discover authoring', async ({ page }) => {",
+     "line": 162,
+     "assertions": [
+      "165: await expect(frame.getByText('How to explore this dashboard')).toBeVisible();",
+      "166: await expect(frame.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);",
+      "168: await expect(frame.getByText('This is a read-only view; exploring and filtering never change the saved dashboard.')).toBeVisible();"
+     ],
+     "boundaries": [
+      "163: await page.goto('/sample-host.html');",
+      "164: const frame = page.frameLocator('iframe[title=\"Business performance analytics — Northstar Commerce sample\"]');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test(`first-value discovery reflows at ${label} ${width}×${height}`, async ({ page }, info) => {",
+     "line": 176,
+     "assertions": [
+      "179: await expect(page.getByRole('heading', { name: 'What would you like to understand?' })).toBeVisible();",
+      "180: await expect(page.getByRole('button', { name: /Explore answer: How is revenue changing\\?/ })).toBeVisible();",
+      "181: expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);"
+     ],
+     "boundaries": [
+      "177: await page.setViewportSize({ width, height });",
+      "178: await page.goto('/');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('forced-colors discovery keeps question selection, focus and text readable', async ({ page }, info) => {",
+     "line": 188,
+     "assertions": [
+      "195: await expect(choice).toHaveAttribute('aria-pressed', 'true');",
+      "196: await expect(choice).toBeFocused();"
+     ],
+     "boundaries": [
+      "189: await page.emulateMedia({ forcedColors: 'active' });",
+      "190: await page.goto('/#/dashboards');",
+      "194: await page.keyboard.press('Enter');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('genuine Chromium 200% and 400% tab zoom reflows question-first navigation', async ({}, info) => {",
+     "line": 200,
+     "assertions": [
+      "211: await expect(page.getByRole('heading', { name: 'What would you like to understand?' })).toBeVisible();",
+      "228: await expect.poll(async () => (await metrics()).width).toBeLessThanOrEqual(baseline.width / factor + 2);",
+      "230: expect(actual).toBeCloseTo(factor, 1);",
+      "231: expect(observed.dpr / baseline.dpr).toBeCloseTo(factor, 1);",
+      "232: expect(observed.overflow).toBe(false);",
+      "234: await expect(start).toBeVisible();",
+      "236: await expect(start).toBeFocused();"
+     ],
+     "boundaries": [
+      "202: const context = await chromium.launchPersistentContext('', {",
+      "210: await page.goto('http://127.0.0.1:5173/');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  },
+  {
+   "path": "web/e2e/organization.spec.ts",
+   "blob": "f84ebd39d129676eb0ca7ca17f34d1c5972eaa42",
+   "capability": "Organization context and access",
+   "cases": [
+    {
+     "declaration": "test('switching organizations retains a scoped context after reload and browser Back', async ({ page }, info) => {",
+     "line": 11,
+     "assertions": [
+      "19: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "21: await expect(page).toHaveURL(/#\\/organization\\/isolated\\/overview$/);",
+      "22: await expect(page.getByText('Your access is view-only.')).toBeVisible();",
+      "24: await expect(page.getByRole('heading', { name: 'Dashboards' })).toBeVisible();",
+      "25: await expect(page.getByText('Isolated customer report')).toBeVisible();",
+      "26: await expect(page.getByRole('button', { name: 'New dashboard' })).toHaveCount(0);",
+      "29: await expect(page.getByText('Isolated customer report')).toBeVisible();",
+      "30: await expect(page.getByRole('combobox', { name: 'Switch organization' })).toHaveValue('isolated');",
+      "32: await expect(page).toHaveURL(/#\\/organization\\/isolated\\/overview$/);",
+      "33: await expect(page.getByText('Your access is view-only.')).toBeVisible();"
+     ],
+     "boundaries": [
+      "12: await page.route('**/api/organizations', route => route.fulfill({ json: memberships }));",
+      "13: await page.route('**/api/organizations/isolated/dashboards', route => route.fulfill({ json: [{",
+      "18: await page.goto('/');",
+      "28: await page.reload();",
+      "31: await page.goBack();"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('unavailable organization URL cannot become selected tenant context', async ({ page }) => {",
+     "line": 36,
+     "assertions": [
+      "39: await expect(page.getByText('The requested organization is unavailable to your account. Showing an authorized workspace.')).toBeVisible();",
+      "40: await expect(page).toHaveURL(/#\\/organization\\/northstar\\/overview$/);",
+      "41: await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();",
+      "42: await expect(page.getByText('Isolated customer report')).toHaveCount(0);"
+     ],
+     "boundaries": [
+      "37: await page.route('**/api/organizations', route => route.fulfill({ json: memberships }));",
+      "38: await page.goto('/#/organization/untrusted/dashboard/18ff3350-79f4-4bb8-8d73-9b5e6885df89');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('viewer understands permissions and disconnected source metadata', async ({ page }) => {",
+     "line": 45,
+     "assertions": [
+      "50: await expect(page.getByRole('heading', { name: 'Your access' })).toBeVisible();",
+      "51: await expect(page.getByText('Your role: viewer')).toBeVisible();",
+      "52: await expect(page.getByText('Live connections', { exact: true })).toBeVisible();",
+      "54: await expect(page.getByText('Registration only — no live connections')).toBeVisible();",
+      "55: await expect(page.getByRole('button', { name: 'Register data source' })).toHaveCount(0);",
+      "56: await expect(page.getByText('No data sources registered')).toBeVisible();"
+     ],
+     "boundaries": [
+      "46: await page.route('**/api/organizations', route => route.fulfill({ json: memberships }));",
+      "47: await page.route('**/api/organizations/isolated/dashboards', route => route.fulfill({ json: [] }));",
+      "48: await page.route('**/api/organizations/isolated/data-sources', route => route.fulfill({ json: [] }));",
+      "49: await page.goto('/#/organization/isolated/settings');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test(`organization context stays readable at ${name} ${width}×${height}`, async ({ page }, info) => {",
+     "line": 64,
+     "assertions": [
+      "67: await expect(page.getByRole('heading', { name: 'Organization', exact: true })).toBeVisible();",
+      "68: await expect(page.getByRole('heading', { name: 'Your access' })).toBeVisible();",
+      "69: await expect(page.getByText('Metadata only', { exact: true })).toBeVisible();",
+      "70: expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);"
+     ],
+     "boundaries": [
+      "65: await page.setViewportSize({ width, height });",
+      "66: await page.goto('/#/organization/northstar/settings');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('organization view survives forced colors without hiding role semantics', async ({ page }, info) => {",
+     "line": 75,
+     "assertions": [
+      "78: await expect(page.getByText('Your role: owner')).toBeVisible();"
+     ],
+     "boundaries": [
+      "76: await page.emulateMedia({ forcedColors: 'active' });",
+      "77: await page.goto('/#/organization/northstar/settings');"
+     ],
+     "disposition": "pending semantic review"
+    },
+    {
+     "declaration": "test('genuine Chromium 200% and 400% zoom preserves organization access context', async ({}, info) => {",
+     "line": 82,
+     "assertions": [
+      "93: await expect(page.getByRole('heading', { name: 'Your access' })).toBeVisible();",
+      "110: await expect.poll(async () => (await metrics()).width).toBeLessThanOrEqual(baseline.width / factor + 2);",
+      "112: expect(actual).toBeCloseTo(factor, 1);",
+      "113: expect(observed.dpr / baseline.dpr).toBeCloseTo(factor, 1);",
+      "114: expect(observed.overflow).toBe(false);",
+      "115: await expect(page.getByRole('heading', { name: 'Your access' })).toBeVisible();"
+     ],
+     "boundaries": [
+      "84: const context = await chromium.launchPersistentContext('', {",
+      "92: await page.goto('http://127.0.0.1:5173/#/organization/northstar/settings');"
+     ],
+     "disposition": "pending semantic review"
+    }
+   ]
+  }
+ ],
+ "missing": []
+}
