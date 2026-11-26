@@ -48,4 +48,4 @@ and 320 pixels, forced-colors behavior, accessibility scans, and attached
 screenshots. Existing EXP-01/02/03 and visualization authoring coverage remains
 required.
 
-CI and CodeQL status: pending exact-head PR and post-merge verification.
+Verification: exact-head PR CI run #461 and CodeQL run #463 passed. Post-merge CI run #462 and CodeQL run #464 passed on `experiment/dashboard-filtering` at `1242782ca04bc197b79152a0ae7a1659bc93a2f5`. `main` remains unchanged.
