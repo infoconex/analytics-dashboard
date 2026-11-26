@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  evaluateAuthoredQueryPreviews, evaluateFieldFilters, fieldFilterValueError, getFieldFilterCapabilities, parseFieldFilterValues,
-  type FieldFilter,
+  evaluateAuthoredQueryPreviews, evaluateFieldFilters, fieldFilterValueError, getFieldFilterCapabilities, getQueryPreviewAuthoringOptions, parseFieldFilterValues,
+  type FieldFilter, type QueryPreviewDefinition,
 } from './fieldFilterFixtures';
 import { resolveReportingRange } from './reportingCalendar';
 
@@ -106,5 +106,61 @@ describe('experimental typed business-dimension filters', () => {
     expect(fieldFilterValueError(filter('order_status', 'text', 'GreaterThan', 'Open'))).toContain('not supported');
     const oversized = filter('order_status', 'text', 'In', ...Array.from({ length: 101 }, (_, index) => `value-${index}`));
     expect(fieldFilterValueError(oversized)).toContain('at most 100');
+  });
+});
+
+describe('EXP-05 bounded preview authoring', () => {
+  const sales: QueryPreviewDefinition = {
+    dataset: 'sales', visualization: 'bar', groupByDimension: 'customer_id', aggregate: 'sum', measureDimension: 'amount',
+  };
+  const range = { start: '2026-11-18T00:00:00Z', end: '2026-11-21T00:00:00Z' };
+
+  it('exposes only approved grouping and aggregation options per fixture', () => {
+    expect(getQueryPreviewAuthoringOptions('sales')).toMatchObject({
+      groups: [{ id: 'customer_id', label: 'Customer' }, { id: 'order_status', label: 'Order status' }, { id: 'service_tier', label: 'Service tier' }],
+      sumMeasure: { id: 'amount', label: 'Amount (USD)' },
+    });
+    expect(getQueryPreviewAuthoringOptions('support')).toMatchObject({
+      groups: [{ id: 'customer_id', label: 'Customer' }, { id: 'order_status', label: 'Ticket status' }],
+      sumMeasure: null,
+    });
+    expect(getQueryPreviewAuthoringOptions('unknown')).toBeNull();
+  });
+
+  it('applies typed predicates and reporting time before an authored group and aggregate', () => {
+    const filters = [filter('customer_id', 'text', 'Equal', 'C-103')];
+    const sum = evaluateAuthoredQueryPreviews(filters, range, [sales]);
+    expect(sum.find(item => item.id === 'sales')).toMatchObject({
+      query: sales, groups: [{ label: 'C-103', value: 2400 }], count: 1, calendar: 'Applied', applied: ['customer_id'],
+    });
+    const count = { ...sales, aggregate: 'count' as const, measureDimension: undefined };
+    const changed = evaluateAuthoredQueryPreviews(filters, range, [count]);
+    expect(changed.find(item => item.id === 'sales')).toMatchObject({ query: count, groups: [{ label: 'C-103', value: 1 }] });
+    expect(changed.filter(item => item.id !== 'sales')).toEqual(sum.filter(item => item.id !== 'sales'));
+    expect(evaluateAuthoredQueryPreviews([], null, [count]).find(item => item.id === 'sales')).toMatchObject({
+      query: count, count: 4, groups: ['C-101', 'C-102', 'C-103', 'C-104'].map(label => ({ label, value: 1 })),
+    });
+    expect(evaluateAuthoredQueryPreviews(filters, range).find(item => item.id === 'sales')).toMatchObject({
+      groups: [{ label: 'Open', value: 2400 }], calendar: 'Applied', applied: ['customer_id'],
+    });
+  });
+
+  it('rejects unknown datasets, grouping and measure identifiers, chart kinds, aggregate types and duplicates rather than falling back', () => {
+    const invalid: QueryPreviewDefinition[] = [
+      { ...sales, dataset: 'customer-dataset' },
+      { ...sales, groupByDimension: 'CustomerId' },
+      { ...sales, groupByDimension: 'amount' },
+      { ...sales, measureDimension: 'TotalAmount' },
+      { ...sales, measureDimension: undefined },
+      { ...sales, aggregate: 'count' },
+      { ...sales, dataset: 'support' },
+      { ...sales, visualization: 'line' as never },
+      { ...sales, aggregate: 'avg' as never },
+      { ...sales, dataset: 'support', groupByDimension: 'service_tier', aggregate: 'count', measureDimension: undefined },
+    ];
+    for (const definition of invalid) {
+      expect(() => evaluateAuthoredQueryPreviews([], null, [definition])).toThrow('Unsupported fictional query preview definition.');
+    }
+    expect(() => evaluateAuthoredQueryPreviews([], null, [sales, sales])).toThrow('Duplicate fictional query preview definition.');
   });
 });
