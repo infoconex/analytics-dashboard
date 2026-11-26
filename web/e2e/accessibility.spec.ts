@@ -55,6 +55,13 @@ test('mobile navigation, forms and active filters remain operable without page o
   await page.getByRole('combobox', { name: /Marketing channel/ }).selectOption('Organic search');
   await expect(page.getByRole('button', { name: 'Remove Organic search filter', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  // Also exercise a mobile reload against the real API, without repeating a separate dashboard setup.
+  await page.reload();
+  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Social');
+  await expect(page.getByRole('button', { name: 'Remove Social filter', exact: true })).toBeVisible();
+  await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);
+  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
 });
 
 test('mobile visualization dialog exposes its primary action by natural scrolling', async ({ page }) => {

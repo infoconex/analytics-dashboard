@@ -120,8 +120,13 @@ test('UX-30 browser Back and Forward preserve return context and a declined dirt
   await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toBeFocused();
   await expect(page.locator('.dashboard-heading .eyebrow')).toContainText('EDITING DRAFT');
   await page.getByRole('textbox', { name: 'Dashboard name' }).fill('Unsaved quarterly draft');
-  page.once('dialog', dialog => void dialog.dismiss());
+  let declinedConfirmation = false;
+  page.once('dialog', async dialog => {
+    await dialog.dismiss();
+    declinedConfirmation = true;
+  });
   await page.evaluate(() => history.back());
+  await expect.poll(() => declinedConfirmation, { message: 'Browser Back must request confirmation for a dirty draft' }).toBe(true);
   await expect(page.getByRole('textbox', { name: 'Dashboard name' })).toHaveValue('Unsaved quarterly draft');
   await expect(page).toHaveURL(/\/dashboard\/quarterly-business-23$/);
 

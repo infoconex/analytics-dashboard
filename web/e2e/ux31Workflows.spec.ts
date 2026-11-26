@@ -187,16 +187,4 @@ test('UX-31 viewer, direct-link, and tenant boundaries survive navigation', asyn
   await expect(page.getByRole('button', { name: 'Edit dashboard' })).toHaveCount(0);
 });
 
-test('UX-31 declined browser Back preserves unsaved editing draft', async ({ page }) => {
-  await fixture(page);
-  await page.goto('/#/organization/northstar/dashboards');
-  await page.locator('[data-dashboard-id="customer-adoption"]')
-    .getByRole('button', { name: 'View dashboard' }).click();
-  await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  const name = page.getByRole('textbox', { name: 'Dashboard name' });
-  await name.fill('Uncommitted customer name');
-  page.once('dialog', dialog => void dialog.dismiss());
-  await page.evaluate(() => history.back());
-  await expect(name).toHaveValue('Uncommitted customer name');
-  await expect(page).toHaveURL(/dashboard\/customer-adoption$/);
-});
+

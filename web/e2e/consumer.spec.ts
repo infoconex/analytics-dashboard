@@ -5,7 +5,9 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole('button', { name: /Open Business performance/ }).click();
 });
 
-test('dashboard consumers coordinate date and channel filters and reset independently', async ({ page }) => {
+test('seeded dashboard renders six visualizations and consumers coordinate independent filters', async ({ page }) => {
+  await expect(page.getByText('Revenue over time', { exact: true })).toBeVisible();
+  await expect(page.locator('.widget-tile')).toHaveCount(6);
   const revenue = page.locator('.widget-tile').filter({ hasText: 'Total revenue' });
   const channels = page.locator('.widget-tile').filter({ hasText: 'Traffic sources' });
   const channelTable = page.locator('.widget-tile').filter({ hasText: 'Channel details' });
@@ -62,14 +64,6 @@ test('clicking a channel bar selects the category, and clicking it again restore
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
 });
 
-test('mobile filter controls do not overflow and remain operable', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.reload();
-  await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Social');
-  await expect(page.getByRole('button', { name: 'Remove Social filter', exact: true })).toBeVisible();
-  await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);
-  await expect(page.getByRole('button', { name: 'Edit dashboard' })).toBeVisible();
-});
 
 test('read-only organization members can use consumer filters', async ({ page }) => {
   await page.route('**/api/organizations', route => route.fulfill({ json: [
