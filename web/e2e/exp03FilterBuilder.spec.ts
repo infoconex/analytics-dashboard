@@ -87,5 +87,6 @@ test('embedded field builder applies typed filters with clear cross-provider sco
   await expect(reviewPanel).toHaveAttribute('open', '');
   const accessibility = await new AxeBuilder({ page: reviewPage })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
-  expect(accessibility.violations.map(item => item.id)).toEqual([]);
+  expect(accessibility.violations.map(item => ({ id: item.id,
+    nodes: item.nodes.map(node => ({ target: node.target, failureSummary: node.failureSummary })) }))).toEqual([]);
 });
