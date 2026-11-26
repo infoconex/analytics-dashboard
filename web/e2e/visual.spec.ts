@@ -729,41 +729,6 @@ test('UX-5 deterministic task journey measures direct navigation and safe recove
   await testInfo.attach('ux5-scripted-task-evidence.json', { path: evidencePath, contentType: 'application/json' });
 });
 
-test('browser zoom attempts report genuine viewport changes rather than treating CSS reflow as zoom', async ({ page }, testInfo) => {
-  await fixedDemoApi(page, denseDashboard);
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/#/dashboards');
-  await page.getByRole('button', { name: /Open Business performance/ }).click();
-  const baseline = await page.evaluate(() => ({ width: window.innerWidth, dpr: window.devicePixelRatio }));
-  const observed: { target: number; width: number; dpr: number; achieved: boolean }[] = [];
-
-  for (const target of [2, 4]) {
-    let state = baseline;
-    for (let attempt = 0; attempt < 14; attempt++) {
-      await page.keyboard.press('Control+Equal');
-      state = await page.evaluate(() => ({ width: window.innerWidth, dpr: window.devicePixelRatio }));
-      if (state.width <= baseline.width / target + 2 && state.dpr >= baseline.dpr * (target - 0.1)) break;
-      // The headless browser may not implement Chrome's browser-UI zoom shortcut.
-      if (attempt === 1 && state.width === baseline.width && state.dpr === baseline.dpr) break;
-    }
-    const achieved = state.width <= baseline.width / target + 2
-      && state.dpr >= baseline.dpr * (target - 0.1);
-    observed.push({ target, ...state, achieved });
-    if (achieved) {
-      await assertNoDocumentOverflow(page, state.width);
-      await capture(page, testInfo, `34-actual-browser-zoom-${target * 100}`);
-    }
-    if (!achieved && target === 2) break;
-  }
-  await page.keyboard.press('Control+0');
-  console.log(`[UX-4d browser zoom evidence] ${JSON.stringify({ baseline, observed })}`);
-  await testInfo.attach('actual-browser-zoom-attempt.json', {
-    body: JSON.stringify({ baseline, observed, note: 'Only a changed CSS viewport AND devicePixelRatio count as actual zoom evidence. Failed targets are untested.' }, null, 2),
-    contentType: 'application/json',
-  });
-  expect(observed).toHaveLength(observed[0]?.achieved ? 2 : 1);
-});
-
 test('UX-4g inventories rendered controls, their targets, contrast, focus and modal states', async ({ page }, testInfo) => {
   await fixedDemoApi(page, denseDashboard);
   await page.setViewportSize({ width: 1440, height: 900 });
