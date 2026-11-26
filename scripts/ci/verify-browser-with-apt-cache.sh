@@ -24,7 +24,7 @@ trap cleanup EXIT
 archive_dir="$(sudo mktemp -d /var/cache/nexa-playwright-apt.XXXXXX)"
 sudo chmod 0755 "$archive_dir"
 apt_config="$(sudo mktemp /etc/apt/apt.conf.d/99nexa-playwright-XXXXXX)"
-printf 'Dir::Cache::archives "%s/";\nAPT::Keep-Downloaded-Packages "true";\nBinary::apt::APT::Keep-Downloaded-Packages "true";\nBinary::apt-get::APT::Keep-Downloaded-Packages "true";\n' "$archive_dir" | sudo tee "$apt_config" >/dev/null
+printf 'Dir::Cache::archives "%s/";\nAPT::Keep-Downloaded-Packages "true";\nBinary::apt::APT::Keep-Downloaded-Packages "true";\nBinary::apt-get::APT::Keep-Downloaded-Packages "true";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "1";\nAPT::Update::Error-Mode "any";\n' "$archive_dir" | sudo tee "$apt_config" >/dev/null
 # Only regular package archives are staged. APT validates requested versions
 # against current signed repository indexes, downloading any missing packages.
 find "$cache_dir" -maxdepth 1 -type f -name '*.deb' -exec sudo install -m 0644 -t "$archive_dir" -- {} +
