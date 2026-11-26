@@ -27,6 +27,15 @@
 .field-filter-outcome-title span { color:#56657b; font-size:11px; }
 .field-filter-outcomes article p { margin:8px 0 0; color:#586981; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
 .field-filter-outcomes article .field-filter-limitation { color:#82552a; }
+.query-preview { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:10px; margin-top:18px; }
+.query-preview > h3,.query-preview > p { grid-column:1/-1; }
+.query-preview > p { max-width:900px; margin:0; color:#65748b; font-size:12px; line-height:1.6; }
+.query-preview article { min-width:0; padding:12px; border:1px solid #dce5f4; border-radius:8px; background:#f8faff; }
+.query-preview article > div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 8px; color:#344765; font-size:12px; }
+.query-preview article > div span { color:#56657b; font-size:11px; }
+.query-preview code { display:block; margin-top:8px; color:#3c4b64; font-size:11px; overflow-wrap:anywhere; }
+.query-preview article p { margin:8px 0 0; color:#586981; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
+.query-preview article .field-filter-limitation { color:#82552a; }
 @media(max-width:520px) {
   .field-filter-builder { padding:0 12px 12px; }
   .field-filter-form { align-items:stretch; padding:11px; }
@@ -36,7 +45,7 @@
   .field-filter-outcomes { grid-template-columns:1fr; }
 }
 @media(forced-colors:active) {
-  .field-filter-builder,.field-filter-form,.field-filter-active li,.field-filter-outcomes article { border-color:CanvasText; }
-  .field-filter-active li,.field-filter-outcomes article,.field-filter-form { background:Canvas; }
+  .field-filter-builder,.field-filter-form,.field-filter-active li,.field-filter-outcomes article,.query-preview article { border-color:CanvasText; }
+  .field-filter-active li,.field-filter-outcomes article,.query-preview article,.field-filter-form { background:Canvas; }
   .field-filter-builder :is(h3,p,strong,label,summary,.field-filter-limitation) { color:CanvasText; }
 }

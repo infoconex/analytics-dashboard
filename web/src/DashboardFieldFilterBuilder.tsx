@@ -1,9 +1,14 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  evaluateFieldFilters, fieldFilterDimensions, fieldFilterOperatorLabels, fieldFilterValueError,
+  evaluateAuthoredQueryPreviews, evaluateFieldFilters, fieldFilterDimensions, fieldFilterOperatorLabels, fieldFilterValueError,
   getFieldFilterCapabilities, parseFieldFilterValues, type FieldFilter, type FieldFilterOperator,
 } from './fieldFilterFixtures';
+import type { UtcRange } from './reportingCalendar';
 import './fieldFilterBuilder.css';
+
+interface Props {
+  range?: UtcRange | null;
+}
 
 const noValueOperators = new Set<FieldFilterOperator>(['IsNull', 'IsNotNull']);
 const operatorNames: Record<string, string> = {
@@ -20,7 +25,7 @@ function formatFilter(filter: FieldFilter) {
   return `${dimension} ${fieldFilterOperatorLabels[filter.operator]}${value}`;
 }
 
-export function DashboardFieldFilterBuilder() {
+export function DashboardFieldFilterBuilder({ range = null }: Props) {
   const [filters, setFilters] = useState<FieldFilter[]>([]);
   const [dimension, setDimension] = useState(fieldFilterDimensions[0]?.id ?? '');
   const capabilities = useMemo(() => getFieldFilterCapabilities(dimension), [dimension]);
@@ -30,6 +35,7 @@ export function DashboardFieldFilterBuilder() {
   const [error, setError] = useState('');
   const dimensionRef = useRef<HTMLSelectElement>(null);
   const outcomes = useMemo(() => evaluateFieldFilters(filters), [filters]);
+  const previews = useMemo(() => evaluateAuthoredQueryPreviews(filters, range), [filters, range]);
   const isValueFree = noValueOperators.has(operator);
   const selectedDimension = fieldFilterDimensions.find(item => item.id === dimension);
 
@@ -56,9 +62,10 @@ export function DashboardFieldFilterBuilder() {
     const next: FieldFilter = { dimension, type: selectedDimension.type, operator, values: parseFieldFilterValues(rawValue, selectedDimension.type, operator) };
     const validationError = fieldFilterValueError(next);
     if (validationError) { setError(validationError); return; }
-    setFilters(previous => editingIndex === null
-      ? [...previous, next]
-      : previous.map((filter, index) => index === editingIndex ? next : filter));
+    const nextFilters = editingIndex === null
+      ? [...filters, next]
+      : filters.map((filter, index) => index === editingIndex ? next : filter);
+    setFilters(nextFilters);
     resetDraft();
   }
 
@@ -76,7 +83,8 @@ export function DashboardFieldFilterBuilder() {
   }
 
   function remove(index: number) {
-    setFilters(previous => previous.filter((_, current) => current !== index));
+    const nextFilters = filters.filter((_, current) => current !== index);
+    setFilters(nextFilters);
     if (editingIndex === index) resetDraft();
     else if (editingIndex !== null && editingIndex > index) setEditingIndex(editingIndex - 1);
     dimensionRef.current?.focus();
@@ -153,5 +161,24 @@ export function DashboardFieldFilterBuilder() {
         {filters.length > 0 && outcome.applied.length > 0 && outcome.count === 0 && <p role="status">No matching records. Remove or edit a filter to recover results.</p>}
       </article>)}
     </div>
+    <section className="query-preview" aria-label="Authored query preview">
+      <h3>Authored query preview</h3>
+      <p>These bounded visualization definitions apply the shared selections to fictional raw records before grouping and aggregation. Results are local previews; no provider, query endpoint, or customer data is accessed.</p>
+      {previews.map(preview => <article key={preview.id} aria-label={`${preview.title} query preview`}>
+        <div><strong>{preview.title}</strong><span>{preview.provider}</span></div>
+        <code>{preview.query.visualization} · {preview.query.dataset} · group by {fieldFilterDimensions.find(item => item.id === preview.query.groupByDimension)?.label ?? 'supported dimension'} · {preview.query.aggregate === 'sum' ? `sum ${fieldFilterDimensions.find(item => item.id === preview.query.measureDimension)?.label ?? 'measure'}` : 'count records'}</code>
+        <p>{preview.count} fictional {preview.count === 1 ? 'record' : 'records'} · {preview.groups.length === 0 ? 'No matching groups' : preview.groups.map(group => `${group.label}: ${group.value.toLocaleString()}`).join(' · ')}</p>
+        <p>{preview.applied.length === filters.length && preview.unapplied.length === 0
+          ? filters.length ? `Applied ${preview.applied.length} typed ${preview.applied.length === 1 ? 'filter' : 'filters'} before aggregation.` : 'No typed filters selected.'
+          : preview.applied.length ? `Partially filtered: ${preview.applied.length} applied; ${preview.unapplied.length} not applied.`
+            : filters.length ? 'Unchanged: no typed filters could be applied.' : 'No typed filters selected.'}
+          {' '}{preview.calendar === 'Applied' ? range && `Reporting time ${range.start} to ${range.end} (exclusive) was applied before aggregation.`
+            : preview.calendar === 'No approved reporting time' ? 'The reporting period was not applied because this fixture has no approved reporting-time mapping.' : 'All time was selected.'}</p>
+        {preview.unapplied.map((item, index) => <p className="field-filter-limitation" key={`${item.dimension}-${index}`}>
+          {fieldFilterDimensions.find(d => d.id === item.dimension)?.label ?? item.dimension}: {operatorNames[item.reason]}.
+        </p>)}
+        {filters.length > 0 && preview.applied.length > 0 && preview.count === 0 && <p role="status">No matching records. Remove or edit a filter to recover results.</p>}
+      </article>)}
+    </section>
   </details>;
 }
