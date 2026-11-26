@@ -83,6 +83,11 @@ test('read-only organization members can use consumer filters', async ({ page })
 });
 
 test('consumer filters reset on dashboard navigation and never mutate saved dashboard', async ({ page }) => {
+  const writes: string[] = [];
+  page.on('request', request => {
+    const path = new URL(request.url()).pathname;
+    if (path.startsWith('/api/') && request.method() !== 'GET') writes.push(`${request.method()} ${path}`);
+  });
   await page.getByRole('combobox', { name: 'Marketing channel' }).selectOption('Referral');
   await page.getByRole('button', { name: 'Back to dashboards' }).click();
   await page.getByRole('button', { name: /Open Business performance/ }).click();
@@ -90,6 +95,7 @@ test('consumer filters reset on dashboard navigation and never mutate saved dash
   await expect(page.getByText('All sample records', { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('combobox', { name: 'Marketing channel' })).toHaveValue('');
+  expect(writes, 'Consumer filter changes and navigation must not write to the API').toEqual([]);
 });
 
 test('filter removal and reset restore focus to surviving controls with truthful status', async ({ page }) => {
