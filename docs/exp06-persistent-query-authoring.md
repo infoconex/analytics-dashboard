@@ -16,7 +16,7 @@ The server validates both write paths against a fixed semantic allowlist and tra
 
 ## Deferred
 
-Additional chart types, query complexity, real data, independently saved filter presets, live references, integration of experimental filter scope into shared-insight snapshots, and removal of temporary EXP-05 previews are outside this increment. Existing Explore authoring remains aggregate-sample-only.
+Additional chart types, query complexity, real data, independently saved filter presets, live references, and integration of experimental filter scope into shared-insight snapshots are outside this increment. Temporary EXP-04/05 consumer previews were retired in EXP-07 after persistent query-backed cards became available. Existing Explore authoring remains aggregate-sample-only.
 
 ## Verification
 

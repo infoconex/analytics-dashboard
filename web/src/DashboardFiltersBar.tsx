@@ -46,9 +46,9 @@ export function DashboardFiltersBar({ filters, onChange, widgets }: Props) {
 
   const plural = (count: number) => count === 1 ? 'visualization' : 'visualizations';
 
-  return <section className="consumer-filters" aria-label="Dashboard filters">
+  return <section className="consumer-filters" aria-label="Sample month and channel filters">
     <div className="consumer-filters-header">
-      <div className="consumer-filters-title"><Filter size={17} aria-hidden="true" /><div><strong>Explore this dashboard</strong><span>Selections affect only compatible sample visualizations. Your view does not change the saved dashboard.</span></div></div>
+      <div className="consumer-filters-title"><Filter size={17} aria-hidden="true" /><div><strong>Sample month and channel filters</strong><span>These apply only to matching aggregate sample charts. Use Dashboard filters above for saved query-backed cards.</span></div></div>
       {activeCount > 0 && <button type="button" className="reset-filters" onClick={restoreDefaults}><RotateCcw size={14} aria-hidden="true" /> {activeCount === 2 ? 'Restore default filters' : channelActive ? 'Clear channel filter' : 'Restore default period'}</button>}
     </div>
     {(hasCommerce || hasChannels || activeCount > 0) && <div className="consumer-controls">
@@ -67,7 +67,7 @@ export function DashboardFiltersBar({ filters, onChange, widgets }: Props) {
         {dateActive && <button type="button" className="filter-chip" aria-label={`Remove ${consumerPeriodLabels[filters.period]} filter`} onClick={() => changeFromTransientAction({ ...filters, period: '12m' }, 'date')}><CalendarDays size={14} aria-hidden="true" /> {consumerPeriodLabels[filters.period]} <X size={14} aria-hidden="true" /></button>}
         {channelActive && <button type="button" className="filter-chip" aria-label={`Remove ${filters.channel} filter`} onClick={() => changeFromTransientAction({ ...filters, channel: null }, 'channel')}>{filters.channel} <X size={14} aria-hidden="true" /></button>}
       </div>
-      <span className="filter-scope-note">Reporting periods apply only to commerce; marketing channels have no dates. Channel selections never attribute commerce sales.</span>
+      <span className="filter-scope-note">Month selections apply only to commerce; marketing channels have no dates. Channel selections never attribute commerce sales.</span>
       {activeCount > 0 && <div className="filter-impact" aria-label="Filter impact across visualizations">
         {dateActive && <p><strong>Reporting period:</strong> applies to {impact.commerce} commerce {plural(impact.commerce)}; {impact.channels} marketing {plural(impact.channels)} unchanged (no dates).</p>}
         {channelActive && <p><strong>Marketing channel:</strong> applies to {impact.channels} marketing {plural(impact.channels)}; {impact.commerce} commerce {plural(impact.commerce)} unchanged (no channel attribution).</p>}

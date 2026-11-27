@@ -869,14 +869,14 @@ test('EXP-06 persists bounded raw query authoring and independent reusable copie
   const countCard = page.getByRole('article', { name: 'Raw sales count', exact: true });
   await expect(sumCard).toContainText('4 fictional records');
   await expect(countCard).toContainText('Count records by Order status');
+  const filterDisclosure = page.locator('.dashboard-consumer-filter');
+  await filterDisclosure.locator('summary').press('Enter');
   const calendar = page.locator('.reporting-calendar');
-  await calendar.locator('summary').press('Enter');
   await calendar.getByRole('combobox', { name: 'Reporting period', exact: true }).selectOption('custom');
   await calendar.getByLabel('Start date and time', { exact: true }).fill('2026-11-18T00:00');
   await calendar.getByLabel('End date and time (exclusive)').fill('2026-11-21T00:00');
   await calendar.getByRole('button', { name: 'Apply reporting period' }).press('Enter');
   const panel = page.locator('.field-filter-builder');
-  await panel.locator('summary').press('Enter');
   await panel.getByRole('combobox', { name: 'Business dimension' }).selectOption('customer_id');
   await panel.getByRole('combobox', { name: 'Filter comparison' }).selectOption('Equal');
   await panel.getByRole('textbox', { name: 'Filter value' }).fill('C-103');
@@ -923,9 +923,9 @@ test('EXP-06 persists bounded raw query authoring and independent reusable copie
   await expect(calendar).toHaveCount(0);
   await expect(sumCard).toContainText('4 fictional records');
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(calendar.locator('summary')).toContainText('All time');
+  await expect(calendar.locator('h3')).toContainText('All time');
   await expect(sumCard).toContainText('4 fictional records');
-  await panel.locator('summary').press('Enter');
+  await filterDisclosure.locator('summary').press('Enter');
   await expect(panel.getByRole('region', { name: 'Active business filters' })).toContainText('No field filters');
   expect(api.dashboards()[0]?.revision).toBe(2);
   await page.reload();

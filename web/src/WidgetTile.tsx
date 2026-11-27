@@ -83,7 +83,7 @@ export function WidgetTile(props: Props) {
   return isQueryWidget(props.widget) ? <QueryWidgetTile {...props} /> : <LegacyWidgetTile {...props} />;
 }
 
-function LegacyWidgetTile({ widget, period, preview, position, total, editing, onEdit, onRepair, onRemove, onDuplicate, onSaveToLibrary, filters, onChannelSelect, onPeriodReset, onReturnToIndex, onShareInsight }: Props) {
+function LegacyWidgetTile({ widget, period, preview, position, total, editing, onEdit, onRepair, onRemove, onDuplicate, onSaveToLibrary, filters, queryContext, onChannelSelect, onPeriodReset, onReturnToIndex, onShareInsight }: Props) {
   const [keyboardIndex, setKeyboardIndex] = useState(0);
   const [chartFocused, setChartFocused] = useState(false);
   const appearance = chartAppearance(widget);
@@ -148,6 +148,8 @@ function LegacyWidgetTile({ widget, period, preview, position, total, editing, o
   const outsideLabelsVisible = showOutsideLabels && fittedPieLabels.size > 0;
   const selectedChannel = filters?.channel;
   const filterContext = filters && !editing ? describeWidgetFilters(widget.datasetKey, filters) : null;
+  const businessFilterScope = !editing && queryContext && (queryContext.filters.length > 0 || queryContext.range)
+    ? 'Business filters and reporting period are not applied: this aggregate sample has no approved raw-field or reporting-time mapping.' : null;
   function clearLocalFilter() {
     // Move focus to a persistent heading before the transient chip disappears.
     // It remains in this exact visualization at high zoom and inside iframes.
@@ -234,14 +236,15 @@ function LegacyWidgetTile({ widget, period, preview, position, total, editing, o
         ) : null}
       </div>
 
-      {filterContext && (filterContext.applied || filterContext.unaffected) && <div className="widget-filter-context" aria-label={`Filter scope for ${widget.title}`}>
-        {filterContext.applied && <div className="widget-filter-applied">
+      {((filterContext && (filterContext.applied || filterContext.unaffected)) || businessFilterScope) && <div className="widget-filter-context" aria-label={`Filter scope for ${widget.title}`}>
+        {filterContext?.applied && <div className="widget-filter-applied">
           <span className="widget-filter-status">Filter applied</span>
           {(filterContext.applied.kind === 'channel' ? Boolean(onChannelSelect) : Boolean(onPeriodReset))
             ? <button type="button" className="widget-filter-clear" onClick={clearLocalFilter} aria-label={`Remove ${filterContext.applied.label} filter from ${widget.title}`}>{filterContext.applied.label}<X size={14} aria-hidden="true" /></button>
             : <span className="widget-filter-label">{filterContext.applied.label}</span>}
         </div>}
-        {filterContext.unaffected && <span className="widget-filter-unaffected"><strong>Filter not applied:</strong> {filterContext.unaffected}</span>}
+        {filterContext?.unaffected && <span className="widget-filter-unaffected"><strong>Filter not applied:</strong> {filterContext.unaffected}</span>}
+        {businessFilterScope && <span className="widget-filter-unaffected"><strong>Filter not applied:</strong> {businessFilterScope}</span>}
       </div>}
 
       {widget.kind === 'metric' ? (

@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { calendarPresets, defaultCalendarSelection, presetLabel, resolveReportingRange, rollingPresets,
   type CalendarSelection, type Preset, type UtcRange } from './reportingCalendar';
-import { evaluateCalendarSamples } from './reportingCalendarSamples';
 import './reportingCalendar.css';
 
 interface Props { onRangeChange?: (range: UtcRange | null) => void; }
@@ -16,7 +15,6 @@ export function ReportingCalendar({ onRangeChange }: Props) {
   const [range, setRange] = useState<UtcRange | null>(null);
   const [error, setError] = useState('');
   const selector = useRef<HTMLSelectElement>(null);
-  const results = evaluateCalendarSamples(range);
   const dirty = JSON.stringify(draft) !== JSON.stringify(applied);
   function change(patch: Partial<CalendarSelection>) { setDraft(previous => ({ ...previous, ...patch })); setError(''); }
   function apply() {
@@ -29,9 +27,9 @@ export function ReportingCalendar({ onRangeChange }: Props) {
     const next = { ...applied, preset: 'all' as const, start: '', end: '' };
     setDraft(next); setApplied(next); setRange(null); setError(''); onRangeChange?.(null); selector.current?.focus();
   }
-  return <details className="reporting-calendar">
-    <summary>Experimental reporting period · {presetLabel(applied.preset)}</summary>
-    <p>Calendar filtering evaluation only. Fixed fictional Sales and Support event records (November 2025 and 2026). Compatible saved query-backed visualizations use the same period. Original aggregated samples remain unchanged; they have no approved calendar timestamps.</p>
+  return <section className="reporting-calendar" aria-labelledby="reporting-period-heading">
+    <h3 id="reporting-period-heading">Reporting period · {presetLabel(applied.preset)}</h3>
+    <p>Applies to saved query-backed cards with an approved reporting-time mapping. Legacy aggregate samples keep their own month controls.</p>
     <form onSubmit={event => { event.preventDefault(); apply(); }}>
       <div className="reporting-calendar-fields">
         <label>Reporting period<select aria-label="Reporting period" ref={selector} value={draft.preset} onChange={event => change({ preset: event.target.value as Preset })}>
@@ -60,14 +58,7 @@ export function ReportingCalendar({ onRangeChange }: Props) {
     </form>
     <div role="status" aria-label="Calendar filter scope" className="reporting-calendar-status">
       <strong>{presetLabel(applied.preset)} · {applied.zone}</strong>
-      <p>{range ? 'UTC interval: ' + range.start + ' to ' + range.end + ' (exclusive). Applies to the 2 calendar samples below; undated inventory unchanged. Saved query-backed cards report their own applicability.' : 'No calendar restriction. All experimental records.'}</p>
+      <p>{range ? 'UTC interval: ' + range.start + ' to ' + range.end + ' (exclusive). Each saved query-backed card reports whether this period was applied.' : 'No calendar restriction. All records in each saved query-backed card.'}</p>
     </div>
-    <div className="reporting-calendar-results">
-      {results.map(result => <section key={result.name} aria-label={result.name}>
-        <h3>{result.name}</h3>
-        <strong>{result.total === null ? 'No matching records' : result.name === 'Sales revenue' ? '$' + result.total : result.total}</strong>
-        <p>{result.count} fictional records · {result.applied ? 'Calendar filter applied' : result.compatible ? 'All time' : 'No approved reporting time'}</p>
-      </section>)}
-    </div>
-  </details>;
+  </section>;
 }

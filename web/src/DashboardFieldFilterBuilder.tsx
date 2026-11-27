@@ -1,26 +1,16 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  evaluateAuthoredQueryPreviews, evaluateFieldFilters, fieldFilterDimensions, fieldFilterOperatorLabels, fieldFilterValueError,
-  getFieldFilterCapabilities, getQueryPreviewAuthoringOptions, parseFieldFilterValues, type FieldFilter, type FieldFilterOperator,
-  type QueryPreviewDefinition,
+  fieldFilterDimensions, fieldFilterOperatorLabels, fieldFilterValueError,
+  getFieldFilterCapabilities, parseFieldFilterValues, type FieldFilter, type FieldFilterOperator,
 } from './fieldFilterFixtures';
-import type { UtcRange } from './reportingCalendar';
 import './fieldFilterBuilder.css';
 
 interface Props {
-  range?: UtcRange | null;
   filters: FieldFilter[];
   onFiltersChange: (filters: FieldFilter[]) => void;
 }
 
 const noValueOperators = new Set<FieldFilterOperator>(['IsNull', 'IsNotNull']);
-const operatorNames: Record<string, string> = {
-  NoApprovedMapping: 'no matching business dimension is configured',
-  FieldNotFilterable: 'this visualization does not allow filtering by that dimension',
-  IncompatibleType: 'the mapped business field uses an incompatible value type',
-  UnsupportedOperator: 'this data provider does not support the comparison',
-};
-
 function formatFilter(filter: FieldFilter) {
   const dimension = fieldFilterDimensions.find(item => item.id === filter.dimension)?.label ?? filter.dimension;
   const value = noValueOperators.has(filter.operator) ? ''
@@ -28,9 +18,7 @@ function formatFilter(filter: FieldFilter) {
   return `${dimension} ${fieldFilterOperatorLabels[filter.operator]}${value}`;
 }
 
-export function DashboardFieldFilterBuilder({ range = null, filters, onFiltersChange: setFilters }: Props) {
-  const [definitions, setDefinitions] = useState<QueryPreviewDefinition[]>([]);
-  const [editingPreview, setEditingPreview] = useState<string | null>(null);
+export function DashboardFieldFilterBuilder({ filters, onFiltersChange: setFilters }: Props) {
   const [dimension, setDimension] = useState(fieldFilterDimensions[0]?.id ?? '');
   const capabilities = useMemo(() => getFieldFilterCapabilities(dimension), [dimension]);
   const [operator, setOperator] = useState<FieldFilterOperator>(capabilities.operators[0] ?? 'Equal');
@@ -38,18 +26,8 @@ export function DashboardFieldFilterBuilder({ range = null, filters, onFiltersCh
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [error, setError] = useState('');
   const dimensionRef = useRef<HTMLSelectElement>(null);
-  const outcomes = useMemo(() => evaluateFieldFilters(filters), [filters]);
-  const previews = useMemo(() => evaluateAuthoredQueryPreviews(filters, range, definitions), [filters, range, definitions]);
   const isValueFree = noValueOperators.has(operator);
   const selectedDimension = fieldFilterDimensions.find(item => item.id === dimension);
-
-  function changePreview(definition: QueryPreviewDefinition) {
-    setDefinitions(current => [...current.filter(item => item.dataset !== definition.dataset), definition]);
-  }
-
-  function resetPreview(dataset: string) {
-    setDefinitions(current => current.filter(item => item.dataset !== dataset));
-  }
 
   function changeDimension(next: string) {
     setDimension(next);
@@ -102,9 +80,9 @@ export function DashboardFieldFilterBuilder({ range = null, filters, onFiltersCh
     dimensionRef.current?.focus();
   }
 
-  return <details className="field-filter-builder">
-    <summary>Experimental business filters</summary>
-    <p className="field-filter-intro">Build typed filters on fictional records to explore cross-dataset scope. Compatible filters are evaluated before each sample visualization is summarized. Compatible saved query-backed cards use the same selections. Selections never change saved definitions or query connected customer data.</p>
+  return <section className="field-filter-builder" aria-labelledby="business-filters-heading">
+    <h3 id="business-filters-heading">Business filters</h3>
+    <p className="field-filter-intro">These temporary filters apply to saved query-backed cards with compatible approved fields. Each card explains its own filter scope. They never change saved definitions or access customer data.</p>
     <form className="field-filter-form" onSubmit={submit}>
       <label>Business dimension
         <select ref={dimensionRef} value={dimension} onChange={event => changeDimension(event.target.value)}>
@@ -155,74 +133,5 @@ export function DashboardFieldFilterBuilder({ range = null, filters, onFiltersCh
       </ul>}
     </section>
 
-    <div className="field-filter-outcomes" role="region" aria-live="polite" aria-label="Filter applicability by sample visualization">
-      <h3>Sample visualization scope</h3>
-      {outcomes.map(outcome => <article key={outcome.id}>
-        <div className="field-filter-outcome-title"><strong>{outcome.title}</strong><span>{outcome.provider}</span></div>
-        <p>{outcome.count} {outcome.count === 1 ? 'record' : 'records'} · total {outcome.measureLabel} {outcome.total.toLocaleString()}</p>
-        {filters.length === 0
-          ? <p>No field filters applied.</p>
-          : <p>{outcome.applied.length === filters.length && outcome.unapplied.length === 0
-            ? `Applied ${outcome.applied.length} ${outcome.applied.length === 1 ? 'filter' : 'filters'} before summarizing.`
-            : outcome.applied.length > 0
-              ? `Partially filtered: applied ${outcome.applied.length}; ${outcome.unapplied.length} ${outcome.unapplied.length === 1 ? 'filter was' : 'filters were'} not applied.`
-              : 'Unchanged: none of the active filters could be applied.'}</p>}
-        {outcome.unapplied.map((item, index) => <p className="field-filter-limitation" key={`${item.dimension}-${index}`}>
-          {fieldFilterDimensions.find(d => d.id === item.dimension)?.label ?? item.dimension}: {operatorNames[item.reason]}.
-        </p>)}
-        {filters.length > 0 && outcome.applied.length > 0 && outcome.count === 0 && <p role="status">No matching records. Remove or edit a filter to recover results.</p>}
-      </article>)}
-    </div>
-    <section className="query-preview" aria-label="Authored query preview">
-      <h3>Authored query preview</h3>
-      <p>These bounded visualization definitions apply the shared selections to fictional raw records before grouping and aggregation. Edit a preview to explore its grouping and aggregate. Changes are temporary and are not saved to dashboards. No provider, query endpoint, or customer data is accessed.</p>
-      {previews.map(preview => {
-        const options = getQueryPreviewAuthoringOptions(preview.query.dataset)!;
-        const expanded = editingPreview === preview.id;
-        return <article key={preview.id} aria-label={`${preview.title} query preview`}>
-        <div><strong>{preview.title}</strong><span>{preview.provider}</span></div>
-        <code>{preview.query.visualization} · {preview.query.dataset} · group by {fieldFilterDimensions.find(item => item.id === preview.query.groupByDimension)?.label ?? 'supported dimension'} · {preview.query.aggregate === 'sum' ? `sum ${fieldFilterDimensions.find(item => item.id === preview.query.measureDimension)?.label ?? 'measure'}` : 'count records'}</code>
-        <p aria-live="polite">{preview.count} fictional {preview.count === 1 ? 'record' : 'records'} · {preview.groups.length === 0 ? 'No matching groups' : preview.groups.map(group => `${group.label}: ${group.value.toLocaleString()}`).join(' · ')}</p>
-        <p>{preview.applied.length === filters.length && preview.unapplied.length === 0
-          ? filters.length ? `Applied ${preview.applied.length} typed ${preview.applied.length === 1 ? 'filter' : 'filters'} before aggregation.` : 'No typed filters selected.'
-          : preview.applied.length ? `Partially filtered: ${preview.applied.length} applied; ${preview.unapplied.length} not applied.`
-            : filters.length ? 'Unchanged: no typed filters could be applied.' : 'No typed filters selected.'}
-          {' '}{preview.calendar === 'Applied' ? range && `Reporting time ${range.start} to ${range.end} (exclusive) was applied before aggregation.`
-            : preview.calendar === 'No approved reporting time' ? 'The reporting period was not applied because this fixture has no approved reporting-time mapping.' : 'All time was selected.'}</p>
-        {preview.unapplied.map((item, index) => <p className="field-filter-limitation" key={`${item.dimension}-${index}`}>
-          {fieldFilterDimensions.find(d => d.id === item.dimension)?.label ?? item.dimension}: {operatorNames[item.reason]}.
-        </p>)}
-        {filters.length > 0 && preview.applied.length > 0 && preview.count === 0 && <p role="status">No matching records. Remove or edit a filter to recover results.</p>}
-        <button className="button button-light query-preview-edit" type="button" aria-expanded={expanded}
-          onClick={() => setEditingPreview(current => current === preview.id ? null : preview.id)}>
-          {expanded ? 'Close preview editor' : 'Edit preview'}
-        </button>
-        {expanded && <div className="query-preview-editor">
-          <label>Group by
-            <select value={preview.query.groupByDimension} onChange={event => changePreview({
-              ...preview.query, groupByDimension: event.target.value,
-            })}>
-              {options.groups.map(group => <option key={group.id} value={group.id}>{group.label}</option>)}
-            </select>
-          </label>
-          <label>Aggregate
-            <select value={preview.query.aggregate} onChange={event => {
-              const aggregate = event.target.value;
-              if (aggregate === 'count') changePreview({
-                ...preview.query, aggregate, measureDimension: undefined,
-              });
-              else if (aggregate === 'sum' && options.sumMeasure) changePreview({
-                ...preview.query, aggregate, measureDimension: options.sumMeasure.id,
-              });
-            }}>
-              <option value="count">Count records</option>
-              {options.sumMeasure && <option value="sum">Sum {options.sumMeasure.label}</option>}
-            </select>
-          </label>
-          <button className="button button-light" type="button" onClick={() => resetPreview(preview.id)}>Reset preview definition</button>
-        </div>}
-      </article>;
-      })}
-    </section>
-  </details>;
+  </section>;
 }
