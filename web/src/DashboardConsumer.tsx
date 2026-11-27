@@ -37,18 +37,18 @@ interface Props {
 // scoped to one open dashboard, not to a link or server-persisted draft.
 export function DashboardConsumer({ widgets, updatedAt, savedRevision, draftPreview = false, editing, canEdit, onStartEdit, onRepair, onChange, onEdit, onAdd, onAddSaved, onDuplicate, onSaveToLibrary, onFiltersChange, onShareInsight, initialFilters }: Props) {
   const [filters, setFilters] = useState({ ...(initialFilters ?? defaultConsumerFilters) });
-  const [experimentalRange, setExperimentalRange] = useState<UtcRange | null>(null);
-  const [experimentalFilters, setExperimentalFilters] = useState<FieldFilter[]>([]);
-  const showExperimentalFilters = !editing && !draftPreview && widgets.length > 0;
+  const [reportingRange, setReportingRange] = useState<UtcRange | null>(null);
+  const [businessFilters, setBusinessFilters] = useState<FieldFilter[]>([]);
+  const showDashboardFilters = !editing && !draftPreview && widgets.length > 0;
   // These controls unmount outside saved-dashboard viewing. Reset their lifted
   // selections as well so no invisible filter survives a return to the viewer.
   useEffect(() => {
-    if (!showExperimentalFilters) {
-      setExperimentalRange(null);
-      setExperimentalFilters(current => current.length ? [] : current);
+    if (!showDashboardFilters) {
+      setReportingRange(null);
+      setBusinessFilters(current => current.length ? [] : current);
     }
-  }, [showExperimentalFilters]);
-  const queryContext: QueryContext = showExperimentalFilters ? { filters: experimentalFilters, range: experimentalRange } : { filters: [], range: null };
+  }, [showDashboardFilters]);
+  const queryContext: QueryContext = showDashboardFilters ? { filters: businessFilters, range: reportingRange } : { filters: [], range: null };
   const hasFilters = widgets.some(widget => !isQueryWidget(widget) && (widget.datasetKey === 'commerce' || widget.datasetKey === 'channels'));
   const availability = summarizeSampleAvailability(widgets, filters, queryContext);
   const incomplete = availability.noMatch + availability.unavailable;
@@ -66,8 +66,13 @@ export function DashboardConsumer({ widgets, updatedAt, savedRevision, draftPrev
         <li>Choose the reporting period at the top of the dashboard. Select a marketing channel when available; remove its filter to see all channels.</li>
         <li>{canEdit ? 'For advanced composition, choose Edit dashboard above. Viewing and filtering never save changes.' : 'This is a read-only view; exploring and filtering never change the saved dashboard.'}</li></ul>
     </details>}
-    {showExperimentalFilters && <ReportingCalendar onRangeChange={setExperimentalRange} />}
-    {showExperimentalFilters && <DashboardFieldFilterBuilder range={experimentalRange} filters={experimentalFilters} onFiltersChange={setExperimentalFilters} />}
+    {showDashboardFilters && <details className="dashboard-consumer-filter">
+      <summary>Dashboard filters <span>Temporary selections for this saved dashboard</span></summary>
+      <div className="dashboard-consumer-filter-content">
+        <ReportingCalendar onRangeChange={setReportingRange} />
+        <DashboardFieldFilterBuilder filters={businessFilters} onFiltersChange={setBusinessFilters} />
+      </div>
+    </details>}
     {hasFilters && <DashboardFiltersBar filters={filters} onChange={changeFilters} widgets={widgets} />}
     {!editing && incomplete > 0 && <section className="dashboard-availability" aria-label="Visualization availability">
       <p role="status" aria-live="polite" aria-atomic="true"><strong>Partial dashboard data:</strong> {availability.available} of {widgets.length} visualizations have usable sample records.

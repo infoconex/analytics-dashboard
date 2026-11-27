@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { defaultCalendarSelection, resolveReportingRange, type CalendarSelection, type Preset } from './reportingCalendar';
-import { evaluateCalendarSamples } from './reportingCalendarSamples';
 
 const now = new Date('2026-11-23T20:15:30.123Z');
 const resolve = (preset: Preset, changes: Partial<CalendarSelection> = {}, clock = now) =>
@@ -44,16 +43,5 @@ describe('reporting calendar', () => {
     }
     expect(() => resolve('today', { zone: 'invalid-zone' })).toThrow();
     expect(() => resolve('thisWeek', { weekStart: 7 })).toThrow();
-  });
-  it('applies one half-open range before aggregation to independent mapped datasets', () => {
-    const range = resolve('custom', { start: '2026-11-16T00:00', end: '2026-11-17T00:00' });
-    expect(evaluateCalendarSamples(range)).toEqual([
-      { name: 'Sales revenue', applied: true, compatible: true, count: 2, total: 20 },
-      { name: 'Support requests', applied: true, compatible: true, count: 1, total: 1 },
-      { name: 'Undated inventory', applied: false, compatible: false, count: 1, total: 42 },
-    ]);
-    expect(evaluateCalendarSamples(null).map(x => x.total)).toEqual([345, 5, 42]);
-    const empty = resolve('custom', { start: '2026-11-18T00:00', end: '2026-11-19T00:00' });
-    expect(evaluateCalendarSamples(empty).map(x => x.total)).toEqual([null, null, 42]);
   });
 });

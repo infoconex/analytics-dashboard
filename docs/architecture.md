@@ -67,6 +67,14 @@ SQL compilation or query execution; the disconnected 3a compilers are not wired
 into that route.
 See [query contracts](query-contracts.md) for the type/operator matrix and limits.
 
+## Experimental dashboard consumer filtering (EXP-01–EXP-07)
+
+The experimental saved-dashboard viewer keeps reporting-period and typed business-filter selections in page memory. Compatible saved fictional query-backed cards apply them to raw fictional rows before grouping and aggregation; each card reports its own applicability, including unmapped fields and missing reporting-time mappings. Legacy aggregate sample cards retain their existing month/channel controls and explicitly report that raw-record filters do not apply. Selections reset when leaving the saved viewer or changing dashboard context and never update dashboard definitions or revisions.
+
+Temporary EXP-04/05 query preview cards and their query-shape editor were removed in EXP-07. The saved query-backed widgets created through the existing dashboard and library authoring workflows are the only query visualizations shown to consumers. These remain fixed fictional fixtures evaluated in the browser; the controls do not call registered providers or customer data sources.
+
+The server's persisted query validator and the client fixture evaluator still carry mirrored fixed fictional semantic metadata. This is acceptable only for the current bounded experiment. Consolidate metadata into a trusted contract before adding semantic datasets, broader query authoring, or customer-backed execution. It is not a customer dataset catalog or authorization to execute queries.
+
 ## Connection security (Issue #10)
 
 `ConnectionService` requires an organization **owner** through `IOrganizationCatalog`,
