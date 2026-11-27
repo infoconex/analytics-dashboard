@@ -20,6 +20,7 @@ async function installReadOnlyDashboard(page: import('@playwright/test').Page) {
   await page.route('**/api/**', route => {
     const request = route.request(), path = new URL(request.url()).pathname;
     if (request.method() !== 'GET') writes.push(`${request.method()} ${path}`);
+    if (path === '/api/identity') return route.fulfill({ json: { userId: 'sample-viewer', displayName: 'Sample Viewer' } });
     if (path === '/api/organizations') return route.fulfill({ json: [{ id: 'northstar', name: 'Northstar Commerce', role: 'viewer' }] });
     if (path === '/api/organizations/northstar/dashboards') return route.fulfill({ json: [dashboard] });
     if (path === `/api/organizations/northstar/dashboards/${dashboardId}`) return route.fulfill({ json: dashboard });
@@ -85,6 +86,23 @@ test('EXP-07 unifies consumer filters and reports real per-card scope in standal
   await page.screenshot({ path: forced, animations: 'disabled', fullPage: true });
   await info.attach('exp07-standalone-forced-colors', { path: forced, contentType: 'image/png' });
 
+  const editFilter = business.getByRole('button', { name: 'Edit', exact: true });
+  await editFilter.click();
+  await business.getByRole('textbox', { name: 'Filter value' }).fill('C-999');
+  await business.getByRole('button', { name: 'Save filter' }).press('Enter');
+  await expect(sales).toHaveAttribute('data-availability', 'no-match');
+  await expect(sales).toContainText('No matching records.');
+  const remove = business.getByRole('button', { name: 'Remove Customer is C-999', exact: true });
+  await remove.focus();
+  await remove.press('Enter');
+  await expect(business.getByLabel('Business dimension')).toBeFocused();
+  await expect(sales).toContainText('1 fictional record');
+  await calendar.getByRole('button', { name: 'Clear reporting period' }).press('Enter');
+  await expect(calendar.getByRole('combobox', { name: 'Reporting period' })).toBeFocused();
+  await expect(sales).toContainText('4 fictional records');
+  await expect(page.getByText(/Saved revision 7/)).toBeVisible();
+  await expect(writes).toEqual([]);
+
   await page.emulateMedia({ forcedColors: 'none' });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/sample-host.html');
@@ -93,6 +111,11 @@ test('EXP-07 unifies consumer filters and reports real per-card scope in standal
   await expect(embeddedFilter.locator('summary')).toContainText('Dashboard filters');
   await embeddedFilter.locator('summary').press('Enter');
   await frame.getByRole('article', { name: 'Saved sales query' }).getByText('Open').waitFor();
+  const embeddedBusiness = embeddedFilter.locator('.field-filter-builder');
+  await embeddedBusiness.getByRole('combobox', { name: 'Business dimension' }).selectOption('customer_id');
+  await embeddedBusiness.getByRole('textbox', { name: 'Filter value' }).fill('C-102');
+  await embeddedBusiness.getByRole('button', { name: 'Apply filter' }).press('Enter');
+  await expect(frame.getByRole('article', { name: 'Saved sales query' })).toContainText('800');
   const embeddedPath = info.outputPath('exp07-embedded-1440.png');
   await page.screenshot({ path: embeddedPath, animations: 'disabled', fullPage: true });
   await info.attach('exp07-embedded-1440', { path: embeddedPath, contentType: 'image/png' });
